@@ -3,7 +3,7 @@
 # @Email:  eric.corwin@gmail.com
 # @Filename: BarraquandCorwin.py
 # @Last modified by:   ecorwin
-# @Last modified time: 2020-09-04T18:24:05-07:00
+# @Last modified time: 2020-09-15T14:22:54-07:00
 
 import numpy as np
 from numba import jit
@@ -114,15 +114,27 @@ def numbaFloatEvolveTimeStep(occupancy, biases, smallCutoff = 1e15):
     return occupancy
 
 def floatEvolveTimeStep(occupancy, biases, smallCutoff = 1e15):
+    '''
+    args:
+    occupancy (array of floats): How many walkers are at each element
+    biases (array of floats): Weight of our weighted coin at each element for this timestep
+    smallCutoff (float): The precision of our floating point number
+    '''
+
     # Motion in 1d on the positive number line, shifting by 1/2 step in space each time step
+    # Small numbers can be treated like an integer using binomial
     small = occupancy < smallCutoff
+    # Giant numbers we don't need to worry about variance since it won't matter anyway
     giant = occupancy > smallCutoff**2
+    # Medium numbers we can use the gaussian approximation
     medium = np.logical_and(~small, ~giant)
 
     rightShift = np.zeros(shape=len(occupancy)+1)
     # If we're so large that sqrt(N) is less than the precision
     rightShift[np.hstack([False, giant])] = biases[giant] * occupancy[giant]
     # If sqrt(N) is within precision, but we're too big to use binomial then use the gaussian appx
+    # TODO: Check that I'm doing the gaussian appx correctly or if there's a scale attached to the width
+    # Prob don't need the np.round()
     rightShift[np.hstack([False, medium])] = np.round( np.random.normal( loc=biases[medium]*occupancy[medium], scale = np.sqrt(occupancy[medium]) ) )
     # If we're small enough to use integer representations then use binomial
     rightShift[np.hstack([False, small])] = np.random.binomial(occupancy[small].astype(int), biases[small])
@@ -131,6 +143,7 @@ def floatEvolveTimeStep(occupancy, biases, smallCutoff = 1e15):
     return occupancy - rightShift[1:] + rightShift[:-1]
 
 def floatRunFixedTime(maxTime, biasFunction, numWalkers=None, dtype=np.float):
+    # This is useful for running things in parallel
     np.random.seed()
     # Start w/ the smallest system possible
     occupancy = np.zeros(2, dtype=dtype)
@@ -140,20 +153,19 @@ def floatRunFixedTime(maxTime, biasFunction, numWalkers=None, dtype=np.float):
         occupancy[0] = numWalkers
     else:
         occupancy[0] = np.finfo(dtype).max
-    edges = np.empty( (maxTime,2))
 
+    edges = np.empty( (maxTime,2) )
     start = time.time()
+
     for t in range(maxTime):
-        # if np.any(np.isnan(np.sqrt(occupancy))):
-        #     bad = np.isnan(np.sqrt(occupancy))
-        #     print(time, occupancy[bad])
         # The origin shifts by 1/2 a step for each iteration
         origin += .5
 
         biases = biasFunction(len(occupancy))
         # occupancy = numbaFloatEvolveTimeStep(occupancy, biases)
         occupancy = floatEvolveTimeStep(occupancy, biases)
-        # Find the filled region
+        # Find the filled region, the first index tells us to extract the list from what where gives us
+        # The second list gives us the first [0] and last [-1] element
         endPoints = np.where(occupancy)[0][[0,-1]]
         lenFilled = endPoints[1]-endPoints[0] + 1
         # Trim the occupancy
@@ -161,7 +173,9 @@ def floatRunFixedTime(maxTime, biasFunction, numWalkers=None, dtype=np.float):
         newOcc[:lenFilled] = occupancy[endPoints[0]:(endPoints[1]+1)]
         occupancy = newOcc
         # Shift the origin
+        # TODO: Double check that we shouldn't shift the edges after we calculate edges!!!!!!!!!!
         origin -= endPoints[0]
+
         edges[t,:] = endPoints - origin
         if t % 10000 == 0:
             print(t)
@@ -175,49 +189,3 @@ def parallelVariance(numSamples, tMax, biasFunction):
         # results = parallel(delayed(runFixedTime)(tMax, biasFunction) for i in range(numSamples))
     return edges
     #return np.hstack(edges)
-
-
-# def firstPassage(maxValue, alpha=2, beta=2):
-#     occupancy = np.zeros((maxValue+1)*2, dtype=np.int64)
-#     occupancy[[maxValue, maxValue+1]] = np.iinfo(np.int64).max/2
-#     time = 0
-#     while (occupancy[0]) == 0 and (occupancy[-1] == 0):
-#         occupancy = evolveTimeStep(occupancy, np.random.beta(alpha, beta, size=occupancy.shape))
-#         time += 1
-#     return time, occupancy
-#
-# def einsteinFirstPassage(maxValue):
-#     occupancy = np.zeros((maxValue+1)*2, dtype=np.int64)
-#     occupancy[[maxValue, maxValue+1]] = np.iinfo(np.int64).max/2
-#     time = 0
-#     while (occupancy[0]) == 0 and (occupancy[-1] == 0):
-#         occupancy = evolveTimeStep(occupancy, .5)
-#         time += 1
-#     return time, occupancy
-#
-# def fixedTime(maxTime, alpha=2, beta=2):
-#     occupancy = np.zeros((maxTime+1)*2, dtype=np.int64)
-#     occupancy[[maxTime, maxTime+1]] = np.iinfo(np.int64).max/2
-#     for time in range(maxTime):
-#         occupancy = evolveTimeStep(occupancy, np.random.beta(alpha, beta, size=occupancy.shape))
-#     return np.max(np.abs(np.nonzero(occupancy)[0]-(maxTime+.5)) - .5).astype(np.int64), occupancy
-#
-# def einsteinFixedTime(maxTime):
-#     occupancy = np.zeros((maxTime+1)*2, dtype=np.int64)
-#     occupancy[[maxTime, maxTime+1]] = np.iinfo(np.int64).max/2
-#     for time in range(maxTime):
-#         occupancy = evolveTimeStep(occupancy, .5)
-#     return np.max(np.abs(np.nonzero(occupancy)[0]-(maxTime+.5)) - .5).astype(np.int64), occupancy
-#
-# def width(timeRange, numSamples=30):
-#     returnData = []
-#     mE = np.zeros(numSamples)
-#     mBC = np.zeros(numSamples)
-#     for t in timeRange:
-#         for i in range(numSamples):
-#             mE[i],_ = einsteinFixedTime(t)
-#             mBC[i],_ = fixedTime(t)
-#         returnData.append([np.mean(mE), np.var(mE), np.mean(mBC), np.var(mBC)])
-#         print(t, returnData[-1])
-#
-#     return np.array(returnData)
