@@ -3,7 +3,7 @@
 # @Email:  eric.corwin@gmail.com
 # @Filename: BarraquandCorwin.py
 # @Last modified by:   ecorwin
-# @Last modified time: 2020-09-15T14:42:47-07:00
+# @Last modified time: 2020-09-15T14:44:24-07:00
 
 import numpy as np
 from numba import jit
@@ -172,9 +172,8 @@ def floatRunFixedTime(maxTime, biasFunction, numWalkers=None, dtype=np.float):
         newOcc = np.zeros(lenFilled + 1)
         newOcc[:lenFilled] = occupancy[endPoints[0]:(endPoints[1]+1)]
         occupancy = newOcc
-        # Shift the origin
         edges[t,:] = endPoints - origin
-        # TODO: Double check that we shouldn't shift the edges after we calculate edges!!!!!!!!!!
+        # Shift the origin
         origin -= endPoints[0]
 
         if t % 10000 == 0:
