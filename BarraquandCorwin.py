@@ -3,7 +3,7 @@
 # @Email:  eric.corwin@gmail.com
 # @Filename: BarraquandCorwin.py
 # @Last modified by:   ecorwin
-# @Last modified time: 2020-09-15T14:44:24-07:00
+# @Last modified time: 2020-09-15T14:54:29-07:00
 
 import numpy as np
 from numba import jit
@@ -133,9 +133,8 @@ def floatEvolveTimeStep(occupancy, biases, smallCutoff = 1e15):
     # If we're so large that sqrt(N) is less than the precision
     rightShift[np.hstack([False, giant])] = biases[giant] * occupancy[giant]
     # If sqrt(N) is within precision, but we're too big to use binomial then use the gaussian appx
-    # TODO: Check that I'm doing the gaussian appx correctly or if there's a scale attached to the width
-    # Prob don't need the np.round()
-    rightShift[np.hstack([False, medium])] = np.round( np.random.normal( loc=biases[medium]*occupancy[medium], scale = np.sqrt(occupancy[medium]) ) )
+    mediumVariance = occupancy[medium] * biases[medium] * (1-biases[medium])
+    rightShift[np.hstack([False, medium])] = np.random.normal( loc=biases[medium]*occupancy[medium], scale = np.sqrt(mediumVariance) )
     # If we're small enough to use integer representations then use binomial
     rightShift[np.hstack([False, small])] = np.random.binomial(occupancy[small].astype(int), biases[small])
 
