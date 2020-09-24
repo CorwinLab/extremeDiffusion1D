@@ -3,7 +3,7 @@
 # @Email:  eric.corwin@gmail.com
 # @Filename: BarraquandCorwin.py
 # @Last modified by:   ecorwin
-# @Last modified time: 2020-09-15T14:54:29-07:00
+# @Last modified time: 2020-09-24T16:46:23-07:00
 
 import numpy as np
 #from numba import jit
@@ -134,7 +134,7 @@ def floatEvolveTimeStep(occupancy, biases, smallCutoff = 1e15):
     rightShift[np.hstack([False, giant])] = biases[giant] * occupancy[giant]
     # If sqrt(N) is within precision, but we're too big to use binomial then use the gaussian appx
     mediumVariance = occupancy[medium] * biases[medium] * (1-biases[medium])
-    rightShift[np.hstack([False, medium])] = np.random.normal( loc=biases[medium]*occupancy[medium], scale = np.sqrt(mediumVariance) )
+    rightShift[np.hstack([False, medium])] = np.round(np.random.normal( loc=biases[medium]*occupancy[medium], scale = np.sqrt(mediumVariance) ))
     # If we're small enough to use integer representations then use binomial
     rightShift[np.hstack([False, small])] = np.random.binomial(occupancy[small].astype(int), biases[small])
 
@@ -178,7 +178,7 @@ def floatRunFixedTime(maxTime, biasFunction, numWalkers=None, dtype=np.float):
         if t % 10000 == 0:
             print(t)
     print('Finished in', time.time()-start )
-    return edges#, occupancy
+    return edges, occupancy
 
 def parallelVariance(numSamples, tMax, biasFunction):
     numCores = multiprocessing.cpu_count()//2
