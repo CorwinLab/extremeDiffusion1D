@@ -6,8 +6,8 @@
 # @Last modified time: 2020-09-15T14:54:29-07:00
 
 import numpy as np
-from numba import jit
-from joblib import Parallel, delayed
+#from numba import jit
+#from joblib import Parallel, delayed
 import multiprocessing
 from matplotlib import pyplot as plt
 import time
@@ -99,7 +99,7 @@ def plotWalkers(nWalkers, startPoint, symbol='C0.'):
     walkers = np.random.uniform(size=(nWalkers, 2)) * .8 + .1 + startPoint
     plt.plot(walkers[:,0], walkers[:,1], symbol, markersize=5)
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def numbaFloatEvolveTimeStep(occupancy, biases, smallCutoff = 1e15):
     rightShift = 0
     for i in range(len(occupancy)):
@@ -177,7 +177,7 @@ def floatRunFixedTime(maxTime, biasFunction, numWalkers=None, dtype=np.float):
 
         if t % 10000 == 0:
             print(t)
-    print(f'Finished in {time.time()-start}' )
+    print('Finished in', time.time()-start )
     return edges#, occupancy
 
 def parallelVariance(numSamples, tMax, biasFunction):
