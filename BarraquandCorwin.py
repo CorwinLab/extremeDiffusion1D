@@ -3,7 +3,7 @@
 # @Email:  eric.corwin@gmail.com
 # @Filename: BarraquandCorwin.py
 # @Last modified by:   ecorwin
-# @Last modified time: 2020-09-25T10:55:55-07:00
+# @Last modified time: 2020-09-25T13:23:34-07:00
 
 import numpy as np
 #from numba import jit
@@ -20,8 +20,6 @@ def betaBias(N, alpha=1, beta=1):
 
 def uniformBias(N):
     return np.random.uniform(size=N)
-
-
 
 def floatEvolveTimeStep(occupancy, biases, smallCutoff = 1e15):
     '''
@@ -49,7 +47,7 @@ def floatEvolveTimeStep(occupancy, biases, smallCutoff = 1e15):
     rightShift[np.hstack([False, small])] = np.random.binomial(occupancy[small].astype(int), biases[small])
 
     # return occupancy - rightShift + np.roll(rightShift,1)
-    return occupancy - rightShift[1:] + rightShift[:-1]
+    return np.round(occupancy - rightShift[1:] + rightShift[:-1])
 
 def floatRunFixedTime(maxTime, biasFunction, numWalkers=None, dtype=np.float):
     # This is useful for running things in parallel

@@ -1,60 +1,49 @@
+# @Author: Eric Corwin <ecorwin>
+# @Date:   2020-09-24T15:48:46-07:00
+# @Email:  eric.corwin@gmail.com
+# @Filename: Loop.py
+# @Last modified by:   ecorwin
+# @Last modified time: 2020-09-25T13:49:33-07:00
+
 import BarraquandCorwin as bc
 import numpy as np
 
-# Initial number of particles
-numThings = 100e10
-# Max value of N
-maxN = 110e10
-# Number of times to run for each N
-numRuns = 100
+def computeEdgeVariance(minNumWalkers = 1e10, maxNumWalkers = 1e300, numRuns = 100):
 
-# Create empty arrays to store information
-allThings = []
-allTimes=[]
-allVarsL=[]
-allVarsR=[]
+    # Initial number of particles
+    numSteps = np.log10(maxNumWalkers/minNumWalkers)/10 + 1
+    numWalkersList = np.geomspace(minNumWalkers, maxNumWalkers, numSteps)
 
-# Loop through until we reach the max N
-while numThings <= maxN:
-    # Find max time based on N
-    maxTime = int(np.log(numThings)**2)
+    # Create empty arrays to store information
+    allTimes = []
+    allVarsL = []
+    allVarsR = []
 
-    # Create arrays to track each edge
-    leftEdge = []
-    rightEdge = []
-    # Repeat numRuns times
-    for x in range(numRuns):
-        # Create array of edges
-        edges = bc.floatRunFixedTime(maxTime,bc.einsteinBias,numThings)
-        # Separate arrays for left and right edges
-        leftEdge.append(edges[0])
-        rightEdge.append(edges[1])
+    # Loop through until we reach the max N
+    for numWalkers in numWalkersList:
+        # Find max time based on N
+        maxTime = int(np.log(numWalkers)**2)
 
-    # Calculate variance of left and right edges
-    varLeft = np.array(np.var(leftEdge, axis=1))
-    varRight = np.array(np.var(rightEdge, axis=1))
-        
-    # Add current N to array of Ns
-    allThings.append(numThings)
+        # Create arrays to track each edge
+        leftEdge = []
+        rightEdge = []
+        # Repeat numRuns times
+        for x in range(numRuns):
+            # Create array of edges
+            edges = bc.floatRunFixedTime(maxTime,bc.einsteinBias,numWalkers)
+            # Separate arrays for left and right edges
+            leftEdge.append(edges[:,0])
+            rightEdge.append(edges[:,1])
 
-    # Add current time array to array of all times (not confusing at all)
-    allTimes.append(np.arange(1,maxTime+1,1))
+        # Calculate variance of left and right edges
+        varLeft = np.var(np.stack(leftEdge), axis=0)
+        varRight = np.var(np.stack(rightEdge), axis=0)
 
-    # Add variances for this N to array of variances
-    allVarsL.append(varLeft)
-    allVarsR.append(varRight)
+        # Add current time array to array of all times (not confusing at all)
+        allTimes.append(np.arange(1,maxTime+1,1))
 
-    # Next N
-    numThings += 1e10
+        # Add variances for this N to array of variances
+        allVarsL.append(varLeft)
+        allVarsR.append(varRight)
 
-
-    
-#print('All things:')
-#print(allThings)
-#print('')
-#print('All times:')
-#print(allTimes)
-print('')
-print('All variances:')
-print(np.vstack(allVarsL))
-print(np.vstack(allVarsR))
+    return allVarsL, allVarsR, allTimes, numWalkersList
