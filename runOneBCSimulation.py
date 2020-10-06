@@ -3,7 +3,7 @@
 # @Email:  eric.corwin@gmail.com
 # @Filename: runOneBCSimulation.py
 # @Last modified by:   ecorwin
-# @Last modified time: 2020-10-06T13:01:21-07:00
+# @Last modified time: 2020-10-06T13:21:42-07:00
 
 import BarraquandCorwin as bc
 import numpy as np
@@ -17,7 +17,8 @@ if __name__ == '__main__':
     topDir = sys.argv[1]
     numWalkersStr = sys.argv[2]
     numWalkers = float( numWalkersStr )
-    if sys.argv[3] == 'einstein':
+    biasName = sys.argv[3]
+    if biasName == 'einstein':
         biasFunction = bc.einsteinBias
     else:
         biasFunction = bc.uniformBias
@@ -27,7 +28,7 @@ if __name__ == '__main__':
     # Run the simulation
     edges = bc.floatRunFixedTime(maxTime, biasFunction, numWalkers=numWalkers)
     # Save the data
-    if not os.path.isdir(f'{topDir}/{numWalkersStr}'):
-        os.mkdir(f'{topDir}/{numWalkersStr}')
-    fileName = f'{topDir}/{numWalkersStr}/{numWalkersStr}-{uniqueId}'
+    dirName = f'{topDir}/{biasName}/{numWalkersStr}'
+    os.makedirs(dirName, exist_ok=True)
+    fileName = f'{dirName}/{numWalkersStr}-{uniqueId}'
     np.savetxt(fileName, edges)
