@@ -3,7 +3,7 @@
 # @Email:  eric.corwin@gmail.com
 # @Filename: BarraquandCorwin.py
 # @Last modified by:   ecorwin
-# @Last modified time: 2020-09-25T13:23:34-07:00
+# @Last modified time: 2020-12-22T14:36:46-08:00
 
 import numpy as np
 #from numba import jit
@@ -11,6 +11,7 @@ from joblib import Parallel, delayed
 import multiprocessing
 from matplotlib import pyplot as plt
 import time
+import os
 
 def einsteinBias(N):
     return np.zeros(N) + .5
@@ -105,6 +106,15 @@ def parallelVarianceMean(maxTime, biasFunction, numSamples, numWalkers=None):
     return range(1, maxTime+1), np.mean(edges, axis=0), np.var(edges, axis=0)
     # return edges
     # return np.hstack(edges)
+
+def computeVarianceMean(topDir):
+    edges = []
+    for fileName in os.listdir(topDir):
+        edges.append( np.loadtxt(topDir + os.sep + fileName) )
+        print(fileName)
+    edges = np.stack(edges)
+    maxTime = edges[0].shape[0]
+    return range(1, maxTime+1), np.mean(edges, axis=0), np.var(edges, axis=0)
 
 
 # def evolveTimeStep(occupancy, biases):
