@@ -3,7 +3,7 @@
 # @Email:  eric.corwin@gmail.com
 # @Filename: BarraquandCorwin.py
 # @Last modified by:   ecorwin
-# @Last modified time: 2020-12-22T14:36:46-08:00
+# @Last modified time: 2021-01-12T14:09:48-08:00
 
 import numpy as np
 #from numba import jit
@@ -29,6 +29,9 @@ def floatEvolveTimeStep(occupancy, biases, smallCutoff = 1e15):
     biases (array of floats): Weight of our weighted coin at each element for this timestep
     smallCutoff (float): The precision of our floating point number
     '''
+    # if np.any(occupancy < 0):
+    #     neg = np.where(occupancy < 0)[0][0]
+    #     print(occupancy[neg-5:neg+5])
 
     # Motion in 1d on the positive number line, shifting by 1/2 step in space each time step
     # Small numbers can be treated like an integer using binomial
@@ -40,15 +43,26 @@ def floatEvolveTimeStep(occupancy, biases, smallCutoff = 1e15):
 
     rightShift = np.zeros(shape=len(occupancy)+1)
     # If we're so large that sqrt(N) is less than the precision
-    rightShift[np.hstack([False, giant])] = biases[giant] * occupancy[giant]
+    rightShift[np.hstack([False, giant])] = np.round(biases[giant] * occupancy[giant])
     # If sqrt(N) is within precision, but we're too big to use binomial then use the gaussian appx
     mediumVariance = occupancy[medium] * biases[medium] * (1-biases[medium])
-    rightShift[np.hstack([False, medium])] = np.round(np.random.normal( loc=biases[medium]*occupancy[medium], scale = np.sqrt(mediumVariance) ))
+    rightShift[np.hstack([False, medium])] = np.ceil(np.random.normal( loc=biases[medium]*occupancy[medium], scale = np.sqrt(mediumVariance) ))
     # If we're small enough to use integer representations then use binomial
     rightShift[np.hstack([False, small])] = np.random.binomial(occupancy[small].astype(int), biases[small])
 
     # return occupancy - rightShift + np.roll(rightShift,1)
-    return np.round(occupancy - rightShift[1:] + rightShift[:-1])
+    returnData = np.round(occupancy - rightShift[1:] + rightShift[:-1])
+    # enforce that the returnData is always positive
+    returnData[returnData < 0] = 0
+    if np.any(returnData < 0):
+        neg = np.where(returnData < 0)[0][0]
+        print(returnData[neg-5:neg+5])
+        print(occupancy[neg-5:neg+5])
+        right = rightShift[1:]
+        left = rightShift[:-1]
+        print(-right[neg-5:neg+5] + left[neg-5:neg+5])
+
+    return returnData #np.round(occupancy + (- rightShift[1:] + rightShift[:-1]))
 
 def floatRunFixedTime(maxTime, biasFunction, numWalkers=None, dtype=np.float):
     # This is useful for running things in parallel

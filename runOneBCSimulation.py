@@ -3,7 +3,7 @@
 # @Email:  eric.corwin@gmail.com
 # @Filename: runOneBCSimulation.py
 # @Last modified by:   ecorwin
-# @Last modified time: 2020-10-06T13:21:42-07:00
+# @Last modified time: 2021-01-12T13:32:18-08:00
 
 import BarraquandCorwin as bc
 import numpy as np
@@ -20,11 +20,14 @@ if __name__ == '__main__':
     biasName = sys.argv[3]
     if biasName == 'einstein':
         biasFunction = bc.einsteinBias
-    else:
+    elif biasName == 'uniform':
         biasFunction = bc.uniformBias
+    else:
+        alpha = np.float(sys.argv[3])
+        biasFunction = lambda N: bc.betaBias(N, alpha=alpha, beta=alpha)
     uniqueId = sys.argv[4]
 
-    maxTime = np.int( np.log( numWalkers )**2 )
+    maxTime = np.int( np.log( numWalkers )**(5/2) )
     # Run the simulation
     edges = bc.floatRunFixedTime(maxTime, biasFunction, numWalkers=numWalkers)
     # Save the data
