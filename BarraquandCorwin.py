@@ -3,7 +3,7 @@
 # @Email:  eric.corwin@gmail.com
 # @Filename: BarraquandCorwin.py
 # @Last modified by:   ecorwin
-# @Last modified time: 2021-01-12T14:09:48-08:00
+# @Last modified time: 2021-01-18T13:24:49-08:00
 
 import numpy as np
 #from numba import jit
@@ -121,14 +121,15 @@ def parallelVarianceMean(maxTime, biasFunction, numSamples, numWalkers=None):
     # return edges
     # return np.hstack(edges)
 
-def computeVarianceMean(topDir):
+def computeVarianceMean(topDir, N, beta):
     edges = []
     for fileName in os.listdir(topDir):
-        edges.append( np.loadtxt(topDir + os.sep + fileName) )
+        tempEdge = np.max(np.abs(np.loadtxt(topDir + os.sep + fileName)),1)
+        edges.append( tempEdge )
         print(fileName)
     edges = np.stack(edges)
     maxTime = edges[0].shape[0]
-    return range(1, maxTime+1), np.mean(edges, axis=0), np.var(edges, axis=0)
+    return range(1, maxTime+1), np.mean(edges, axis=0), np.var(edges, axis=0), N, beta
 
 
 # def evolveTimeStep(occupancy, biases):
