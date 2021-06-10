@@ -43,14 +43,6 @@ def floatEvolveTimeStep(occupancy, biases, smallCutoff = 1e15):
     # return occupancy - rightShift + np.roll(rightShift,1)
     returnData = np.round(occupancy - rightShift[1:] + rightShift[:-1])
     # enforce that the returnData is always positive
-    returnData[returnData < 0] = 0
-    if np.any(returnData < 0):
-        neg = np.where(returnData < 0)[0][0]
-        print(returnData[neg-5:neg+5])
-        print(occupancy[neg-5:neg+5])
-        right = rightShift[1:]
-        left = rightShift[:-1]
-        print(-right[neg-5:neg+5] + left[neg-5:neg+5])
 
     return returnData #np.round(occupancy + (- rightShift[1:] + rightShift[:-1]))
 
