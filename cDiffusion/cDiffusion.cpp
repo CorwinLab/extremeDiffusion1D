@@ -9,8 +9,9 @@
 #include <boost/random/binomial_distribution.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <random>
+#include <utility>
 
-std::mt19937 gen(2);
+std::random_device rd;
 
 std::vector<int> generateUniformRandom(int const N) {
 	// Generate N random numbers between 0 and 100 according to uniform distribution. 
@@ -32,18 +33,22 @@ void print_generic(Temp vec) {
 	std::cout << "] \n";
 };
 
-std::vector<int> floatEvolveTimeStep(std::vector<int> occupancy, std::vector<float> biases, int smallCutoff) {
+std::pair<std::pair<size_t, size_t>, std::vector<int>> floatEvolveTimeStep(std::vector<int> occupancy, const std::vector<float> biases, const int smallCutoff, unsigned int seed = rd()) {
 	// Iterate one time step according to Barraquad/Corwin model
 	// TODO: Return edges of the timestep as well. 
 	// TODO: Handle shape error of biases and occupancy on python side of things
 	// Throws: Error if occupancy is less than 0, Error if biases does not satisfy 0 <= biases <= 1
 
-	std::vector<int> newOccupancy(occupancy.size() + 1);
-	float leftShift = 0;
-	float rightShift = 0;
+	std::mt19937 gen(seed);
 
-	int minEdge = 0;
-	int maxEdge = 0;
+	std::cout << seed << "\n";
+
+	std::vector<int> newOccupancy(occupancy.size() + 1);
+	long int leftShift = 0;
+	long int rightShift = 0;
+
+	size_t minEdge = 0;
+	size_t maxEdge = 0;
 	bool firstNonzero = true;
 	for (size_t i = 0; i != occupancy.size(); i++) {
 
@@ -69,16 +74,15 @@ std::vector<int> floatEvolveTimeStep(std::vector<int> occupancy, std::vector<flo
 		}
 		else if (occupancy[i] > pow(smallCutoff, 2)) {
 			// If so large that sqrt(N) is less than precision just use occupancy
-			rightShift = round(occupancy[i] * biases[i]);
+			rightShift = lround(occupancy[i] * biases[i]);
 		}
 		else {
 			// If in sqrt(N) precision use gaussian approximation. 
-			float mediumVariance = occupancy[i] * biases[i] * (1 - biases[i]);
+			double mediumVariance = occupancy[i] * biases[i] * (1 - biases[i]);
 			mediumVariance = sqrt(mediumVariance);
 			boost::random::normal_distribution<> distribution(occupancy[i] * biases[i], mediumVariance);
-			rightShift = round(distribution(gen));
+			rightShift = lround(distribution(gen));
 		}
-		std::cout << rightShift << "\n";
 
 		if (i == 0) {
 			newOccupancy[i] = occupancy[i] - rightShift;
@@ -108,16 +112,23 @@ std::vector<int> floatEvolveTimeStep(std::vector<int> occupancy, std::vector<flo
 			}
 		}
 	}
-	std::cout << minEdge << "\n" << maxEdge << "\n";
-	return newOccupancy;
+
+	std::pair<size_t, size_t> edges(minEdge, maxEdge);
+	std::pair<std::pair<size_t, size_t>, std::vector<int>> returnVal(edges, newOccupancy);
+
+	return returnVal;
 }
 
 int main()
 {
+
 	std::vector<float> biases = { 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5 };
 	std::vector<int> occupation = { 10, 12, 20, 0, 0, 5, 0, 0 };
-	std::vector<int> newOccupation = floatEvolveTimeStep(occupation, biases, 4);
-	print_generic(newOccupation);
+	std::pair<std::pair<size_t, size_t>, std::vector<int>> newOccupation = floatEvolveTimeStep(occupation, biases, 4);
+	print_generic(newOccupation.second);
+	std::pair<std::pair<size_t, size_t>, std::vector<int>> newOcc2 = floatEvolveTimeStep(occupation, biases, 4);
+	print_generic(newOcc2.second);
+
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
