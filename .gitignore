@@ -130,3 +130,7 @@ dmypy.json
 
 # Editor files
 *~
+
+# Folders
+cDiffusion/.vs/
+
