@@ -30,26 +30,57 @@ void print_generic(Temp vec) {
 	std::cout << "] \n";
 };
 
-std::pair<std::pair<unsigned int, unsigned int>, std::vector<int>> floatEvolveTimeStep(std::vector<int> occupancy, double beta,
-																						const int smallCutoff) 
+unsigned long int getRightShift(const unsigned int occ, const double bias, const unsigned int smallCutoff) {
+	// Generate left and right shift based on small cutoff
+	unsigned long int rightShift = 0;
+	if (occ < smallCutoff) {
+		// If small enough to use integer representations use binomial distribution
+		boost::random::binomial_distribution<int> distribution(occ, bias);
+		rightShift = distribution(gen);
+	}
+	else if (occ > pow(smallCutoff, 2)) {
+		// If so large that sqrt(N) is less than precision just use occupancy
+		rightShift = lround(occ * bias);
+	}
+	else {
+		// If in sqrt(N) precision use gaussian approximation. 
+		double mediumVariance = occ * bias * (1 - bias);
+		mediumVariance = sqrt(mediumVariance);
+		boost::random::normal_distribution<> distribution(occ * bias, mediumVariance);
+		rightShift = lround(distribution(gen));
+	}
+	return rightShift;
+}
+
+std::pair<unsigned int, unsigned int> floatEvolveTimeStep(std::vector<int> &occupancy, 
+															const double beta,
+															const int smallCutoff,
+															unsigned int minEdgeBound, 
+															unsigned int maxEdgeBound)
 {
 	// Iterate one time step according to Barraquad/Corwin model
-
 	// Pass in a beta value or even function to generate biases
+	// Changes occupancy vector itself rather than creating a new vector
+	
+	// Need to pre-allocate size of occupancy and then only sum over min/max edges
+	
+	// Need to set smallCutoff to double precision cutoff = 2^53
 
-	// Use single occupancy vector rather than doubling the size of the occupancy
-	// Pre-allocate the occupancy vector to size N
+	// Throws: Error if occupancy is less than 0, Error if biases does not satisfy 0 <= biases <= 1, 
+	// Error if minEdge > maxEdge -> Could we make this a hard cutoff or no?
 
-	// Look up best practices w/ standard vectors.
+	if (minEdgeBound > maxEdgeBound) {
+		throw std::runtime_error("Minimum edge must be greater than maximum edge");
+	}
 
-	// Throws: Error if occupancy is less than 0, Error if biases does not satisfy 0 <= biases <= 1
+	occupancy.push_back(0);
 
+	// If we keep the occupancy the same throughout the whole experiment we probably only need
+	// to construct this distribution once but w/e
 	boost::random::beta_distribution<> betaDist(1, beta);
-	std::vector<int> newOccupancy(occupancy.size() + 1);
+
 	unsigned long int leftShift = 0;
 	unsigned long int rightShift = 0;
-	
-	// Use unsigned long instead of size_t to be consistent
 	unsigned int minEdge = 0;
 	unsigned int maxEdge = 0;
 	bool firstNonzero = true;
@@ -66,47 +97,34 @@ std::pair<std::pair<unsigned int, unsigned int>, std::vector<int>> floatEvolveTi
 			continue;
 		}
 
-		double bias = betaDist(gen);
-
 		if (occupancy[i] < 0) {
 			throw std::runtime_error("Occupancy must be > 0");
 		}
 
+		//Then generate a random bias (the expensive part in this algorithm)
+		double bias = betaDist(gen);
+
+		// Only keeping this b/c once we accept functions need to check limits
 		if (bias < 0.0 || bias > 1.0) {
 			throw std::runtime_error("Biases must satisfy 0 <= biases <= 1");
 		}
 
-		if (occupancy[i] < smallCutoff) {
-			// If small enough to use integer representations use binomial distribution
-			boost::random::binomial_distribution<int> distribution(occupancy[i], bias);
-			rightShift = distribution(gen);
-		}
-		else if (occupancy[i] > pow(smallCutoff, 2)) {
-			// If so large that sqrt(N) is less than precision just use occupancy
-			rightShift = lround(occupancy[i] * bias);
-		}
-		else {
-			// If in sqrt(N) precision use gaussian approximation. 
-			double mediumVariance = occupancy[i] * bias * (1 - bias);
-			mediumVariance = sqrt(mediumVariance);
-			boost::random::normal_distribution<> distribution(occupancy[i] * bias, mediumVariance);
-			rightShift = lround(distribution(gen));
-		}
+		rightShift = getRightShift(occupancy[i], bias, smallCutoff);
 
 		if (i == 0) {
-			newOccupancy[i] = occupancy[i] - rightShift;
+			occupancy[i] = occupancy[i] - rightShift;
 			leftShift = rightShift;
-			if (newOccupancy[i] != 0) {
+			if (occupancy[i] != 0) {
 				minEdge = i;
 				firstNonzero = false;
 			}
 			continue;
 		}
 
-		newOccupancy[i] = occupancy[i] - rightShift + leftShift;
+		occupancy[i] = occupancy[i] - rightShift + leftShift;
 		leftShift = rightShift;
 
-		if (newOccupancy[i] != 0) {
+		if (occupancy[i] != 0) {
 			if (firstNonzero) {
 				minEdge = i;
 				firstNonzero = false;
@@ -115,28 +133,45 @@ std::pair<std::pair<unsigned int, unsigned int>, std::vector<int>> floatEvolveTi
 		}
 
 		if (i == (occupancy.size() - 1)) {
-			newOccupancy[i + 1] = rightShift;
-			if (newOccupancy[i + 1] != 0) {
+			occupancy[i + 1] = rightShift;
+			if (occupancy[i + 1] != 0) {
 				maxEdge = i + 1;
 			}
 		}
 	}
+	
+	if (minEdge > maxEdge) {
+		throw std::runtime_error("Minimum edge is greater than maximum edge. Something went wrong.");
+	}
 
 	std::pair<unsigned int, unsigned int> edges(minEdge, maxEdge);
-	std::pair<std::pair<unsigned int, unsigned int>, std::vector<int>> returnVal(edges, newOccupancy);
 
-	return returnVal;
+	return edges;
+}
+
+bool checksum(std::vector<int> arr1, std::vector<int> arr2) {
+	int sum1 = 0; 
+	std::accumulate(arr1.begin(), arr1.end(), sum1);
+
+	int sum2 = 0; 
+	std::accumulate(arr2.begin(), arr2.end(), sum2);
+	return sum1 == sum2; 
+}
+
+void editArray(std::vector<int> &occ) {
+	// Pass by reference to change the actual values of the array
+	for (int i = 0; i < occ.size(); i++) {
+		occ[i] = 1; 
+	}
 }
 
 int main()
 {
 	std::vector<float> biases = { 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5 };
 	std::vector<int> occupation = { 10, 12, 20, 0, 0, 5, 0, 0 };
-	std::pair<std::pair<size_t, size_t>, std::vector<int>> newOccupation = floatEvolveTimeStep(occupation,5, 4);
-	print_generic(newOccupation.second);
-	std::pair<std::pair<size_t, size_t>, std::vector<int>> newOcc2 = floatEvolveTimeStep(occupation,5, 4);
-	print_generic(newOcc2.second);
-
+	int occSum = 10 + 12 + 20 + 5; 
+	std::pair<size_t, size_t> edges = floatEvolveTimeStep(occupation, 5, 0, 1, 4);
+	print_generic(occupation);
 	return 0;
 }
 
