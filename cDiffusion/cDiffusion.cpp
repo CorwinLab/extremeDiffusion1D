@@ -12,8 +12,12 @@
 #include <boost/math/distributions.hpp>
 #include <random>
 #include <utility>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 
-unsigned long int SMALL_CUTOFF = pow(2, 53);
+namespace py = pybind11;
+
 std::random_device rd;
 // Take out random seed an initialize generator on import - make sure
 // that this is initialized on import into python
@@ -54,17 +58,25 @@ unsigned long int getRightShift(const unsigned int occ, const double bias,
 	return rightShift;
 }
 
-std::pair<unsigned int, unsigned int> floatEvolveTimeStep(std::vector<int> &occupancy,
-																													const double beta,
-																													const int smallCutoff,
-																													const unsigned int minEdgeIndex,
-																													const unsigned int maxEdgeIndex)
+std::pair<std::vector<int>, std::vector<int> > evolveTimesteps(int N){
+	// Returns list of edges
+}
+
+// Does the same thing as floatEvolveTimeStep but returns the occupancy
+// This is because passing by reference doesn't work easily with Pybind11.
+// I think every time we pass a vector between C++ and Python it's copied.
+
+std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
+	std::vector<int> &occupancy,
+	const double beta,
+	const unsigned int minEdgeIndex,
+	const unsigned int maxEdgeIndex,
+	const unsigned long int smallCutoff=pow(2,53)
+)
 {
 	// Iterate one time step according to Barraquad/Corwin model
 	// Pass in a beta value or even function to generate biases
 	// Changes occupancy vector itself rather than creating a new vector
-
-	// Need to pre-allocate size of occupancy and then only sum over min/max edges
 
 	// Need to set smallCutoff to double precision cutoff = 2^53
 
@@ -78,16 +90,12 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(std::vector<int> &occu
 	}
 
 	// Need to check when maxEdgeIndex breaks the for loop.
-	if (maxEdgeIndex > occupancy.size()){
+	if ((maxEdgeIndex+1) > occupancy.size()){
 		throw std::runtime_error("Maximum edge exceeds size of array");
 	}
 
-	if (minEdgeIndex < 0){
-		throw std::runtime_error("Minimum edge must be >= 0");
-	}
-
 	// Pushback the occupancy if we're iterating through the whole array
-	if (maxEdgeIndex == occupancy.size()){
+	if ((maxEdgeIndex+1) == occupancy.size()){
 		occupancy.push_back(0);
 	}
 
@@ -105,10 +113,8 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(std::vector<int> &occu
 	// Check out range operator
 	for (auto i = minEdgeIndex; i != maxEdgeIndex+1; i++) {
 
-		// So, this becomes a problem later on if the occupancy has a bunch of zeros at the end.
-		// Need to make sure that the left shift gets set to zero at the end of the "line".
-		// I think it does - it's just going to run one extra time to set it to zero.
-
+		// Skip over occupation value if ocuppancy=0 and not moving any walkers
+		// to the position
 		if (occupancy[i] == 0 && leftShift == 0) {
 			continue;
 		}
@@ -117,7 +123,7 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(std::vector<int> &occu
 			throw std::runtime_error("Occupancy must be > 0");
 		}
 
-		//Then generate a random bias (the expensive part in this algorithm)
+		// Generate a random bias (the expensive part in this algorithm)
 		double bias = betaDist(gen);
 
 		// Only keeping this b/c once we accept functions need to check limits
@@ -165,6 +171,19 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(std::vector<int> &occu
 	return edges;
 }
 
+std::pair<std::pair<unsigned int, unsigned int>, std::vector<int> > pyfloatEvolveTimestep(
+	std::vector<int> occupancy,
+	const double beta,
+	const unsigned int minEdgeIndex,
+	const unsigned int maxEdgeIndex,
+	const unsigned long int smallCutoff=pow(2, 53)
+)
+{
+	std::pair<unsigned int, unsigned int> edges = floatEvolveTimeStep(occupancy, beta, minEdgeIndex, maxEdgeIndex, smallCutoff);
+	std::pair<std::pair<unsigned int, unsigned int>, std::vector<int> > returnVal(edges, occupancy);
+	return returnVal;
+}
+
 bool checksum(std::vector<int> arr1, std::vector<int> arr2) {
 	int sum1 = 0;
 	std::accumulate(arr1.begin(), arr1.end(), sum1);
@@ -174,11 +193,11 @@ bool checksum(std::vector<int> arr1, std::vector<int> arr2) {
 	return sum1 == sum2;
 }
 
-void editArray(std::vector<int> &occ) {
-	// Pass by reference to change the actual values of the array
-	for (int i = 0; i < occ.size(); i++) {
-		occ[i] = 1;
-	}
+PYBIND11_MODULE(cDiffusion, m){
+	m.doc() = "C++ diffusion";
+	m.def("floatEvolveTimeStep", &pyfloatEvolveTimestep, "Iterate a step",
+				py::arg("occupancy"), py::arg("beta"), py::arg("minEdgeIndex"),
+				py::arg("maxEdgeIndex"), py::arg("smallCutoff"));
 }
 
 int main()
@@ -190,5 +209,6 @@ int main()
 	int sum = 0;
 	sum = accumulate(occupation.begin(), occupation.end(), sum);
 	std::cout << sum << "\n";
+	std::cout << edges.first << " " << edges.second << "\n";
 	return 0;
 }

@@ -12,8 +12,8 @@ def test_neg_occupation():
 
     occupation = np.array([5, 0, -10])
     with pytest.raises(RuntimeError) as excinfo:
-        edges = cdiff.floatEvolveTimeStep(occupation, beta=1, smallCutoff=0,
-                                            minEdgeBound=0, maxEdgeBound=2)
+        edges, occ = cdiff.floatEvolveTimeStep(occupation, beta=1, smallCutoff=0,
+                                                minEdgeIndex=0, maxEdgeIndex=2)
     assert "Occupancy must be > 0" in str(excinfo.value)
 
 def test_min_greater_max():
@@ -22,8 +22,8 @@ def test_min_greater_max():
     '''
     occupation = np.array([10, 0, 10])
     with pytest.raises(RuntimeError) as excinfo:
-        edges = cdiff.floatEvolveTimeStep(occupation, beta=1, smallCutoff=0,
-                                            minEdgeBound=2, maxEdgeBound=0)
+        edges, occ  = cdiff.floatEvolveTimeStep(occupation, beta=1, smallCutoff=0,
+                                                minEdgeIndex=2, maxEdgeIndex=0)
     assert "Minimum edge must be greater than maximum edge" in str(excinfo.value)
 
 def test_max_greater_array_length():
@@ -34,26 +34,29 @@ def test_max_greater_array_length():
     '''
     occupation = np.array([10, 10, 10])
     with pytest.raises(RuntimeError) as excinfo:
-        cdiff.floatEvolveTimeStep(occupation, beta=1, smallCutoff=0,
-                                    minEdgeBound=0, maxEdgeBound=3)
+        edges, occ = cdiff.floatEvolveTimeStep(occupation, beta=1, minEdgeIndex=0,
+                                                maxEdgeIndex=3, smallCutoff=0)
     assert "Maximum edge exceeds size of array" in str(excinfo.value)
 
 def test_neg_min_edge():
     '''
-    Ensure that it throws an error if hte minimum edge bound is < 0.
+    Ensure that it throws an error if the minimum edge bound is < 0. Should throw
+    an error on the pybind side of things since minEdgeBound is unsigned int.
     '''
     occupation = np.array([10, 10, 10])
-    with pytest.raises(RuntimeError) as excinfo:
-        cdiff.floatEvolveTimeStep(occupation, beta=1, smallCutoff=0,
-                                    minEdgeBound=-1, maxEdgeBound=2)
-    assert "Minimum edge must be >= 0" in str(excinfo.value)
+    with pytest.raises(TypeError) as excinfo:
+        edges, occ = cdiff.floatEvolveTimeStep(occupation, beta=1, minEdgeBound=-1,
+                                                maxEdgeBound=2, smallCutoff=0)
+    assert "incompatible function arguments" in str(excinfo.value)
 
 def test_all_zeros():
     '''
     Ensure that it returns all zeros if only zeros input.
     '''
     occupation = np.array([0, 0, 0, 0])
-    cdiff.floatEvolveTimeStep(occupation, beta=1, smallCutoff=0,
-                                minEdgeBound=0, maxEdgeBound=4)
-    zeros = np.array([0, 0, 0, 0])
-    assert occupation == zeros
+    edges, occupation = cdiff.floatEvolveTimeStep(occupation, 1, 0, 3, 5)
+    zeros = np.array([0, 0, 0, 0, 0])
+    assert np.all(occupation == zeros)
+
+if __name__ == '__main__':
+    pytest.main(['./test_c.py'])
