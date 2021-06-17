@@ -58,5 +58,20 @@ def test_all_zeros():
     zeros = np.array([0, 0, 0, 0, 0])
     assert np.all(occupation == zeros)
 
+def test_single_occupation_filled():
+    '''
+    Make sure the algorith can accept just a single position filled and distributes
+    this to two positions.
+
+    Note:
+    -----
+    This is somewhat based on chance due to the bias being drawn from a random
+    beta distribution. However, it should pass most of the time.
+    '''
+    occupation = np.array([10, 0, 0])
+    edges, occupied = cdiff.floatEvolveTimeStep(occupation, beta=1, minEdgeIndex=0,
+                                                maxEdgeIndex=1, smallCutoff=5)
+    assert edges[1] == 1
+
 if __name__ == '__main__':
     pytest.main(['./test_c.py'])

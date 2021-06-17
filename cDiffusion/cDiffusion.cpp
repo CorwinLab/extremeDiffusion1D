@@ -37,6 +37,7 @@ void print_generic(Temp vec) {
 
 unsigned long int getRightShift(const unsigned int occ, const double bias,
 																const unsigned int smallCutoff) {
+	// Must return a value that is smaller than the input occupancy
 	// Generate left and right shift based on small cutoff
 	unsigned long int rightShift = 0;
 	if (occ < smallCutoff) {
@@ -58,14 +59,6 @@ unsigned long int getRightShift(const unsigned int occ, const double bias,
 	return rightShift;
 }
 
-std::pair<std::vector<int>, std::vector<int> > evolveTimesteps(int N){
-	// Returns list of edges
-}
-
-// Does the same thing as floatEvolveTimeStep but returns the occupancy
-// This is because passing by reference doesn't work easily with Pybind11.
-// I think every time we pass a vector between C++ and Python it's copied.
-
 std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 	std::vector<int> &occupancy,
 	const double beta,
@@ -85,8 +78,10 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 
 	// Note: (alpha=1, beta=1) gives uniform distribution.
 
-	if (minEdgeIndex > maxEdgeIndex) {
-		throw std::runtime_error("Minimum edge must be greater than maximum edge");
+	// Should probably accept if min==max and then we'd just run one value.
+	// However, for now we're going to ignore that :(
+	if (minEdgeIndex >= maxEdgeIndex) {
+		throw std::runtime_error("Minimum edge must be greater than maximum edge: (" + std::to_string(minEdgeIndex) + ", " + std::to_string(maxEdgeIndex) + ")");
 	}
 
 	// Need to check when maxEdgeIndex breaks the for loop.
@@ -133,6 +128,10 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 
 		rightShift = getRightShift(occupancy[i], bias, smallCutoff);
 
+		if (rightShift > occupancy[i]){
+			throw std::runtime_error("Right shift cannot be larger than occupancy, but " + std::to_string(rightShift) + " > " + std::to_string(occupancy[i]));
+		}
+
 		if (i == minEdgeIndex) {
 			occupancy[i] = occupancy[i] - rightShift;
 			leftShift = rightShift;
@@ -166,11 +165,19 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 		throw std::runtime_error("Minimum edge is greater than maximum edge. Something went wrong.");
 	}
 
+	if (minEdge == maxEdge){
+		// Only one state occupied so add 1 to maxEdge to ensure loop runs next step.
+		maxEdge += 1;
+	}
+
 	std::pair<unsigned int, unsigned int> edges(minEdge, maxEdge);
 
 	return edges;
 }
 
+// Does the same thing as floatEvolveTimeStep but returns the occupancy
+// This is because passing by reference doesn't work easily with Pybind11.
+// I think every time we pass a vector between C++ and Python it's copied.
 std::pair<std::pair<unsigned int, unsigned int>, std::vector<int> > pyfloatEvolveTimestep(
 	std::vector<int> occupancy,
 	const double beta,
@@ -182,6 +189,27 @@ std::pair<std::pair<unsigned int, unsigned int>, std::vector<int> > pyfloatEvolv
 	std::pair<unsigned int, unsigned int> edges = floatEvolveTimeStep(occupancy, beta, minEdgeIndex, maxEdgeIndex, smallCutoff);
 	std::pair<std::pair<unsigned int, unsigned int>, std::vector<int> > returnVal(edges, occupancy);
 	return returnVal;
+}
+
+std::pair<std::vector<int>, std::vector<int> > evolveTimesteps(
+	const unsigned long int N,
+	const double beta,
+	const unsigned long int smallCutoff=pow(2,53)
+)
+{
+	std::vector<int> minEdge(N);
+	std::vector<int> maxEdge(N);
+	std::vector<int> occ(N);
+	occ[0] = N;
+
+	std::pair<unsigned int, unsigned int> edges(0, 1);
+	for (unsigned int i=0; i != N; i++){
+		edges = floatEvolveTimeStep(occ, beta, edges.first, edges.second, smallCutoff);
+		minEdge[i] = edges.first;
+		maxEdge[i] = edges.second;
+	}
+	std::pair<std::vector<int>, std::vector<int> > edgesHistory(minEdge, maxEdge);
+	return edgesHistory;
 }
 
 bool checksum(std::vector<int> arr1, std::vector<int> arr2) {
@@ -197,18 +225,7 @@ PYBIND11_MODULE(cDiffusion, m){
 	m.doc() = "C++ diffusion";
 	m.def("floatEvolveTimeStep", &pyfloatEvolveTimestep, "Iterate a step",
 				py::arg("occupancy"), py::arg("beta"), py::arg("minEdgeIndex"),
-				py::arg("maxEdgeIndex"), py::arg("smallCutoff"));
-}
-
-int main()
-{
-	std::vector<int> occupation = { 10, 12, 20, 0, 0, 5, 0, 0 };
-	int occSum = 10 + 12 + 20 + 5;
-	std::pair<size_t, size_t> edges = floatEvolveTimeStep(occupation, 1, 0, 0, occupation.size());
-	print_generic(occupation);
-	int sum = 0;
-	sum = accumulate(occupation.begin(), occupation.end(), sum);
-	std::cout << sum << "\n";
-	std::cout << edges.first << " " << edges.second << "\n";
-	return 0;
+				py::arg("maxEdgeIndex"), py::arg("smallCutoff")=pow(2, 53));
+	m.def("evolveTimesteps", &evolveTimesteps, "Iterate multiple time steps",
+				py::arg("N"), py::arg("beta"), py::arg("smallCutoff")=pow(2, 53));
 }
