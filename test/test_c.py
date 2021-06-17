@@ -36,7 +36,7 @@ def test_max_greater_array_length():
     with pytest.raises(RuntimeError) as excinfo:
         edges, occ = cdiff.floatEvolveTimeStep(occupation, beta=1, minEdgeIndex=0,
                                                 maxEdgeIndex=3, smallCutoff=0)
-    assert "Maximum edge exceeds size of array" in str(excinfo.value)
+    assert "Maximum edge exceeds size of vector" in str(excinfo.value)
 
 def test_neg_min_edge():
     '''

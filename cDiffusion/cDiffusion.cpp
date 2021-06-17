@@ -87,10 +87,10 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 
 	// Need to check when maxEdgeIndex breaks the for loop.
 	if ((maxEdgeIndex+1) > occupancy.size()){
-		throw std::runtime_error("Maximum edge exceeds size of array");
+		throw std::runtime_error("Maximum edge exceeds size of vector");
 	}
 
-	// Pushback the occupancy if we're iterating through the whole array
+	// If iterating over the whole array extend the occupancy.
 	if ((maxEdgeIndex+1) == occupancy.size()){
 		occupancy.push_back(0);
 	}
@@ -107,7 +107,7 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 
 	// Now can use an iterator?
 	// Check out range operator
-	for (auto i = minEdgeIndex; i != maxEdgeIndex+1; i++) {
+	for (auto i = minEdgeIndex; i < maxEdgeIndex+1; i++) {
 
 		// Skip over occupation value if ocuppancy=0 and not moving any walkers
 		// to the position
@@ -120,7 +120,7 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 		}
 
 		if (occupancy[i] > N){
-			throw std::runtime_error("Occupancy greater than total number of walkers N=" + std::to_string("N"));
+			throw std::runtime_error("Occupancy greater than total number of walkers N=" + std::to_string(N));
 		}
 
 		// Generate a random bias (the expensive part in this algorithm)
@@ -188,9 +188,9 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 	const unsigned long int smallCutoff=pow(2,53)
 )
 {
-	std::cout << "Warning: No number of walkers N provided so summing over occupancy. This may take a lot longer";
-	N = accumulate(occupancy.begin(), occupancy.end(), 0);
-	return floatEvolveTimeStep(&occupancy, beta, minEdgeIndex, maxEdgeIndex, N, smallCutoff);
+	std::cout << "Warning: No number of walkers N provided so summing over occupancy. This may take a lot longer \n";
+	unsigned int N = accumulate(occupancy.begin(), occupancy.end(), 0);
+	return floatEvolveTimeStep(occupancy, beta, minEdgeIndex, maxEdgeIndex, N, smallCutoff);
 }
 
 // Does the same thing as floatEvolveTimeStep but returns the occupancy
@@ -230,7 +230,7 @@ std::pair<std::vector<int>, std::vector<int> > evolveTimesteps(
 	return edgesHistory;
 }
 
-class Diffusion(){
+class Diffusion{
 	private:
 		std::vector<int> occupancy;
 		unsigned int N;
@@ -239,6 +239,10 @@ class Diffusion(){
 		std::pair<unsigned int, unsigned int> edges;
 
 	public:
+		Diffusion(unsigned int numberOfParticles){
+			N = numberOfParticles;
+		}
+
 		std::vector<int> getOccupancy(){
 			return occupancy;
 		}
@@ -275,15 +279,20 @@ class Diffusion(){
 		}
 
 		void iterateTimestep(){
-			edges = floatEvolveTimeStep(&occupancy, beta, edges.first, edges.second, smallCutoff);
+			edges = floatEvolveTimeStep(occupancy, beta, edges.first, edges.second, smallCutoff);
 		}
 
 		void evolveTimesteps(unsigned int iterations){
 			for (unsigned int i=0; i < iterations; i++){
-				iterateTimestep()
+				Diffusion::iterateTimestep();
 			}
 		}
-}
+
+		unsigned int findNumberParticles(){
+			unsigned int sum = std::accumulate(occupancy.begin(), occupancy.end(), 0);
+			return sum;
+		}
+};
 
 PYBIND11_MODULE(cDiffusion, m){
 	m.doc() = "C++ diffusion";
@@ -292,4 +301,5 @@ PYBIND11_MODULE(cDiffusion, m){
 				py::arg("maxEdgeIndex"), py::arg("smallCutoff")=pow(2, 53));
 	m.def("evolveTimesteps", &evolveTimesteps, "Iterate multiple time steps",
 				py::arg("N"), py::arg("beta"), py::arg("smallCutoff")=pow(2, 53));
+
 }
