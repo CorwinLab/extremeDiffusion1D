@@ -64,6 +64,7 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 	const double beta,
 	const unsigned int minEdgeIndex,
 	const unsigned int maxEdgeIndex,
+	const unsigned int N,
 	const unsigned long int smallCutoff=pow(2,53)
 )
 {
@@ -116,6 +117,10 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 
 		if (occupancy[i] < 0) {
 			throw std::runtime_error("Occupancy must be > 0");
+		}
+
+		if (occupancy[i] > N){
+			throw std::runtime_error("Occupancy greater than total number of walkers N=" + std::to_string("N"));
 		}
 
 		// Generate a random bias (the expensive part in this algorithm)
@@ -175,6 +180,19 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 	return edges;
 }
 
+std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
+	std::vector<int> &occupancy,
+	const double beta,
+	const unsigned int minEdgeIndex,
+	const unsigned int maxEdgeIndex,
+	const unsigned long int smallCutoff=pow(2,53)
+)
+{
+	std::cout << "Warning: No number of walkers N provided so summing over occupancy. This may take a lot longer";
+	N = accumulate(occupancy.begin(), occupancy.end(), 0);
+	return floatEvolveTimeStep(&occupancy, beta, minEdgeIndex, maxEdgeIndex, N, smallCutoff);
+}
+
 // Does the same thing as floatEvolveTimeStep but returns the occupancy
 // This is because passing by reference doesn't work easily with Pybind11.
 // I think every time we pass a vector between C++ and Python it's copied.
@@ -204,7 +222,7 @@ std::pair<std::vector<int>, std::vector<int> > evolveTimesteps(
 
 	std::pair<unsigned int, unsigned int> edges(0, 1);
 	for (unsigned int i=0; i != N; i++){
-		edges = floatEvolveTimeStep(occ, beta, edges.first, edges.second, smallCutoff);
+		edges = floatEvolveTimeStep(occ, beta, edges.first, edges.second, N, smallCutoff);
 		minEdge[i] = edges.first;
 		maxEdge[i] = edges.second;
 	}
@@ -212,13 +230,59 @@ std::pair<std::vector<int>, std::vector<int> > evolveTimesteps(
 	return edgesHistory;
 }
 
-bool checksum(std::vector<int> arr1, std::vector<int> arr2) {
-	int sum1 = 0;
-	std::accumulate(arr1.begin(), arr1.end(), sum1);
+class Diffusion(){
+	private:
+		std::vector<int> occupancy;
+		unsigned int N;
+		double beta;
+		unsigned int smallCutoff;
+		std::pair<unsigned int, unsigned int> edges;
 
-	int sum2 = 0;
-	std::accumulate(arr2.begin(), arr2.end(), sum2);
-	return sum1 == sum2;
+	public:
+		std::vector<int> getOccupancy(){
+			return occupancy;
+		}
+
+		void setOccupancy(std::vector<int> occ){
+			occupancy = occ;
+		}
+
+		unsigned int getN(){
+			return N;
+		}
+		void setN(unsigned int Number){
+			N = Number;
+		}
+
+		double getBeta(){
+			return beta;
+		}
+
+		void setBeta(double b){
+			beta = b;
+		}
+
+		unsigned int getsmallCutoff(){
+			return smallCutoff;
+		}
+
+		void setsmallCutoff(unsigned int s){
+			smallCutoff = s;
+		}
+
+		std::pair<unsigned int, unsigned int> getEdges(){
+			return edges;
+		}
+
+		void iterateTimestep(){
+			edges = floatEvolveTimeStep(&occupancy, beta, edges.first, edges.second, smallCutoff);
+		}
+
+		void evolveTimesteps(unsigned int iterations){
+			for (unsigned int i=0; i < iterations; i++){
+				iterateTimestep()
+			}
+		}
 }
 
 PYBIND11_MODULE(cDiffusion, m){

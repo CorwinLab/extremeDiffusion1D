@@ -74,4 +74,5 @@ def test_single_occupation_filled():
     assert edges[1] == 1
 
 if __name__ == '__main__':
+    from matplotlib import pyplot as plt
     pytest.main(['./test_c.py'])

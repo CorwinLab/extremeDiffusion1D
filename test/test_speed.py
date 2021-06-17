@@ -1,10 +1,12 @@
 import numpy as np
 import time
 import sys
+from matplotlib import pyplot as plt
 
 sys.path.append('../src')
+sys.path.append('../cDiffusion')
 
-import cdiffusion as cdiff
+import cDiffusion as cdiff
 import diffusion as diff
 
 def timer(func, N=10):
@@ -26,15 +28,28 @@ def timer(func, N=10):
 
     return wrapper
 
-cfloatEvolveTimestep = timer(cdiff.iterate_timestep)
-floatEvolveTimeStep = timer(diff.floatEvolveTimeStep)
+cevolveTimesteps = timer(cdiff.evolveTimesteps, N=3)
+floatRunFixedTime = timer(diff.floatRunFixedTime, N=3)
 
-biases = np.random.random(500000)
-occ = np.random.random(499999) * 100
-occ = np.append(occ, 0)
-occ = np.round(occ)
-c_occ = cfloatEvolveTimestep(occ, biases, smallcutoff=1000)
-reg_occ = floatEvolveTimeStep(occ, biases, smallCutoff=1000)
+Ns = [int(1e2), int(1e3), int(1e4), int(1e5)]
+beta = 1.0
+smallCutoff = int(1e15)
 
-print(np.mean(c_occ))
-print(np.mean(reg_occ))
+ctimes = []
+pytimes = []
+for N in Ns:
+    c_occ = cevolveTimesteps(N, beta, smallCutoff)
+    reg_occ = floatRunFixedTime(N, diff.betaBias, N)
+    ctimes.append(np.mean(c_occ))
+    pytimes.append(np.mean(reg_occ))
+    print(f'Finished N={N}')
+
+fig, ax = plt.subplots()
+ax.scatter(Ns, ctimes, c='k', label='C++')
+ax.scatter(Ns, pytimes, c='b', label='Python')
+ax.set_xlabel('Number of particles/Iterations')
+ax.set_ylabel('Time to run (sec)')
+ax.set_xscale('log')
+ax.set_yscale('log')
+ax.legend()
+fig.savefig('Speed.png')
