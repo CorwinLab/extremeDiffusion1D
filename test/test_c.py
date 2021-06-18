@@ -10,7 +10,7 @@ def test_neg_occupation():
     Test handling of negative occupation.
     '''
 
-    occupation = np.array([5, 0, -10])
+    occupation = np.array([-10, 0, 5])
     with pytest.raises(RuntimeError) as excinfo:
         edges, occ = cdiff.floatEvolveTimeStep(occupation, beta=1, smallCutoff=0,
                                                 minEdgeIndex=0, maxEdgeIndex=2)
@@ -68,11 +68,43 @@ def test_single_occupation_filled():
     This is somewhat based on chance due to the bias being drawn from a random
     beta distribution. However, it should pass most of the time.
     '''
+
     occupation = np.array([10, 0, 0])
     edges, occupied = cdiff.floatEvolveTimeStep(occupation, beta=1, minEdgeIndex=0,
                                                 maxEdgeIndex=1, smallCutoff=5)
-    assert edges[1] == 1
+    assert edges[1] == 1, f"Farthest edge is not 1: {occupied}"
+
+def test_smallCutoff_optional():
+    '''
+    For whatever reason it doesn't seem like Pybind11 likes default arguments
+    so going to test why here.
+    '''
+    occupation = np.array([10, 0, 0])
+    edges, occ = cdiff.floatEvolveTimeStep(occupation, beta=1, minEdgeIndex=0,
+                                            maxEdgeIndex=1)
+
+
+def test_diffusion_constructor():
+    '''
+    Make sure the Diffusion object is being initialized correctly. Looks a little
+    messy because we want to check all the variables are initialized correctly.
+    '''
+    d = cdiff.Diffusion(1, 1, 1)
+
+    # Create a list of all the errors that occur
+    errors = []
+
+    if not d.getN() == 1:
+        errors.append(f"N should be initialized to 1 but is {d.getN()}")
+    if not d.getEdges() == (0, 1):
+        errors.append(f"Edges should be initialzed to (0, 1) but is {d.getEdges()}")
+    if not d.getBeta() == 1:
+        errors.append(f"Beta should be initialzed to 1.0 but is {d.getBeta()}")
+    if not d.getsmallCutoff() == 1:
+        errors.append(f"Small cutoff should be initialized to 1 but is {d.getsmallCutoff()}")
+
+    assert not errors, "Errors occured:\n{}".format("\n".join(errors))
 
 if __name__ == '__main__':
-    from matplotlib import pyplot as plt
+    Diff_obj = cdiff.Diffusion(1, 1, 1)
     pytest.main(['./test_c.py'])

@@ -35,11 +35,11 @@ void print_generic(Temp vec) {
 	std::cout << "] \n";
 };
 
-unsigned long int getRightShift(const unsigned int occ, const double bias,
-																const unsigned int smallCutoff) {
+unsigned long int getRightShift(const double occ, const double bias,
+																const double smallCutoff) {
 	// Must return a value that is smaller than the input occupancy
 	// Generate left and right shift based on small cutoff
-	unsigned long int rightShift = 0;
+	double rightShift = 0;
 	if (occ < smallCutoff) {
 		// If small enough to use integer representations use binomial distribution
 		boost::random::binomial_distribution<int> distribution(occ, bias);
@@ -59,28 +59,24 @@ unsigned long int getRightShift(const unsigned int occ, const double bias,
 	return rightShift;
 }
 
-std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
-	std::vector<int> &occupancy,
+std::pair<double, double> floatEvolveTimeStep(
+	std::vector<double> &occupancy,
 	const double beta,
-	const unsigned int minEdgeIndex,
-	const unsigned int maxEdgeIndex,
-	const unsigned int N,
-	const unsigned long int smallCutoff=pow(2,53)
+	const double minEdgeIndex,
+	const double maxEdgeIndex,
+	const double N,
+	const double smallCutoff=pow(2,53)
 )
 {
 	// Iterate one time step according to Barraquad/Corwin model
 	// Pass in a beta value or even function to generate biases
 	// Changes occupancy vector itself rather than creating a new vector
 
-	// Need to set smallCutoff to double precision cutoff = 2^53
-
 	// Throws: Error if occupancy is less than 0, Error if biases does not satisfy 0 <= biases <= 1,
 	// Error if minEdge > maxEdge -> Could we make this a hard cutoff or no?
 
 	// Note: (alpha=1, beta=1) gives uniform distribution.
 
-	// Should probably accept if min==max and then we'd just run one value.
-	// However, for now we're going to ignore that :(
 	if (minEdgeIndex >= maxEdgeIndex) {
 		throw std::runtime_error("Minimum edge must be greater than maximum edge: (" + std::to_string(minEdgeIndex) + ", " + std::to_string(maxEdgeIndex) + ")");
 	}
@@ -99,10 +95,10 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 	// only need to construct this distribution once but w/e
 	boost::random::beta_distribution<> betaDist(1, beta);
 
-	unsigned long int leftShift = 0;
-	unsigned long int rightShift = 0;
-	unsigned int minEdge = 0;
-	unsigned int maxEdge = 0;
+	double leftShift = 0;
+	double rightShift = 0;
+	double minEdge = 0;
+	double maxEdge = 0;
 	bool firstNonzero = true;
 
 	// Now can use an iterator?
@@ -175,53 +171,53 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 		maxEdge += 1;
 	}
 
-	std::pair<unsigned int, unsigned int> edges(minEdge, maxEdge);
+	std::pair<double, double> edges(minEdge, maxEdge);
 
 	return edges;
 }
 
 std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
-	std::vector<int> &occupancy,
+	std::vector<double> &occupancy,
 	const double beta,
 	const unsigned int minEdgeIndex,
 	const unsigned int maxEdgeIndex,
-	const unsigned long int smallCutoff=pow(2,53)
+	const double smallCutoff=pow(2,53)
 )
 {
 	std::cout << "Warning: No number of walkers N provided so summing over occupancy. This may take a lot longer \n";
-	unsigned int N = accumulate(occupancy.begin(), occupancy.end(), 0);
+	double N = accumulate(occupancy.begin(), occupancy.end(), 0);
 	return floatEvolveTimeStep(occupancy, beta, minEdgeIndex, maxEdgeIndex, N, smallCutoff);
 }
 
 // Does the same thing as floatEvolveTimeStep but returns the occupancy
 // This is because passing by reference doesn't work easily with Pybind11.
 // I think every time we pass a vector between C++ and Python it's copied.
-std::pair<std::pair<unsigned int, unsigned int>, std::vector<int> > pyfloatEvolveTimestep(
-	std::vector<int> occupancy,
+std::pair<std::pair<unsigned int, unsigned int>, std::vector<double> > pyfloatEvolveTimestep(
+	std::vector<double> occupancy,
 	const double beta,
 	const unsigned int minEdgeIndex,
 	const unsigned int maxEdgeIndex,
-	const unsigned long int smallCutoff=pow(2, 53)
+	const double smallCutoff=pow(2, 53)
 )
 {
 	std::pair<unsigned int, unsigned int> edges = floatEvolveTimeStep(occupancy, beta, minEdgeIndex, maxEdgeIndex, smallCutoff);
-	std::pair<std::pair<unsigned int, unsigned int>, std::vector<int> > returnVal(edges, occupancy);
+	std::pair<std::pair<unsigned int, unsigned int>, std::vector<double> > returnVal(edges, occupancy);
 	return returnVal;
 }
 
 std::pair<std::vector<int>, std::vector<int> > evolveTimesteps(
 	const unsigned long int N,
 	const double beta,
-	const unsigned long int smallCutoff=pow(2,53)
+	const double smallCutoff=pow(2,53)
 )
 {
 	std::vector<int> minEdge(N);
 	std::vector<int> maxEdge(N);
-	std::vector<int> occ(N);
+	std::vector<double> occ(N);
 	occ[0] = N;
 
 	std::pair<unsigned int, unsigned int> edges(0, 1);
-	for (unsigned int i=0; i != N; i++){
+	for (auto i=0; i != N; i++){
 		edges = floatEvolveTimeStep(occ, beta, edges.first, edges.second, N, smallCutoff);
 		minEdge[i] = edges.first;
 		maxEdge[i] = edges.second;
@@ -232,29 +228,32 @@ std::pair<std::vector<int>, std::vector<int> > evolveTimesteps(
 
 class Diffusion{
 	private:
-		std::vector<int> occupancy;
+		std::vector<double> occupancy;
 		unsigned int N;
 		double beta;
-		unsigned int smallCutoff;
+		double smallCutoff;
 		std::pair<unsigned int, unsigned int> edges;
 
 	public:
-		Diffusion(unsigned int numberOfParticles){
+		Diffusion(const unsigned int numberOfParticles, const double b, const unsigned int cutoff){
 			N = numberOfParticles;
+			beta = b;
+			smallCutoff = cutoff;
+			edges.first = 0, edges.second = 1;
 		}
 
-		std::vector<int> getOccupancy(){
+		std::vector<double> getOccupancy(){
 			return occupancy;
 		}
 
-		void setOccupancy(std::vector<int> occ){
+		void setOccupancy(const std::vector<double> occ){
 			occupancy = occ;
 		}
 
 		unsigned int getN(){
 			return N;
 		}
-		void setN(unsigned int Number){
+		void setN(const unsigned int Number){
 			N = Number;
 		}
 
@@ -262,15 +261,15 @@ class Diffusion{
 			return beta;
 		}
 
-		void setBeta(double b){
+		void setBeta(const double b){
 			beta = b;
 		}
 
-		unsigned int getsmallCutoff(){
+		double getsmallCutoff(){
 			return smallCutoff;
 		}
 
-		void setsmallCutoff(unsigned int s){
+		void setsmallCutoff(const double s){
 			smallCutoff = s;
 		}
 
@@ -282,24 +281,36 @@ class Diffusion{
 			edges = floatEvolveTimeStep(occupancy, beta, edges.first, edges.second, smallCutoff);
 		}
 
-		void evolveTimesteps(unsigned int iterations){
+		void evolveTimesteps(const unsigned int iterations){
 			for (unsigned int i=0; i < iterations; i++){
 				Diffusion::iterateTimestep();
 			}
 		}
 
 		unsigned int findNumberParticles(){
-			unsigned int sum = std::accumulate(occupancy.begin(), occupancy.end(), 0);
+			double sum = std::accumulate(occupancy.begin(), occupancy.end(), 0);
 			return sum;
 		}
 };
 
 PYBIND11_MODULE(cDiffusion, m){
 	m.doc() = "C++ diffusion";
+
 	m.def("floatEvolveTimeStep", &pyfloatEvolveTimestep, "Iterate a step",
 				py::arg("occupancy"), py::arg("beta"), py::arg("minEdgeIndex"),
 				py::arg("maxEdgeIndex"), py::arg("smallCutoff")=pow(2, 53));
+
 	m.def("evolveTimesteps", &evolveTimesteps, "Iterate multiple time steps",
 				py::arg("N"), py::arg("beta"), py::arg("smallCutoff")=pow(2, 53));
 
+	py::class_<Diffusion>(m, "Diffusion")
+		.def(py::init<const unsigned int, const double, const unsigned int>())
+		.def("getOccupancy", &Diffusion::getOccupancy)
+		.def("setOccupancy", &Diffusion::setOccupancy)
+		.def("getN", &Diffusion::getN)
+		.def("getBeta", &Diffusion::getBeta)
+		.def("setBeta", &Diffusion::setBeta)
+		.def("getsmallCutoff", &Diffusion::getsmallCutoff)
+		.def("setsmallCutoff", &Diffusion::setsmallCutoff)
+		.def("getEdges", &Diffusion::getEdges);
 }
