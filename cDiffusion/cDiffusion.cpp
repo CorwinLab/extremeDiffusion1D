@@ -269,14 +269,14 @@ class Diffusion{
 		unsigned int N;
 		double beta;
 		double smallCutoff;
-		std::pair<unsigned int, unsigned int> edges;
+		std::pair<std::vector<unsigned int>, std::vector<unsigned int> > edges;
 
 	public:
 		Diffusion(const unsigned int numberOfParticles, const double b, const unsigned int cutoff){
 			N = numberOfParticles;
 			beta = b;
 			smallCutoff = cutoff;
-			edges.first = 0, edges.second = 1;
+			edges.first.push_back(0), edges.second.push_back(1);
 		}
 
 		std::vector<double> getOccupancy(){
@@ -310,17 +310,34 @@ class Diffusion{
 			smallCutoff = s;
 		}
 
-		std::pair<unsigned int, unsigned int> getEdges(){
+		std::pair<std::vector<unsigned int>, std::vector<unsigned int> > getEdges(){
 			return edges;
 		}
 
+		// Move the occupancy forward one step in time. Requires push_back for the edges
+		// which might slow it down a lot.
 		void iterateTimestep(){
-			edges = floatEvolveTimeStep(occupancy, beta, edges.first, edges.second, smallCutoff);
+			unsigned int minIndex = edges.first.back();
+			unsigned int maxIndex = edges.second.back();
+			std::pair<unsigned int, unsigned int> newEdges = floatEvolveTimeStep(occupancy, beta, minIndex, maxIndex, N, smallCutoff);
+			edges.first.push_back(newEdges.first);
+			edges.second.push_back(newEdges.second);
 		}
 
+		// Move the ocupancy forward N steps in time. Edges extended initially so
+		// we avoid push_back one by one so it should be faster than running
+		// iterateTimestep N times.
 		void evolveTimesteps(const unsigned int iterations){
-			for (unsigned int i=0; i < iterations; i++){
-				Diffusion::iterateTimestep();
+			unsigned int edgesLength = edges.first.size();
+			edges.first.resize(iterations + edgesLength);
+			edges.second.resize(iterations + edgesLength);
+
+			for (unsigned int i = edgesLength-1; i < edges.first.size(); i++){
+				unsigned int minIndex = edges.first[i];
+				unsigned int maxIndex = edges.second[i];
+				std::pair<unsigned int, unsigned int> newEdges = floatEvolveTimeStep(occupancy, beta, minIndex, maxIndex, N, smallCutoff);
+				edges.first[i+1] = newEdges.first;
+				edges.second[i+1] = newEdges.second;
 			}
 		}
 
@@ -385,5 +402,7 @@ Evolve the occupancy forward through N numbers of timesteps.
 		.def("setBeta", &Diffusion::setBeta)
 		.def("getsmallCutoff", &Diffusion::getsmallCutoff)
 		.def("setsmallCutoff", &Diffusion::setsmallCutoff)
-		.def("getEdges", &Diffusion::getEdges);
+		.def("getEdges", &Diffusion::getEdges)
+		.def("iterateTimestep", &Diffusion::iterateTimestep)
+		.def("evolveTimesteps", &Diffusion::evolveTimesteps);
 }

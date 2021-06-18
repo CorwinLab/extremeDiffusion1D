@@ -96,7 +96,7 @@ def test_diffusion_constructor():
 
     if not d.getN() == 1:
         errors.append(f"N should be initialized to 1 but is {d.getN()}")
-    if not d.getEdges() == (0, 1):
+    if not d.getEdges() == ([0], [1]):
         errors.append(f"Edges should be initialzed to (0, 1) but is {d.getEdges()}")
     if not d.getBeta() == 1:
         errors.append(f"Beta should be initialzed to 1.0 but is {d.getBeta()}")
