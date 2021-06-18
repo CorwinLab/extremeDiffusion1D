@@ -1,6 +1,3 @@
-// cDiffusion.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include <iostream>
 #include <vector>
 #include <numeric>
@@ -35,10 +32,16 @@ void print_generic(Temp vec) {
 	std::cout << "] \n";
 };
 
+// Given the number of particles and probability of going right, generate the number
+// of particles that move to the right. If the number of walkers are small enough
+// draw from a binomial distribution. If they are huge we can just assume the number
+// moving right = number of particles * prob to move right. If they are somewhere
+// in the middle we can get away with approximating the binomial distribution as
+// a normal distribution. The smallCutoff is used to determine what is small,
+// medium and large. Note, if the smallCutoff is too small, the normal approximation
+// may breakdown causing the (# particles right shifted) > (# of particles)
 unsigned long int getRightShift(const double occ, const double bias,
 																const double smallCutoff) {
-	// Must return a value that is smaller than the input occupancy
-	// Generate left and right shift based on small cutoff
 	double rightShift = 0;
 	if (occ < smallCutoff) {
 		// If small enough to use integer representations use binomial distribution
@@ -59,6 +62,8 @@ unsigned long int getRightShift(const double occ, const double bias,
 	return rightShift;
 }
 
+// Iterate one time step according to Barraquad/Corwin model
+// Note: (alpha=1, beta=1) gives uniform distribution.
 std::pair<double, double> floatEvolveTimeStep(
 	std::vector<double> &occupancy,
 	const double beta,
@@ -68,15 +73,6 @@ std::pair<double, double> floatEvolveTimeStep(
 	const double smallCutoff=pow(2,53)
 )
 {
-	// Iterate one time step according to Barraquad/Corwin model
-	// Pass in a beta value or even function to generate biases
-	// Changes occupancy vector itself rather than creating a new vector
-
-	// Throws: Error if occupancy is less than 0, Error if biases does not satisfy 0 <= biases <= 1,
-	// Error if minEdge > maxEdge -> Could we make this a hard cutoff or no?
-
-	// Note: (alpha=1, beta=1) gives uniform distribution.
-
 	if (minEdgeIndex >= maxEdgeIndex) {
 		throw std::runtime_error("Minimum edge must be greater than maximum edge: (" + std::to_string(minEdgeIndex) + ", " + std::to_string(maxEdgeIndex) + ")");
 	}
@@ -176,6 +172,9 @@ std::pair<double, double> floatEvolveTimeStep(
 	return edges;
 }
 
+// Overloaded so that N can be obtained by simply summing the occupancy. This may
+// take a bit longer depending on the size of the occupancy vector due to summing
+// the array beforehand.
 std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 	std::vector<double> &occupancy,
 	const double beta,
@@ -189,7 +188,7 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 	return floatEvolveTimeStep(occupancy, beta, minEdgeIndex, maxEdgeIndex, N, smallCutoff);
 }
 
-// Does the same thing as floatEvolveTimeStep but returns the occupancy
+// Does the same thing as floatEvolveTimeStep but returns the occupancy.
 // This is because passing by reference doesn't work easily with Pybind11.
 // I think every time we pass a vector between C++ and Python it's copied.
 std::pair<std::pair<unsigned int, unsigned int>, std::vector<double> > pyfloatEvolveTimestep(
@@ -205,7 +204,41 @@ std::pair<std::pair<unsigned int, unsigned int>, std::vector<double> > pyfloatEv
 	return returnVal;
 }
 
-std::pair<std::vector<int>, std::vector<int> > evolveTimesteps(
+// Evolve an occupancy through multiple timesteps and return history of the edges.
+std::pair<std::vector<double>, std::vector<double> > evolveTimesteps(
+	const unsigned long int timesteps,
+	std::vector<double> & occupancy,
+	const double beta,
+	const double minEdgeIndex,
+	const double maxEdgeIndex,
+	const double N,
+	const double smallCutoff=pow(2,53)
+)
+{
+	std::vector<double> minEdges(N);
+	std::vector<double> maxEdges(N);
+	minEdges[0] = minEdgeIndex;
+	maxEdges[0] = maxEdgeIndex;
+
+	for (unsigned long int i = 0; i<timesteps; i++){
+		std::pair<unsigned int, unsigned int> edges = floatEvolveTimeStep(
+			occupancy,
+			beta,
+			minEdges[i],
+			maxEdges[i],
+			N,
+			smallCutoff);
+		minEdges[i] = edges.first;
+		maxEdges[i] = edges.second;
+	}
+
+	std::pair<std::vector<double>, std::vector<double> > edgesHistory(minEdges, maxEdges);
+	return edgesHistory;
+}
+
+// Initializes an array of size N and initializes the occupancy to have N walkers
+// at index 0. Then evolves the occupancy for N timesteps.
+std::pair<std::vector<int>, std::vector<int> > initializeAndEvolveTimesteps(
 	const unsigned long int N,
 	const double beta,
 	const double smallCutoff=pow(2,53)
@@ -217,15 +250,19 @@ std::pair<std::vector<int>, std::vector<int> > evolveTimesteps(
 	occ[0] = N;
 
 	std::pair<unsigned int, unsigned int> edges(0, 1);
-	for (auto i=0; i != N; i++){
+	for (unsigned long int i=0; i != N; i++){
 		edges = floatEvolveTimeStep(occ, beta, edges.first, edges.second, N, smallCutoff);
 		minEdge[i] = edges.first;
 		maxEdge[i] = edges.second;
 	}
+
 	std::pair<std::vector<int>, std::vector<int> > edgesHistory(minEdge, maxEdge);
 	return edgesHistory;
 }
 
+// Class to take make a diffusion experiment easier. All the date is handled on
+// the C++ side of things so that the occupancy array is only called when python
+// calls for an array.
 class Diffusion{
 	private:
 		std::vector<double> occupancy;
@@ -296,12 +333,48 @@ class Diffusion{
 PYBIND11_MODULE(cDiffusion, m){
 	m.doc() = "C++ diffusion";
 
-	m.def("floatEvolveTimeStep", &pyfloatEvolveTimestep, "Iterate a step",
+	const char * pyfloatdoc = R"V0G0N(
+Evolve the occupancy forward one timestep drawing from the provided beta distribution.
+
+Parameters
+----------
+occupancy : numpy array or list
+	Number of walkers at each location
+
+beta : float
+	Value of beta for the beta distribution to draw biases from
+
+minEdgeIndex : int
+	Index of the first occupied, or nonzero, index in occupation
+
+maxEdgeIndex : int
+  Index of last occupied, or nonzer, index in occupation
+
+smallCutoff : int (2^53)
+	Precision of double to use for normal and binomial approximation.
+
+Returns
+-------
+edges : tuple
+	Index of first and last occupied, or nonzero, index in new occupation
+
+occupancy : numpy array
+	New number of walkers at each loation. Size should be preserved from the input
+	occupancy array.
+)V0G0N";
+
+	m.def("floatEvolveTimeStep", &pyfloatEvolveTimestep, pyfloatdoc,
 				py::arg("occupancy"), py::arg("beta"), py::arg("minEdgeIndex"),
 				py::arg("maxEdgeIndex"), py::arg("smallCutoff")=pow(2, 53));
 
-	m.def("evolveTimesteps", &evolveTimesteps, "Iterate multiple time steps",
-				py::arg("N"), py::arg("beta"), py::arg("smallCutoff")=pow(2, 53));
+const char * evolveTimestepsdoc = R"V0G0N(
+Evolve the occupancy forward through N numbers of timesteps.
+)V0G0N";
+
+	m.def("evolveTimesteps", &evolveTimesteps, evolveTimestepsdoc,
+				py::arg("timesteps"), py::arg("occupancy"), py::arg("beta"),
+				py::arg("minEdgeIndex"), py::arg("maxEdgeIndex"), py::arg("N"),
+				py::arg("smallCutoff")=pow(2, 53));
 
 	py::class_<Diffusion>(m, "Diffusion")
 		.def(py::init<const unsigned int, const double, const unsigned int>())
