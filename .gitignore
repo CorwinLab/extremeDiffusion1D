@@ -136,3 +136,7 @@ dmypy.json
 cDiffusion/.vs/
 cDiffusion/.vs/cDiffusion/v16/Browse.VC.db
 N50/
+times/
+
+# Data
+*.txt

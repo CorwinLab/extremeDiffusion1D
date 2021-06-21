@@ -16,7 +16,7 @@ def betaBias(N, alpha=1, beta=1):
 def uniformBias(N):
     return np.random.uniform(size=N)
 
-def floatEvolveTimeStep(occupancy, biases, smallCutoff = 1e15):
+def floatEvolveTimeStep(occupancy, biases, smallCutoff = 1e9):
     '''
     args:
     occupancy (array of floats): How many walkers are at each element

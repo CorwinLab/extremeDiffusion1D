@@ -20,6 +20,9 @@ std::random_device rd;
 // that this is initialized on import into python
 std::mt19937 gen(rd());
 std::uniform_real_distribution<> dis(0.0, 1.0);
+boost::random::binomial_distribution<> binomial;
+boost::random::normal_distribution<> normal;
+boost::random::beta_distribution<> beta_dist;
 
 template<class Temp>
 void print_generic(Temp vec) {
@@ -47,8 +50,8 @@ double getRightShift(const double occ, const double bias,
 	double rightShift = 0;
 	if (occ < smallCutoff) {
 		// If small enough to use integer representations use binomial distribution
-		boost::random::binomial_distribution<> distribution(occ, bias);
-	  rightShift = distribution(gen);
+		boost::random::binomial_distribution<>::param_type params(occ, bias);
+	  rightShift = binomial(gen, params);
 	}
 	else if (occ > pow(smallCutoff, 2)) {
 		// If so large that sqrt(N) is less than precision just use occupancy
@@ -58,8 +61,8 @@ double getRightShift(const double occ, const double bias,
 		// If in sqrt(N) precision use gaussian approximation.
 		double mediumVariance = occ * bias * (1 - bias);
 		mediumVariance = sqrt(mediumVariance);
-		boost::random::normal_distribution<> distribution(occ * bias, mediumVariance);
-		rightShift = round(distribution(gen));
+		boost::random::normal_distribution<>::param_type params(occ * bias, mediumVariance);
+		rightShift = round(normal(gen, params));
 	}
 	if (rightShift < 0){
 		throw std::runtime_error("Right shift = " + std::to_string(rightShift) + " for occupancy=" + std::to_string(occ) + ", bias=" + std::to_string(bias) + ", smallCutoff=" + std::to_string(smallCutoff));
@@ -94,7 +97,7 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 
 	// If we keep the occupancy the same throughout the whole experiment we probably
 	// only need to construct this distribution once but w/e
-	boost::random::beta_distribution<> betaDist(1, beta);
+	boost::random::beta_distribution<>::param_type params(beta, beta);
 
 	double leftShift = 0;
 	double rightShift = 0;
@@ -121,7 +124,7 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 		}
 
 		// Generate a random bias (the expensive part in this algorithm)
-		double bias = betaDist(gen);
+		double bias = beta_dist(gen, params);
 
 		// Only keeping this b/c once we accept functions need to check limits
 		if (bias < 0.0 || bias > 1.0) {
@@ -347,7 +350,7 @@ class Diffusion{
 			edges.first.resize(iterations + edgesLength);
 			edges.second.resize(iterations + edgesLength);
 
-			for (unsigned long int i = edgesLength-1; i < edges.first.size()-1; i++){
+			for (unsigned long int i = 0edgesLength-1; i < edges.first.size()-1; i++){
 				unsigned long int minIndex = edges.first[i];
 				unsigned long int maxIndex = edges.second[i];
 				std::pair<unsigned long int, unsigned long int> newEdges = floatEvolveTimeStep(occupancy, beta, minIndex, maxIndex, N, smallCutoff);
@@ -432,6 +435,10 @@ Note
 Much faster than iterateTimestep method because it preallocates needed space in
 edges vector.
 )V0G0N";
+
+	const char * findNumberParticlesdoc = R"V0G0N(
+
+	)V0G0N"
 
 	py::class_<Diffusion>(m, "Diffusion")
 		.def(py::init<const double, const double, const double>())

@@ -28,21 +28,38 @@ def timer(func, N=10):
 
     return wrapper
 
-cevolveTimesteps = timer(cdiff.evolveTimesteps, N=3)
+def runC(num_of_steps, N, smallCutoff):
+    occ = np.zeros(num_of_steps)
+    occ[0] = int(N)
+
+    d = cdiff.Diffusion(int(N), 1, smallCutoff)
+    d.setOccupancy(occ)
+    d.evolveTimesteps(num_of_steps)
+
+cevolveTimesteps = timer(runC, N=3)
 floatRunFixedTime = timer(diff.floatRunFixedTime, N=3)
 
-Ns = [int(1e2), int(1e3), int(1e4), int(1e5)]
+Ns = [int(1e5), (1e10), (1e15), (1e25), (1e35), 1e50]
 beta = 1.0
-smallCutoff = int(1e15)
 
 ctimes = []
 pytimes = []
 for N in Ns:
-    c_occ = cevolveTimesteps(N, beta, smallCutoff)
-    reg_occ = floatRunFixedTime(N, diff.betaBias, N)
-    ctimes.append(np.mean(c_occ))
-    pytimes.append(np.mean(reg_occ))
-    print(f'Finished N={N}')
+    logN = np.log(N)
+    smallCutoff = int(1e9)
+    num_of_steps = logN ** (5/2)
+    num_of_steps = round(num_of_steps)
+
+    py_times = floatRunFixedTime(num_of_steps, diff.betaBias, N)
+
+    c_times = cevolveTimesteps(num_of_steps, N, smallCutoff)
+
+    scientificN = "{:e}".format(N)
+    np.savetxt(f'./times/ctimes{scientificN}.txt', c_times)
+    np.savetxt(f'./times/pytimes{scientificN}.txt', py_times)
+    ctimes.append(np.mean(c_times))
+    pytimes.append(np.mean(py_times))
+    print(f'Finished N={scientificN}')
 
 fig, ax = plt.subplots()
 ax.scatter(Ns, ctimes, c='k', label='C++')
