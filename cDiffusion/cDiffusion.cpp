@@ -39,36 +39,41 @@ void print_generic(Temp vec) {
 // in the middle we can get away with approximating the binomial distribution as
 // a normal distribution. The smallCutoff is used to determine what is small,
 // medium and large. Note, if the smallCutoff is too small, the normal approximation
-// may breakdown causing the (# particles right shifted) > (# of particles)
-unsigned long int getRightShift(const double occ, const double bias,
+// may breakdown causing the (# particles right shifted) > (# of particles).
+// Note that the boost C++ binomial distribution breaks for occupancies bigger than
+// a long integer. It returns the negative bound of a long integer.
+double getRightShift(const double occ, const double bias,
 																const double smallCutoff) {
 	double rightShift = 0;
 	if (occ < smallCutoff) {
 		// If small enough to use integer representations use binomial distribution
-		boost::random::binomial_distribution<int> distribution(occ, bias);
-		rightShift = distribution(gen);
+		boost::random::binomial_distribution<> distribution(occ, bias);
+	  rightShift = distribution(gen);
 	}
 	else if (occ > pow(smallCutoff, 2)) {
 		// If so large that sqrt(N) is less than precision just use occupancy
-		rightShift = lround(occ * bias);
+		rightShift = round(occ * bias);
 	}
 	else {
 		// If in sqrt(N) precision use gaussian approximation.
 		double mediumVariance = occ * bias * (1 - bias);
 		mediumVariance = sqrt(mediumVariance);
 		boost::random::normal_distribution<> distribution(occ * bias, mediumVariance);
-		rightShift = lround(distribution(gen));
+		rightShift = round(distribution(gen));
+	}
+	if (rightShift < 0){
+		throw std::runtime_error("Right shift = " + std::to_string(rightShift) + " for occupancy=" + std::to_string(occ) + ", bias=" + std::to_string(bias) + ", smallCutoff=" + std::to_string(smallCutoff));
 	}
 	return rightShift;
 }
 
 // Iterate one time step according to Barraquad/Corwin model
 // Note: (alpha=1, beta=1) gives uniform distribution.
-std::pair<double, double> floatEvolveTimeStep(
+std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 	std::vector<double> &occupancy,
 	const double beta,
-	const double minEdgeIndex,
-	const double maxEdgeIndex,
+	const unsigned long int minEdgeIndex,
+	const unsigned long int maxEdgeIndex,
 	const double N,
 	const double smallCutoff=pow(2,53)
 )
@@ -93,8 +98,8 @@ std::pair<double, double> floatEvolveTimeStep(
 
 	double leftShift = 0;
 	double rightShift = 0;
-	double minEdge = 0;
-	double maxEdge = 0;
+	unsigned long int minEdge = 0;
+	unsigned long int maxEdge = 0;
 	bool firstNonzero = true;
 
 	// Now can use an iterator?
@@ -108,11 +113,11 @@ std::pair<double, double> floatEvolveTimeStep(
 		}
 
 		if (occupancy[i] < 0) {
-			throw std::runtime_error("Occupancy must be > 0");
+			throw std::runtime_error("Occupancy must be > 0 but Occupancy[" + std::to_string(i) + "]=" + std::to_string(occupancy[i]));
 		}
 
 		if (occupancy[i] > N){
-			throw std::runtime_error("Occupancy greater than total number of walkers N=" + std::to_string(N));
+			throw std::runtime_error("Occupancy greater than total number of walkers N=" + std::to_string(N) + ", but occupancy[" + std::to_string(i) + "]=" + std::to_string(occupancy[i]));
 		}
 
 		// Generate a random bias (the expensive part in this algorithm)
@@ -127,6 +132,10 @@ std::pair<double, double> floatEvolveTimeStep(
 
 		if (rightShift > occupancy[i]){
 			throw std::runtime_error("Right shift cannot be larger than occupancy, but " + std::to_string(rightShift) + " > " + std::to_string(occupancy[i]));
+		}
+
+		if (rightShift < 0){
+			throw std::runtime_error("Right shift cannot be less than zero, but rightShift = " + std::to_string(rightShift));
 		}
 
 		if (i == minEdgeIndex) {
@@ -167,7 +176,7 @@ std::pair<double, double> floatEvolveTimeStep(
 		maxEdge += 1;
 	}
 
-	std::pair<double, double> edges(minEdge, maxEdge);
+	std::pair<unsigned long int, unsigned long int> edges(minEdge, maxEdge);
 
 	return edges;
 }
@@ -175,11 +184,11 @@ std::pair<double, double> floatEvolveTimeStep(
 // Overloaded so that N can be obtained by simply summing the occupancy. This may
 // take a bit longer depending on the size of the occupancy vector due to summing
 // the array beforehand.
-std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
+std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 	std::vector<double> &occupancy,
 	const double beta,
-	const unsigned int minEdgeIndex,
-	const unsigned int maxEdgeIndex,
+	const unsigned long int minEdgeIndex,
+	const unsigned long int maxEdgeIndex,
 	const double smallCutoff=pow(2,53)
 )
 {
@@ -191,21 +200,27 @@ std::pair<unsigned int, unsigned int> floatEvolveTimeStep(
 // Does the same thing as floatEvolveTimeStep but returns the occupancy.
 // This is because passing by reference doesn't work easily with Pybind11.
 // I think every time we pass a vector between C++ and Python it's copied.
-std::pair<std::pair<unsigned int, unsigned int>, std::vector<double> > pyfloatEvolveTimestep(
+
+// So this needs to be fixed ASAP. Currently have N=0 in the function call b/c
+// As the overloaded function floatEvolveTimeStep is written it's ambigious which
+// function to defer to. This is b/c smallCutoff and N are now both doubles
+// so they're ambigious?
+std::pair<std::pair<unsigned long int, unsigned long int>, std::vector<double> > pyfloatEvolveTimestep(
 	std::vector<double> occupancy,
 	const double beta,
-	const unsigned int minEdgeIndex,
-	const unsigned int maxEdgeIndex,
+	const unsigned long int minEdgeIndex,
+	const unsigned long int maxEdgeIndex,
 	const double smallCutoff=pow(2, 53)
 )
 {
-	std::pair<unsigned int, unsigned int> edges = floatEvolveTimeStep(occupancy, beta, minEdgeIndex, maxEdgeIndex, smallCutoff);
-	std::pair<std::pair<unsigned int, unsigned int>, std::vector<double> > returnVal(edges, occupancy);
+
+	std::pair<unsigned long int, unsigned long int> edges = floatEvolveTimeStep(occupancy, beta, minEdgeIndex, maxEdgeIndex, 0, smallCutoff);
+	std::pair<std::pair<unsigned long int, unsigned long int>, std::vector<double> > returnVal(edges, occupancy);
 	return returnVal;
 }
 
 // Evolve an occupancy through multiple timesteps and return history of the edges.
-std::pair<std::vector<double>, std::vector<double> > evolveTimesteps(
+std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > evolveTimesteps(
 	const unsigned long int timesteps,
 	std::vector<double> & occupancy,
 	const double beta,
@@ -215,8 +230,8 @@ std::pair<std::vector<double>, std::vector<double> > evolveTimesteps(
 	const double smallCutoff=pow(2,53)
 )
 {
-	std::vector<double> minEdges(N);
-	std::vector<double> maxEdges(N);
+	std::vector<unsigned long int> minEdges(N);
+	std::vector<unsigned long int> maxEdges(N);
 	minEdges[0] = minEdgeIndex;
 	maxEdges[0] = maxEdgeIndex;
 
@@ -232,20 +247,20 @@ std::pair<std::vector<double>, std::vector<double> > evolveTimesteps(
 		maxEdges[i] = edges.second;
 	}
 
-	std::pair<std::vector<double>, std::vector<double> > edgesHistory(minEdges, maxEdges);
+	std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > edgesHistory(minEdges, maxEdges);
 	return edgesHistory;
 }
 
 // Initializes an array of size N and initializes the occupancy to have N walkers
 // at index 0. Then evolves the occupancy for N timesteps.
-std::pair<std::vector<int>, std::vector<int> > initializeAndEvolveTimesteps(
+std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > initializeAndEvolveTimesteps(
 	const unsigned long int N,
 	const double beta,
 	const double smallCutoff=pow(2,53)
 )
 {
-	std::vector<int> minEdge(N);
-	std::vector<int> maxEdge(N);
+	std::vector<unsigned long int> minEdge(N);
+	std::vector<unsigned long int> maxEdge(N);
 	std::vector<double> occ(N);
 	occ[0] = N;
 
@@ -256,7 +271,7 @@ std::pair<std::vector<int>, std::vector<int> > initializeAndEvolveTimesteps(
 		maxEdge[i] = edges.second;
 	}
 
-	std::pair<std::vector<int>, std::vector<int> > edgesHistory(minEdge, maxEdge);
+	std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > edgesHistory(minEdge, maxEdge);
 	return edgesHistory;
 }
 
@@ -266,13 +281,13 @@ std::pair<std::vector<int>, std::vector<int> > initializeAndEvolveTimesteps(
 class Diffusion{
 	private:
 		std::vector<double> occupancy;
-		unsigned int N;
+		double N;
 		double beta;
 		double smallCutoff;
-		std::pair<std::vector<unsigned int>, std::vector<unsigned int> > edges;
+		std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > edges;
 
 	public:
-		Diffusion(const unsigned int numberOfParticles, const double b, const unsigned int cutoff){
+		Diffusion(const double numberOfParticles, const double b, const double cutoff){
 			N = numberOfParticles;
 			beta = b;
 			smallCutoff = cutoff;
@@ -287,10 +302,10 @@ class Diffusion{
 			occupancy = occ;
 		}
 
-		unsigned int getN(){
+		double getN(){
 			return N;
 		}
-		void setN(const unsigned int Number){
+		void setN(const double Number){
 			N = Number;
 		}
 
@@ -310,16 +325,16 @@ class Diffusion{
 			smallCutoff = s;
 		}
 
-		std::pair<std::vector<unsigned int>, std::vector<unsigned int> > getEdges(){
+		std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > getEdges(){
 			return edges;
 		}
 
 		// Move the occupancy forward one step in time. Requires push_back for the edges
 		// which might slow it down a lot.
 		void iterateTimestep(){
-			unsigned int minIndex = edges.first.back();
-			unsigned int maxIndex = edges.second.back();
-			std::pair<unsigned int, unsigned int> newEdges = floatEvolveTimeStep(occupancy, beta, minIndex, maxIndex, N, smallCutoff);
+			unsigned long int minIndex = edges.first.back();
+			unsigned long int maxIndex = edges.second.back();
+			std::pair<unsigned long int, unsigned long int> newEdges = floatEvolveTimeStep(occupancy, beta, minIndex, maxIndex, N, smallCutoff);
 			edges.first.push_back(newEdges.first);
 			edges.second.push_back(newEdges.second);
 		}
@@ -332,10 +347,10 @@ class Diffusion{
 			edges.first.resize(iterations + edgesLength);
 			edges.second.resize(iterations + edgesLength);
 
-			for (unsigned int i = edgesLength-1; i < edges.first.size(); i++){
-				unsigned int minIndex = edges.first[i];
-				unsigned int maxIndex = edges.second[i];
-				std::pair<unsigned int, unsigned int> newEdges = floatEvolveTimeStep(occupancy, beta, minIndex, maxIndex, N, smallCutoff);
+			for (unsigned long int i = edgesLength-1; i < edges.first.size()-1; i++){
+				unsigned long int minIndex = edges.first[i];
+				unsigned long int maxIndex = edges.second[i];
+				std::pair<unsigned long int, unsigned long int> newEdges = floatEvolveTimeStep(occupancy, beta, minIndex, maxIndex, N, smallCutoff);
 				edges.first[i+1] = newEdges.first;
 				edges.second[i+1] = newEdges.second;
 			}
@@ -384,7 +399,7 @@ occupancy : numpy array
 				py::arg("occupancy"), py::arg("beta"), py::arg("minEdgeIndex"),
 				py::arg("maxEdgeIndex"), py::arg("smallCutoff")=pow(2, 53));
 
-const char * evolveTimestepsdoc = R"V0G0N(
+	const char * evolveTimestepsdoc = R"V0G0N(
 Evolve the occupancy forward through N numbers of timesteps.
 )V0G0N";
 
@@ -393,16 +408,42 @@ Evolve the occupancy forward through N numbers of timesteps.
 				py::arg("minEdgeIndex"), py::arg("maxEdgeIndex"), py::arg("N"),
 				py::arg("smallCutoff")=pow(2, 53));
 
+	const char * iterateTimestepdoc = R"V0G0N(
+Move the occupancy forward through one timestep. Appends the new edge positions
+to the edges vector.
+
+Note
+----
+Use evolveTimesteps to move forward multiple timesteps as evolveTimesteps preallocates
+needed space in edges vector for new edge positions whereas iterateTimestep just
+push_back the edges vector every iteration.
+)V0G0N";
+
+	const char * classevolveTimestepsdoc = R"V0G0N(
+Evolve the occupancy forward N number of iterations.
+
+Parameters
+----------
+iterations : int
+	Number of iterations to move the system forward int time
+
+Note
+----
+Much faster than iterateTimestep method because it preallocates needed space in
+edges vector.
+)V0G0N";
+
 	py::class_<Diffusion>(m, "Diffusion")
-		.def(py::init<const unsigned int, const double, const unsigned int>())
+		.def(py::init<const double, const double, const double>())
 		.def("getOccupancy", &Diffusion::getOccupancy)
-		.def("setOccupancy", &Diffusion::setOccupancy)
+		.def("setOccupancy", &Diffusion::setOccupancy, py::arg("occupancy"))
 		.def("getN", &Diffusion::getN)
 		.def("getBeta", &Diffusion::getBeta)
-		.def("setBeta", &Diffusion::setBeta)
+		.def("setBeta", &Diffusion::setBeta, py::arg("beta"))
 		.def("getsmallCutoff", &Diffusion::getsmallCutoff)
-		.def("setsmallCutoff", &Diffusion::setsmallCutoff)
+		.def("setsmallCutoff", &Diffusion::setsmallCutoff, py::arg("smallCutoff"))
 		.def("getEdges", &Diffusion::getEdges)
-		.def("iterateTimestep", &Diffusion::iterateTimestep)
-		.def("evolveTimesteps", &Diffusion::evolveTimesteps);
+		.def("iterateTimestep", &Diffusion::iterateTimestep, iterateTimestepdoc)
+		.def("evolveTimesteps", &Diffusion::evolveTimesteps, classevolveTimestepsdoc, py::arg("iterations"))
+		.def("findNumberParticles", &Diffusion::findNumberParticles);
 }
