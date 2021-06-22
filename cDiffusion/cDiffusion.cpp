@@ -81,8 +81,8 @@ double getRightShift(
 std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 	std::vector<double>& occupancy,
 	const double beta,
-	const unsigned long int minEdgeIndex, //Call this prevMinEdge
-	const unsigned long int maxEdgeIndex,
+	const unsigned long int prevMinEdge,
+	const unsigned long int prevMaxEdge,
 	const double N,
 	const double smallCutoff = 2147483646, // This is 2^31-2, which seemed to be the largest number that would work for me?
 	const double largeCutoff = 1e31,
@@ -93,16 +93,19 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 	}
 
 	// If iterating over the whole array extend the occupancy.
+	// This would probably be more efficient if you just doubled the size or something
+	// Ideally, we should never actually encounter this code
 	if ((prevMaxIndex+1) == occupancy.size()){
 		occupancy.push_back(0);
 	}
 
 	// If we keep the occupancy the same throughout the whole experiment we probably
 	// only need to construct this distribution once but w/e
+	// EC: This could be passed in as a const variable
 	boost::random::beta_distribution<>::param_type params(beta, beta);
 
-	double leftShift = 0;
-	double rightShift = 0;
+	double toNextSite = 0;
+	double fromLastSite = 0;
 	unsigned long int minEdge = 0;
 	unsigned long int maxEdge = 0;
 	bool firstNonzero = true;
@@ -113,17 +116,13 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 
 		double* occ = &occupancy.at(i);
 		// Skip over occupation value if ocuppancy=0 and not moving any walkers
-		// to the position
-		if (*occ == 0 && leftShift == 0) {
+		// to the position because there's nothing to do
+		if (*occ == 0 && toNextSite == 0) {
 			continue;
 		}
 
-		if (*occ < 0) {
-			throw std::runtime_error("Occupancy must be > 0 but Occupancy[" + std::to_string(i) + "]=" + std::to_string(*occ));
-		}
-
-		if (*occ > N){
-			throw std::runtime_error("Occupancy greater than total number of walkers N=" + std::to_string(N) + ", but occupancy[" + std::to_string(i) + "]=" + std::to_string(*occ));
+		if (*occ < 0 || *occ > N) {
+			throw std::runtime_error("Occupancy out of bounds. N=" + std::to_string(N) + ", but occupancy[" + std::to_string(i) + "]=" + std::to_string(*occ));
 		}
 
 		// Generate a random bias (the expensive part in this algorithm)
@@ -134,41 +133,21 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 			throw std::runtime_error("Biases must satisfy 0 <= biases <= 1");
 		}
 
-		rightShift = getRightShift(*occ, bias, smallCutoff, largeCutoff);
+		toNextSite = getRightShift(*occ, bias, smallCutoff, largeCutoff);
 
-		if (rightShift < 0){
-			throw std::runtime_error("Right shift = " + std::to_string(rightShift) + " for occupancy=" + std::to_string(*occ) + ", bias=" + std::to_string(bias) + ", smallCutoff=" + std::to_string(smallCutoff));
+		if (toNextSite < 0 || toNextSite > *occ) {
+			throw std::runtime_error("Right shift = " + std::to_string(toNextSite) + " for occupancy=" + std::to_string(*occ) + ", bias=" + std::to_string(bias) + ", smallCutoff=" + std::to_string(smallCutoff));
 		}
 
-		if (rightShift > *occ){
-			throw std::runtime_error("Right shift cannot be larger than occupancy, but " + std::to_string(rightShift) + " > " + std::to_string(*occ));
-		}
-
-		if (i == prevMinIndex) {
-			*occ = *occ - rightShift;
-			leftShift = rightShift;
-			if (*occ != 0) {
-				minEdge = i;
-				firstNonzero = false;
-			}
-			continue;
-		}
-
-		*occ = *occ - rightShift + leftShift;
-		leftShift = rightShift;
-
-		if (*occ != 0) {
+		// EC: Try to simplify
+		// update the new occupancy
+		*occ = *occ - toNextSite + fromLastSite
+		fromLastSite = toNextSite
+		if (*occ != 0 ) {
+			maxEdge = i
 			if (firstNonzero) {
 				minEdge = i;
 				firstNonzero = false;
-			}
-			maxEdge = i;
-		}
-
-		if (i == prevMaxIndex) {
-			occupancy.at(i+1) = rightShift;
-			if (occupancy.at(i+1) != 0) {
-				maxEdge = i + 1;
 			}
 		}
 	}
