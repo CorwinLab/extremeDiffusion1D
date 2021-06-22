@@ -110,52 +110,40 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 	unsigned long int maxEdge = 0;
 	bool firstNonzero = true;
 
-	// Now can use an iterator?
-	// Check out range operator
-	for (auto i = prevMinIndex; i < prevMaxIndex+1; i++) {
 
-		double* occ = &occupancy.at(i);
-		// Skip over occupation value if ocuppancy=0 and not moving any walkers
-		// to the position because there's nothing to do
-		if (*occ == 0 && toNextSite == 0) {
-			continue;
+
+	for (auto i = prevMinIndex; i < prevMaxIndex+2; i++) {
+
+		if (occupancy[i] != 0) {
+			// Generate a random bias (the expensive part in this algorithm)
+			double bias = beta_dist(gen, params);
+			toNextSite = getRightShift(occupancy[i], bias, smallCutoff, largeCutoff);
+		} else {
+			toNextSite = 0;
 		}
 
-		if (*occ < 0 || *occ > N) {
-			throw std::runtime_error("Occupancy out of bounds. N=" + std::to_string(N) + ", but occupancy[" + std::to_string(i) + "]=" + std::to_string(*occ));
-		}
-
-		// Generate a random bias (the expensive part in this algorithm)
-		double bias = beta_dist(gen, params);
-
-		// Only keeping this b/c once we accept functions need to check limits
-		if (bias < 0.0 || bias > 1.0) {
-			throw std::runtime_error("Biases must satisfy 0 <= biases <= 1");
-		}
-
-		toNextSite = getRightShift(*occ, bias, smallCutoff, largeCutoff);
-
-		if (toNextSite < 0 || toNextSite > *occ) {
-			throw std::runtime_error("Right shift = " + std::to_string(toNextSite) + " for occupancy=" + std::to_string(*occ) + ", bias=" + std::to_string(bias) + ", smallCutoff=" + std::to_string(smallCutoff));
-		}
-
-		// EC: Try to simplify
-		// update the new occupancy
-		*occ = *occ - toNextSite + fromLastSite
+		occupancy[i] += fromLastSite - toNextSite
 		fromLastSite = toNextSite
-		if (*occ != 0 ) {
+
+		if (occupancy[i] != 0 ) {
 			maxEdge = i
 			if (firstNonzero) {
 				minEdge = i;
 				firstNonzero = false;
 			}
 		}
+
+		if ( occupancy[i] < 0 || occupancy[i] > 0 || toNextSite < 0 || toNextSite > N ) {
+			throw std::runtime_error("Occupancy[" + std::to_string(i) + "]=" + std::to_string(occupancy[i] + " toNextSite = " + std::to_string(toNextSite)));
+		}
+
 	}
 
 	if (minEdge > maxEdge) {
 		throw std::runtime_error("Minimum edge is greater than maximum edge. Something went wrong.");
 	}
 
+	//EC: I don't think that this is needed as the loop will run if minEdge = maxEdge, right?
 	if (minEdge == maxEdge){
 		// Only one state occupied so add 1 to maxEdge to ensure loop runs next step.
 		maxEdge += 1;
