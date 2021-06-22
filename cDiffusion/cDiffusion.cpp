@@ -46,7 +46,7 @@ void print_generic(Temp vec) {
 // may breakdown causing the (# particles right shifted) > (# of particles).
 // Note that the boost C++ binomial distribution breaks for occupancies bigger than
 // a long integer. It returns the negative bound of a long integer.
-double getRightShift(const double occ, const double bias,
+double gettoNextSite(const double occ, const double bias,
 																const double smallCutoff=smallCutoff,
 																const double largeCutoff=largeCutoff) {
 	if (occ < smallCutoff) {
@@ -89,80 +89,43 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 	// only need to construct this distribution once but w/e
 	boost::random::beta_distribution<>::param_type params(beta, beta);
 
-	double leftShift = 0;
-	double rightShift = 0;
+	double fromLastSite = 0;
+	double toNextSite = 0;
 	unsigned long int minEdge = 0;
 	unsigned long int maxEdge = 0;
 	bool firstNonzero = true;
 
-	// Now can use an iterator?
-	// Check out range operator
-	for (auto i = prevMinIndex; i < prevMaxIndex+1; i++) {
+	for (auto i = prevMinIndex; i < prevMaxIndex+2; i++) {
 
 		double* occ = &occupancy.at(i);
-		// Skip over occupation value if ocuppancy=0 and not moving any walkers
-		// to the position
-		if (*occ == 0 && leftShift == 0) {
-			continue;
+
+		double bias = 0;
+		if (*occ != 0) {
+			bias = beta_dist(gen, params);
+			toNextSite = gettoNextSite(*occ, bias, smallCutoff, largeCutoff);
+		}
+		else{
+			toNextSite = 0;
 		}
 
-		if (*occ < 0) {
-			throw std::runtime_error("Occupancy must be > 0 but Occupancy[" + std::to_string(i) + "]=" + std::to_string(*occ));
-		}
-
-		if (*occ > N){
-			throw std::runtime_error("Occupancy greater than total number of walkers N=" + std::to_string(N) + ", but occupancy[" + std::to_string(i) + "]=" + std::to_string(*occ));
-		}
-
-		// Generate a random bias (the expensive part in this algorithm)
-		double bias = beta_dist(gen, params);
-
-		// Only keeping this b/c once we accept functions need to check limits
-		if (bias < 0.0 || bias > 1.0) {
-			throw std::runtime_error("Biases must satisfy 0 <= biases <= 1");
-		}
-
-		rightShift = getRightShift(*occ, bias, smallCutoff, largeCutoff);
-
-		if (rightShift < 0){
-			throw std::runtime_error("Right shift = " + std::to_string(rightShift) + " for occupancy=" + std::to_string(*occ) + ", bias=" + std::to_string(bias) + ", smallCutoff=" + std::to_string(smallCutoff));
-		}
-
-		if (rightShift > *occ){
-			throw std::runtime_error("Right shift cannot be larger than occupancy, but " + std::to_string(rightShift) + " > " + std::to_string(*occ));
-		}
-
-		if (i == prevMinIndex) {
-			*occ = *occ - rightShift;
-			leftShift = rightShift;
-			if (*occ != 0) {
-				minEdge = i;
-				firstNonzero = false;
-			}
-			continue;
-		}
-
-		*occ = *occ - rightShift + leftShift;
-		leftShift = rightShift;
+		double prevOcc = *occ; // For error checking below
+		*occ += fromLastSite - toNextSite;
+		fromLastSite = toNextSite;
 
 		if (*occ != 0) {
+			maxEdge = i;
 			if (firstNonzero) {
 				minEdge = i;
 				firstNonzero = false;
 			}
-			maxEdge = i;
 		}
 
-		if (i == prevMaxIndex) {
-			occupancy.at(i+1) = rightShift;
-			if (occupancy.at(i+1) != 0) {
-				maxEdge = i + 1;
-			}
+		if (toNextSite < 0 || toNextSite > prevOcc || bias < 0.0 || bias > 1.0 || *occ < 0 || *occ > N){
+			throw std::runtime_error("One or more variables out of bounds: Right shift= "
+			+ std::to_string(toNextSite) + ", occupancy=" + std::to_string(*occ)
+			+ ", bias=" + std::to_string(bias) + ", smallCutoff=" + std::to_string(smallCutoff)
+			+ ", N=" + std::to_string(N));
 		}
-	}
-
-	if (minEdge > maxEdge) {
-		throw std::runtime_error("Minimum edge is greater than maximum edge. Something went wrong.");
 	}
 
 	if (minEdge == maxEdge){

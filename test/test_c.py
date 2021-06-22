@@ -14,7 +14,7 @@ def test_neg_occupation():
     with pytest.raises(RuntimeError) as excinfo:
         edges, occ = cdiff.floatEvolveTimeStep(occupation, beta=1, prevMinIndex=0,
                                                 prevMaxIndex=2, N=5)
-    assert "Occupancy must be > 0" in str(excinfo.value)
+    assert "One or more variables out of bounds" in str(excinfo.value)
 
 def test_min_greater_max():
     '''
