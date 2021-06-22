@@ -39,7 +39,7 @@ def runC(num_of_steps, N, smallCutoff):
 cevolveTimesteps = timer(runC, N=3)
 floatRunFixedTime = timer(diff.floatRunFixedTime, N=3)
 
-Ns = [int(1e5), (1e10), (1e15), (1e25), (1e35), 1e50]
+Ns = [int(1e5), (1e10), (1e15), (1e25)]
 beta = 1.0
 
 ctimes = []

@@ -68,7 +68,7 @@ double gettoNextSite(const double occ, const double bias,
 // Note: (alpha=1, beta=1) gives uniform distribution.
 std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 	std::vector<double>& occupancy,
-	const double beta,
+	const boost::random::beta_distribution<>::param_type betaParams,
 	const unsigned long int prevMinIndex,
 	const unsigned long int prevMaxIndex,
 	const double N,
@@ -87,7 +87,6 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 
 	// If we keep the occupancy the same throughout the whole experiment we probably
 	// only need to construct this distribution once but w/e
-	boost::random::beta_distribution<>::param_type params(beta, beta);
 
 	double fromLastSite = 0;
 	double toNextSite = 0;
@@ -101,7 +100,7 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 
 		double bias = 0;
 		if (*occ != 0) {
-			bias = beta_dist(gen, params);
+			bias = beta_dist(gen, betaParams);
 			toNextSite = gettoNextSite(*occ, bias, smallCutoff, largeCutoff);
 		}
 		else{
@@ -151,8 +150,8 @@ std::pair<std::pair<unsigned long int, unsigned long int>, std::vector<double> >
 	const double largeCutoff=largeCutoff
 )
 {
-
-	std::pair<unsigned long int, unsigned long int> edges = floatEvolveTimeStep(occupancy, beta, prevMinIndex, prevMaxIndex, N, smallCutoff, largeCutoff);
+	boost::random::beta_distribution<>::param_type betaParams(beta, beta);
+	std::pair<unsigned long int, unsigned long int> edges = floatEvolveTimeStep(occupancy, betaParams, prevMinIndex, prevMaxIndex, N, smallCutoff, largeCutoff);
 	std::pair<std::pair<unsigned long int, unsigned long int>, std::vector<double> > returnVal(edges, occupancy);
 	return returnVal;
 }
@@ -173,11 +172,12 @@ std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > evolv
 	std::vector<unsigned long int> maxEdges(N);
 	minEdges[0] = prevMinIndex;
 	maxEdges[0] = prevMaxIndex;
+	boost::random::beta_distribution<>::param_type betaParams(beta, beta);
 
 	for (unsigned long int i = 0; i<timesteps; i++){
 		std::pair<unsigned int, unsigned int> edges = floatEvolveTimeStep(
 			occupancy,
-			beta,
+			betaParams,
 			minEdges[i],
 			maxEdges[i],
 			N,
@@ -204,10 +204,11 @@ std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > initi
 	std::vector<unsigned long int> maxEdge(N);
 	std::vector<double> occ(N);
 	occ[0] = N;
+	boost::random::beta_distribution<>::param_type betaParams(beta, beta);
 
 	std::pair<unsigned int, unsigned int> edges(0, 1);
 	for (unsigned long int i=0; i != N; i++){
-		edges = floatEvolveTimeStep(occ, beta, edges.first, edges.second, N, smallCutoff, largeCutoff);
+		edges = floatEvolveTimeStep(occ, betaParams, edges.first, edges.second, N, smallCutoff, largeCutoff);
 		minEdge[i] = edges.first;
 		maxEdge[i] = edges.second;
 	}
@@ -223,7 +224,7 @@ class Diffusion{
 	private:
 		std::vector<double> occupancy;
 		double N;
-		double beta;
+		boost::random::beta_distribution<>::param_type betaParams;
 		double smallCutoff;
 		double largeCutoff;
 		std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > edges;
@@ -231,10 +232,11 @@ class Diffusion{
 	public:
 		Diffusion(const double numberOfParticles, const double b, const double scutoff=pow(2, 31)-2, const double lcutoff=1e31){
 			N = numberOfParticles;
-			beta = b;
 			smallCutoff = scutoff;
 			largeCutoff = lcutoff;
 			edges.first.push_back(0), edges.second.push_back(1);
+			boost::random::beta_distribution<>::param_type params(b, b);
+			betaParams = params;
 		}
 
 		std::vector<double> getOccupancy(){
@@ -254,11 +256,12 @@ class Diffusion{
 		}
 
 		double getBeta(){
-			return beta;
+			return betaParams.beta();
 		}
 
 		void setBeta(const double b){
-			beta = b;
+			boost::random::beta_distribution<>::param_type params(b, b);
+			betaParams = params;
 		}
 
 		double getsmallCutoff(){
@@ -286,7 +289,7 @@ class Diffusion{
 		void iterateTimestep(){
 			unsigned long int minIndex = edges.first.back();
 			unsigned long int maxIndex = edges.second.back();
-			std::pair<unsigned long int, unsigned long int> newEdges = floatEvolveTimeStep(occupancy, beta, minIndex, maxIndex, N, smallCutoff, largeCutoff);
+			std::pair<unsigned long int, unsigned long int> newEdges = floatEvolveTimeStep(occupancy, betaParams, minIndex, maxIndex, N, smallCutoff, largeCutoff);
 			edges.first.push_back(newEdges.first);
 			edges.second.push_back(newEdges.second);
 		}
@@ -302,7 +305,7 @@ class Diffusion{
 			for (unsigned long int i = edgesLength-1; i < edges.first.size()-1; i++){
 				unsigned long int minIndex = edges.first[i];
 				unsigned long int maxIndex = edges.second[i];
-				std::pair<unsigned long int, unsigned long int> newEdges = floatEvolveTimeStep(occupancy, beta, minIndex, maxIndex, N, smallCutoff, largeCutoff);
+				std::pair<unsigned long int, unsigned long int> newEdges = floatEvolveTimeStep(occupancy, betaParams, minIndex, maxIndex, N, smallCutoff, largeCutoff);
 				edges.first[i+1] = newEdges.first;
 				edges.second[i+1] = newEdges.second;
 			}
@@ -391,7 +394,9 @@ Sum over occupancy to find the current number of particles.
 )V0G0N";
 
 	py::class_<Diffusion>(m, "Diffusion")
-		.def(py::init<const double, const double, const double, const double>())
+		.def(py::init<const double, const double, const double, const double>(),
+					py::arg("numberOfParticles"), py::arg("beta"), py::arg("smallCutoff")=smallCutoff,
+					py::arg("largeCutoff")=largeCutoff)
 		.def("getOccupancy", &Diffusion::getOccupancy)
 		.def("setOccupancy", &Diffusion::setOccupancy, py::arg("occupancy"))
 		.def("getN", &Diffusion::getN)
