@@ -12,17 +12,18 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
+#include <assert.h>
 
 namespace py = pybind11;
 
 std::random_device rd;
-// Take out random seed an initialize generator on import - make sure
-// that this is initialized on import into python
 std::mt19937 gen(rd());
 std::uniform_real_distribution<> dis(0.0, 1.0);
 boost::random::binomial_distribution<> binomial;
 boost::random::normal_distribution<> normal;
 boost::random::beta_distribution<> beta_dist;
+const double smallCutoff = pow(2, 31) - 2;
+const double largeCutoff = 1e31;
 
 template<class Temp>
 void print_generic(Temp vec) {
@@ -46,50 +47,37 @@ void print_generic(Temp vec) {
 // Note that the boost C++ binomial distribution breaks for occupancies bigger than
 // a long integer. It returns the negative bound of a long integer.
 double getRightShift(const double occ, const double bias,
-																const double smallCutoff=pow(2,53)-2,
-																const double largeCutoff=pow(10, 31)) {
-	double rightShift = 0;
+																const double smallCutoff=smallCutoff,
+																const double largeCutoff=largeCutoff) {
 	if (occ < smallCutoff) {
 		// If small enough to use integer representations use binomial distribution
-		boost::random::binomial_distribution<>::param_type params(occ, bias);
-	  rightShift = binomial(gen, params);
+	  return binomial(gen, boost::random::binomial_distribution<>::param_type(occ, bias));
 	}
 	else if (occ > largeCutoff) {
 		// If so large that sqrt(N) is less than precision just use occupancy
-		rightShift = round(occ * bias);
+		return round(occ * bias);
 	}
 	else {
 		// If in sqrt(N) precision use gaussian approximation.
-		double mediumVariance = occ * bias * (1 - bias);
-		mediumVariance = sqrt(mediumVariance);
-		boost::random::normal_distribution<>::param_type params(occ * bias, mediumVariance);
-		rightShift = round(normal(gen, params));
+		double mediumVariance = sqrt(occ * bias * (1 - bias));
+		return round(normal(gen, boost::random::normal_distribution<>::param_type(occ * bias, mediumVariance)));
 	}
-	if (rightShift < 0){
-		throw std::runtime_error("Right shift = " + std::to_string(rightShift) + " for occupancy=" + std::to_string(occ) + ", bias=" + std::to_string(bias) + ", smallCutoff=" + std::to_string(smallCutoff));
-	}
-	return rightShift;
 }
 
 // Iterate one time step according to Barraquad/Corwin model
 // Note: (alpha=1, beta=1) gives uniform distribution.
 std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
-	std::vector<double> &occupancy,
+	std::vector<double>& occupancy,
 	const double beta,
 	const unsigned long int prevMinIndex,
 	const unsigned long int prevMaxIndex,
 	const double N,
-	const double smallCutoff=pow(2,53)-2,
-	const double largeCutoff=pow(10, 31)
+	const double smallCutoff=smallCutoff,
+	const double largeCutoff=largeCutoff
 )
 {
 	if (prevMinIndex >= prevMaxIndex) {
 		throw std::runtime_error("Minimum edge must be greater than maximum edge: (" + std::to_string(prevMinIndex) + ", " + std::to_string(prevMaxIndex) + ")");
-	}
-
-	// Need to check when prevMaxIndex breaks the for loop.
-	if ((prevMaxIndex+1) > occupancy.size()){
-		throw std::runtime_error("Maximum edge exceeds size of vector");
 	}
 
 	// If iterating over the whole array extend the occupancy.
@@ -111,18 +99,19 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 	// Check out range operator
 	for (auto i = prevMinIndex; i < prevMaxIndex+1; i++) {
 
+		double* occ = &occupancy.at(i);
 		// Skip over occupation value if ocuppancy=0 and not moving any walkers
 		// to the position
-		if (occupancy[i] == 0 && leftShift == 0) {
+		if (*occ == 0 && leftShift == 0) {
 			continue;
 		}
 
-		if (occupancy[i] < 0) {
-			throw std::runtime_error("Occupancy must be > 0 but Occupancy[" + std::to_string(i) + "]=" + std::to_string(occupancy[i]));
+		if (*occ < 0) {
+			throw std::runtime_error("Occupancy must be > 0 but Occupancy[" + std::to_string(i) + "]=" + std::to_string(*occ));
 		}
 
-		if (occupancy[i] > N){
-			throw std::runtime_error("Occupancy greater than total number of walkers N=" + std::to_string(N) + ", but occupancy[" + std::to_string(i) + "]=" + std::to_string(occupancy[i]));
+		if (*occ > N){
+			throw std::runtime_error("Occupancy greater than total number of walkers N=" + std::to_string(N) + ", but occupancy[" + std::to_string(i) + "]=" + std::to_string(*occ));
 		}
 
 		// Generate a random bias (the expensive part in this algorithm)
@@ -133,30 +122,30 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 			throw std::runtime_error("Biases must satisfy 0 <= biases <= 1");
 		}
 
-		rightShift = getRightShift(occupancy[i], bias, smallCutoff, largeCutoff);
-
-		if (rightShift > occupancy[i]){
-			throw std::runtime_error("Right shift cannot be larger than occupancy, but " + std::to_string(rightShift) + " > " + std::to_string(occupancy[i]));
-		}
+		rightShift = getRightShift(*occ, bias, smallCutoff, largeCutoff);
 
 		if (rightShift < 0){
-			throw std::runtime_error("Right shift cannot be less than zero, but rightShift = " + std::to_string(rightShift));
+			throw std::runtime_error("Right shift = " + std::to_string(rightShift) + " for occupancy=" + std::to_string(*occ) + ", bias=" + std::to_string(bias) + ", smallCutoff=" + std::to_string(smallCutoff));
+		}
+
+		if (rightShift > *occ){
+			throw std::runtime_error("Right shift cannot be larger than occupancy, but " + std::to_string(rightShift) + " > " + std::to_string(*occ));
 		}
 
 		if (i == prevMinIndex) {
-			occupancy[i] = occupancy[i] - rightShift;
+			*occ = *occ - rightShift;
 			leftShift = rightShift;
-			if (occupancy[i] != 0) {
+			if (*occ != 0) {
 				minEdge = i;
 				firstNonzero = false;
 			}
 			continue;
 		}
 
-		occupancy[i] = occupancy[i] - rightShift + leftShift;
+		*occ = *occ - rightShift + leftShift;
 		leftShift = rightShift;
 
-		if (occupancy[i] != 0) {
+		if (*occ != 0) {
 			if (firstNonzero) {
 				minEdge = i;
 				firstNonzero = false;
@@ -165,8 +154,8 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 		}
 
 		if (i == prevMaxIndex) {
-			occupancy[i + 1] = rightShift;
-			if (occupancy[i + 1] != 0) {
+			occupancy.at(i+1) = rightShift;
+			if (occupancy.at(i+1) != 0) {
 				maxEdge = i + 1;
 			}
 		}
@@ -189,19 +178,14 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 // Does the same thing as floatEvolveTimeStep but returns the occupancy.
 // This is because passing by reference doesn't work easily with Pybind11.
 // I think every time we pass a vector between C++ and Python it's copied.
-
-// So this needs to be fixed ASAP. Currently have N=0 in the function call b/c
-// As the overloaded function floatEvolveTimeStep is written it's ambigious which
-// function to defer to. This is b/c smallCutoff and N are now both doubles
-// so they're ambigious?
 std::pair<std::pair<unsigned long int, unsigned long int>, std::vector<double> > pyfloatEvolveTimestep(
 	std::vector<double> occupancy,
 	const double beta,
 	const unsigned long int prevMinIndex,
 	const unsigned long int prevMaxIndex,
 	const double N,
-	const double smallCutoff=pow(2, 53)-2,
-	const double largeCutoff=pow(10, 31)
+	const double smallCutoff=smallCutoff,
+	const double largeCutoff=largeCutoff
 )
 {
 
@@ -218,8 +202,8 @@ std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > evolv
 	const double prevMinIndex,
 	const double prevMaxIndex,
 	const double N,
-	const double smallCutoff=pow(2,53)-2,
-	const double largeCutoff=pow(10, 31)
+	const double smallCutoff=smallCutoff,
+	const double largeCutoff=largeCutoff
 )
 {
 	std::vector<unsigned long int> minEdges(N);
@@ -249,8 +233,8 @@ std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > evolv
 std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > initializeAndEvolveTimesteps(
 	const unsigned long int N,
 	const double beta,
-	const double smallCutoff=pow(2,53)-2,
-	const double largeCutoff=pow(10, 31)
+	const double smallCutoff=smallCutoff,
+	const double largeCutoff=largeCutoff
 )
 {
 	std::vector<unsigned long int> minEdge(N);
@@ -282,7 +266,7 @@ class Diffusion{
 		std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > edges;
 
 	public:
-		Diffusion(const double numberOfParticles, const double b, const double scutoff, const double lcutoff){
+		Diffusion(const double numberOfParticles, const double b, const double scutoff=pow(2, 31)-2, const double lcutoff=1e31){
 			N = numberOfParticles;
 			beta = b;
 			smallCutoff = scutoff;
@@ -402,8 +386,8 @@ occupancy : numpy array
 
 	m.def("floatEvolveTimeStep", &pyfloatEvolveTimestep, pyfloatdoc,
 				py::arg("occupancy"), py::arg("beta"), py::arg("prevMinIndex"),
-				py::arg("prevMaxIndex"), py::arg("N"), py::arg("smallCutoff")=pow(2, 53)-2,
-				py::arg("largeCutoff")=pow(10, 31));
+				py::arg("prevMaxIndex"), py::arg("N"), py::arg("smallCutoff")=smallCutoff,
+				py::arg("largeCutoff")=largeCutoff);
 
 	const char * evolveTimestepsdoc = R"V0G0N(
 Evolve the occupancy forward through N numbers of timesteps.
@@ -412,7 +396,7 @@ Evolve the occupancy forward through N numbers of timesteps.
 	m.def("evolveTimesteps", &evolveTimesteps, evolveTimestepsdoc,
 				py::arg("timesteps"), py::arg("occupancy"), py::arg("beta"),
 				py::arg("prevMinIndex"), py::arg("prevMaxIndex"), py::arg("N"),
-				py::arg("smallCutoff")=pow(2, 53)-2, py::arg("largeCutoff")=pow(10, 31));
+				py::arg("smallCutoff")=smallCutoff, py::arg("largeCutoff")=largeCutoff);
 
 	const char * iterateTimestepdoc = R"V0G0N(
 Move the occupancy forward through one timestep. Appends the new edge positions
