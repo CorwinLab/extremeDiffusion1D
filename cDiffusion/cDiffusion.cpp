@@ -78,9 +78,9 @@ double getRightShift(
 // Iterate one time step according to Barraquad/Corwin model
 // Note: (alpha=1, beta=1) gives uniform distribution.
 std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
-	std::vector<double> &occupancy,
+	std::vector<double>& occupancy,
 	const double beta,
-	const unsigned long int minEdgeIndex,
+	const unsigned long int minEdgeIndex, //Call this prevMinEdge
 	const unsigned long int maxEdgeIndex,
 	const double N,
 	const double smallCutoff = 2147483646, // This is 2^31-2, which seemed to be the largest number that would work for me?
@@ -122,6 +122,7 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 			continue;
 		}
 
+		//Too much error checking
 		if (occupancy[i] < 0) {
 			throw std::runtime_error("Occupancy must be > 0 but Occupancy[" + std::to_string(i) + "]=" + std::to_string(occupancy[i]));
 		}
@@ -224,7 +225,7 @@ std::pair<std::pair<unsigned long int, unsigned long int>, std::vector<double> >
 )
 {
 
-	std::pair<unsigned long int, unsigned long int> edges = floatEvolveTimeStep(occupancy, beta, minEdgeIndex, maxEdgeIndex, 0, smallCutoff);
+	auto edges = floatEvolveTimeStep(occupancy, beta, minEdgeIndex, maxEdgeIndex, 0, smallCutoff);
 	std::pair<std::pair<unsigned long int, unsigned long int>, std::vector<double> > returnVal(edges, occupancy);
 	return returnVal;
 }
