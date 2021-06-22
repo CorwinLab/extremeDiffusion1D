@@ -19,11 +19,14 @@ std::random_device rd;
 // Take out random seed an initialize generator on import - make sure
 // that this is initialized on import into python
 std::mt19937 gen(rd());
+// EC: Do you need this real distribution?
 std::uniform_real_distribution<> dis(0.0, 1.0);
 boost::random::binomial_distribution<> binomial;
 boost::random::normal_distribution<> normal;
 boost::random::beta_distribution<> beta_dist;
 
+// EC: I think that there's a better way to print a vector: https://stackoverflow.com/questions/10750057/how-do-i-print-out-the-contents-of-a-vector/11335634#11335634
+// std::copy(vec.begin(), vec.end(), std::ostream_iterator<char>(std::cout, " "));
 template<class Temp>
 void print_generic(Temp vec) {
 	// Prints an object with an interator member.
@@ -45,29 +48,31 @@ void print_generic(Temp vec) {
 // may breakdown causing the (# particles right shifted) > (# of particles).
 // Note that the boost C++ binomial distribution breaks for occupancies bigger than
 // a long integer. It returns the negative bound of a long integer.
-double getRightShift(const double occ, const double bias,
-																const double smallCutoff) {
-	double rightShift = 0;
+double getRightShift(
+	const double occ,
+	const double bias,
+	const double smallCutoff,
+	const double largeCutoff,
+)
+{
+
 	if (occ < smallCutoff) {
 		// If small enough to use integer representations use binomial distribution
-		boost::random::binomial_distribution<>::param_type params(occ, bias);
-	  rightShift = binomial(gen, params);
+	  return binomial(gen, boost::random::binomial_distribution<>::param_type params(occ, bias) );
+	} else if (occ < largeCutoff) {
+		// If sqrt(N) is within our precision
+		double mediumStd = sqrt(occ * bias * (1 - bias));
+		return round( normal( gen, boost::random::normal_distribution<>::param_type params(occ * bias, mediumStd) ) )
+	} else {
+		// If N is so large the sqrt(N) is less than precision
+		return round(occ*bias);
 	}
-	else if (occ > pow(smallCutoff, 2)) {
-		// If so large that sqrt(N) is less than precision just use occupancy
-		rightShift = round(occ * bias);
-	}
-	else {
-		// If in sqrt(N) precision use gaussian approximation.
-		double mediumVariance = occ * bias * (1 - bias);
-		mediumVariance = sqrt(mediumVariance);
-		boost::random::normal_distribution<>::param_type params(occ * bias, mediumVariance);
-		rightShift = round(normal(gen, params));
-	}
-	if (rightShift < 0){
-		throw std::runtime_error("Right shift = " + std::to_string(rightShift) + " for occupancy=" + std::to_string(occ) + ", bias=" + std::to_string(bias) + ", smallCutoff=" + std::to_string(smallCutoff));
-	}
-	return rightShift;
+
+	// I would put this error check on the output of getRightShift, this prevents needing the temporary variable
+	// if (rightShift < 0){
+	// 	throw std::runtime_error("Right shift = " + std::to_string(rightShift) + " for occupancy=" + std::to_string(occ) + ", bias=" + std::to_string(bias) + ", smallCutoff=" + std::to_string(smallCutoff));
+	// }
+
 }
 
 // Iterate one time step according to Barraquad/Corwin model
@@ -78,7 +83,8 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 	const unsigned long int minEdgeIndex,
 	const unsigned long int maxEdgeIndex,
 	const double N,
-	const double smallCutoff=pow(2,53)
+	const double smallCutoff = 2147483646, // This is 2^31-2, which seemed to be the largest number that would work for me?
+	const double largeCutoff = 1e31,
 )
 {
 	if (minEdgeIndex >= maxEdgeIndex) {
@@ -92,6 +98,7 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 
 	// If iterating over the whole array extend the occupancy.
 	if ((maxEdgeIndex+1) == occupancy.size()){
+		//EC: Does this ever actually happen?  It would probably be faster to simply pre-allocate the occupancy array to be the right length
 		occupancy.push_back(0);
 	}
 
