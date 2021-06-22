@@ -12,18 +12,19 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
+#include <assert.h>
 
 namespace py = pybind11;
 
 std::random_device rd;
-// Take out random seed an initialize generator on import - make sure
-// that this is initialized on import into python
 std::mt19937 gen(rd());
 // EC: Do you need this real distribution?
 std::uniform_real_distribution<> dis(0.0, 1.0);
 boost::random::binomial_distribution<> binomial;
 boost::random::normal_distribution<> normal;
 boost::random::beta_distribution<> beta_dist;
+const double smallCutoff = pow(2, 31) - 2;
+const double largeCutoff = 1e31;
 
 // EC: I think that there's a better way to print a vector: https://stackoverflow.com/questions/10750057/how-do-i-print-out-the-contents-of-a-vector/11335634#11335634
 // std::copy(vec.begin(), vec.end(), std::ostream_iterator<char>(std::cout, " "));
@@ -87,18 +88,12 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 	const double largeCutoff = 1e31,
 )
 {
-	if (minEdgeIndex >= maxEdgeIndex) {
-		throw std::runtime_error("Minimum edge must be greater than maximum edge: (" + std::to_string(minEdgeIndex) + ", " + std::to_string(maxEdgeIndex) + ")");
-	}
-
-	// Need to check when maxEdgeIndex breaks the for loop.
-	if ((maxEdgeIndex+1) > occupancy.size()){
-		throw std::runtime_error("Maximum edge exceeds size of vector");
+	if (prevMinIndex >= prevMaxIndex) {
+		throw std::runtime_error("Minimum edge must be greater than maximum edge: (" + std::to_string(prevMinIndex) + ", " + std::to_string(prevMaxIndex) + ")");
 	}
 
 	// If iterating over the whole array extend the occupancy.
-	if ((maxEdgeIndex+1) == occupancy.size()){
-		//EC: Does this ever actually happen?  It would probably be faster to simply pre-allocate the occupancy array to be the right length
+	if ((prevMaxIndex+1) == occupancy.size()){
 		occupancy.push_back(0);
 	}
 
@@ -114,21 +109,21 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 
 	// Now can use an iterator?
 	// Check out range operator
-	for (auto i = minEdgeIndex; i < maxEdgeIndex+1; i++) {
+	for (auto i = prevMinIndex; i < prevMaxIndex+1; i++) {
 
+		double* occ = &occupancy.at(i);
 		// Skip over occupation value if ocuppancy=0 and not moving any walkers
 		// to the position
-		if (occupancy[i] == 0 && leftShift == 0) {
+		if (*occ == 0 && leftShift == 0) {
 			continue;
 		}
 
-		//Too much error checking
-		if (occupancy[i] < 0) {
-			throw std::runtime_error("Occupancy must be > 0 but Occupancy[" + std::to_string(i) + "]=" + std::to_string(occupancy[i]));
+		if (*occ < 0) {
+			throw std::runtime_error("Occupancy must be > 0 but Occupancy[" + std::to_string(i) + "]=" + std::to_string(*occ));
 		}
 
-		if (occupancy[i] > N){
-			throw std::runtime_error("Occupancy greater than total number of walkers N=" + std::to_string(N) + ", but occupancy[" + std::to_string(i) + "]=" + std::to_string(occupancy[i]));
+		if (*occ > N){
+			throw std::runtime_error("Occupancy greater than total number of walkers N=" + std::to_string(N) + ", but occupancy[" + std::to_string(i) + "]=" + std::to_string(*occ));
 		}
 
 		// Generate a random bias (the expensive part in this algorithm)
@@ -139,30 +134,30 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 			throw std::runtime_error("Biases must satisfy 0 <= biases <= 1");
 		}
 
-		rightShift = getRightShift(occupancy[i], bias, smallCutoff);
-
-		if (rightShift > occupancy[i]){
-			throw std::runtime_error("Right shift cannot be larger than occupancy, but " + std::to_string(rightShift) + " > " + std::to_string(occupancy[i]));
-		}
+		rightShift = getRightShift(*occ, bias, smallCutoff, largeCutoff);
 
 		if (rightShift < 0){
-			throw std::runtime_error("Right shift cannot be less than zero, but rightShift = " + std::to_string(rightShift));
+			throw std::runtime_error("Right shift = " + std::to_string(rightShift) + " for occupancy=" + std::to_string(*occ) + ", bias=" + std::to_string(bias) + ", smallCutoff=" + std::to_string(smallCutoff));
 		}
 
-		if (i == minEdgeIndex) {
-			occupancy[i] = occupancy[i] - rightShift;
+		if (rightShift > *occ){
+			throw std::runtime_error("Right shift cannot be larger than occupancy, but " + std::to_string(rightShift) + " > " + std::to_string(*occ));
+		}
+
+		if (i == prevMinIndex) {
+			*occ = *occ - rightShift;
 			leftShift = rightShift;
-			if (occupancy[i] != 0) {
+			if (*occ != 0) {
 				minEdge = i;
 				firstNonzero = false;
 			}
 			continue;
 		}
 
-		occupancy[i] = occupancy[i] - rightShift + leftShift;
+		*occ = *occ - rightShift + leftShift;
 		leftShift = rightShift;
 
-		if (occupancy[i] != 0) {
+		if (*occ != 0) {
 			if (firstNonzero) {
 				minEdge = i;
 				firstNonzero = false;
@@ -170,9 +165,9 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 			maxEdge = i;
 		}
 
-		if (i == maxEdgeIndex) {
-			occupancy[i + 1] = rightShift;
-			if (occupancy[i + 1] != 0) {
+		if (i == prevMaxIndex) {
+			occupancy.at(i+1) = rightShift;
+			if (occupancy.at(i+1) != 0) {
 				maxEdge = i + 1;
 			}
 		}
@@ -192,40 +187,21 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 	return edges;
 }
 
-// Overloaded so that N can be obtained by simply summing the occupancy. This may
-// take a bit longer depending on the size of the occupancy vector due to summing
-// the array beforehand.
-std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
-	std::vector<double> &occupancy,
-	const double beta,
-	const unsigned long int minEdgeIndex,
-	const unsigned long int maxEdgeIndex,
-	const double smallCutoff=pow(2,53)
-)
-{
-	std::cout << "Warning: No number of walkers N provided so summing over occupancy. This may take a lot longer \n";
-	double N = accumulate(occupancy.begin(), occupancy.end(), 0);
-	return floatEvolveTimeStep(occupancy, beta, minEdgeIndex, maxEdgeIndex, N, smallCutoff);
-}
-
 // Does the same thing as floatEvolveTimeStep but returns the occupancy.
 // This is because passing by reference doesn't work easily with Pybind11.
 // I think every time we pass a vector between C++ and Python it's copied.
-
-// So this needs to be fixed ASAP. Currently have N=0 in the function call b/c
-// As the overloaded function floatEvolveTimeStep is written it's ambigious which
-// function to defer to. This is b/c smallCutoff and N are now both doubles
-// so they're ambigious?
 std::pair<std::pair<unsigned long int, unsigned long int>, std::vector<double> > pyfloatEvolveTimestep(
 	std::vector<double> occupancy,
 	const double beta,
-	const unsigned long int minEdgeIndex,
-	const unsigned long int maxEdgeIndex,
-	const double smallCutoff=pow(2, 53)
+	const unsigned long int prevMinIndex,
+	const unsigned long int prevMaxIndex,
+	const double N,
+	const double smallCutoff=smallCutoff,
+	const double largeCutoff=largeCutoff
 )
 {
 
-	auto edges = floatEvolveTimeStep(occupancy, beta, minEdgeIndex, maxEdgeIndex, 0, smallCutoff);
+	std::pair<unsigned long int, unsigned long int> edges = floatEvolveTimeStep(occupancy, beta, prevMinIndex, prevMaxIndex, N, smallCutoff, largeCutoff);
 	std::pair<std::pair<unsigned long int, unsigned long int>, std::vector<double> > returnVal(edges, occupancy);
 	return returnVal;
 }
@@ -235,16 +211,17 @@ std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > evolv
 	const unsigned long int timesteps,
 	std::vector<double> & occupancy,
 	const double beta,
-	const double minEdgeIndex,
-	const double maxEdgeIndex,
+	const double prevMinIndex,
+	const double prevMaxIndex,
 	const double N,
-	const double smallCutoff=pow(2,53)
+	const double smallCutoff=smallCutoff,
+	const double largeCutoff=largeCutoff
 )
 {
 	std::vector<unsigned long int> minEdges(N);
 	std::vector<unsigned long int> maxEdges(N);
-	minEdges[0] = minEdgeIndex;
-	maxEdges[0] = maxEdgeIndex;
+	minEdges[0] = prevMinIndex;
+	maxEdges[0] = prevMaxIndex;
 
 	for (unsigned long int i = 0; i<timesteps; i++){
 		std::pair<unsigned int, unsigned int> edges = floatEvolveTimeStep(
@@ -253,7 +230,8 @@ std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > evolv
 			minEdges[i],
 			maxEdges[i],
 			N,
-			smallCutoff);
+			smallCutoff,
+			largeCutoff);
 		minEdges[i] = edges.first;
 		maxEdges[i] = edges.second;
 	}
@@ -267,7 +245,8 @@ std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > evolv
 std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > initializeAndEvolveTimesteps(
 	const unsigned long int N,
 	const double beta,
-	const double smallCutoff=pow(2,53)
+	const double smallCutoff=smallCutoff,
+	const double largeCutoff=largeCutoff
 )
 {
 	std::vector<unsigned long int> minEdge(N);
@@ -277,7 +256,7 @@ std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > initi
 
 	std::pair<unsigned int, unsigned int> edges(0, 1);
 	for (unsigned long int i=0; i != N; i++){
-		edges = floatEvolveTimeStep(occ, beta, edges.first, edges.second, N, smallCutoff);
+		edges = floatEvolveTimeStep(occ, beta, edges.first, edges.second, N, smallCutoff, largeCutoff);
 		minEdge[i] = edges.first;
 		maxEdge[i] = edges.second;
 	}
@@ -295,13 +274,15 @@ class Diffusion{
 		double N;
 		double beta;
 		double smallCutoff;
+		double largeCutoff;
 		std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > edges;
 
 	public:
-		Diffusion(const double numberOfParticles, const double b, const double cutoff){
+		Diffusion(const double numberOfParticles, const double b, const double scutoff=pow(2, 31)-2, const double lcutoff=1e31){
 			N = numberOfParticles;
 			beta = b;
-			smallCutoff = cutoff;
+			smallCutoff = scutoff;
+			largeCutoff = lcutoff;
 			edges.first.push_back(0), edges.second.push_back(1);
 		}
 
@@ -316,6 +297,7 @@ class Diffusion{
 		double getN(){
 			return N;
 		}
+
 		void setN(const double Number){
 			N = Number;
 		}
@@ -336,6 +318,14 @@ class Diffusion{
 			smallCutoff = s;
 		}
 
+		double getlargeCutoff(){
+			return largeCutoff;
+		}
+
+		void setlargeCutoff(const double l){
+			largeCutoff = l;
+		}
+
 		std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > getEdges(){
 			return edges;
 		}
@@ -345,7 +335,7 @@ class Diffusion{
 		void iterateTimestep(){
 			unsigned long int minIndex = edges.first.back();
 			unsigned long int maxIndex = edges.second.back();
-			std::pair<unsigned long int, unsigned long int> newEdges = floatEvolveTimeStep(occupancy, beta, minIndex, maxIndex, N, smallCutoff);
+			std::pair<unsigned long int, unsigned long int> newEdges = floatEvolveTimeStep(occupancy, beta, minIndex, maxIndex, N, smallCutoff, largeCutoff);
 			edges.first.push_back(newEdges.first);
 			edges.second.push_back(newEdges.second);
 		}
@@ -358,10 +348,10 @@ class Diffusion{
 			edges.first.resize(iterations + edgesLength);
 			edges.second.resize(iterations + edgesLength);
 
-			for (unsigned long int i = 0edgesLength-1; i < edges.first.size()-1; i++){
+			for (unsigned long int i = edgesLength-1; i < edges.first.size()-1; i++){
 				unsigned long int minIndex = edges.first[i];
 				unsigned long int maxIndex = edges.second[i];
-				std::pair<unsigned long int, unsigned long int> newEdges = floatEvolveTimeStep(occupancy, beta, minIndex, maxIndex, N, smallCutoff);
+				std::pair<unsigned long int, unsigned long int> newEdges = floatEvolveTimeStep(occupancy, beta, minIndex, maxIndex, N, smallCutoff, largeCutoff);
 				edges.first[i+1] = newEdges.first;
 				edges.second[i+1] = newEdges.second;
 			}
@@ -387,10 +377,10 @@ occupancy : numpy array or list
 beta : float
 	Value of beta for the beta distribution to draw biases from
 
-minEdgeIndex : int
+prevMinIndex : int
 	Index of the first occupied, or nonzero, index in occupation
 
-maxEdgeIndex : int
+prevMaxIndex : int
   Index of last occupied, or nonzer, index in occupation
 
 smallCutoff : int (2^53)
@@ -407,8 +397,9 @@ occupancy : numpy array
 )V0G0N";
 
 	m.def("floatEvolveTimeStep", &pyfloatEvolveTimestep, pyfloatdoc,
-				py::arg("occupancy"), py::arg("beta"), py::arg("minEdgeIndex"),
-				py::arg("maxEdgeIndex"), py::arg("smallCutoff")=pow(2, 53));
+				py::arg("occupancy"), py::arg("beta"), py::arg("prevMinIndex"),
+				py::arg("prevMaxIndex"), py::arg("N"), py::arg("smallCutoff")=smallCutoff,
+				py::arg("largeCutoff")=largeCutoff);
 
 	const char * evolveTimestepsdoc = R"V0G0N(
 Evolve the occupancy forward through N numbers of timesteps.
@@ -416,8 +407,8 @@ Evolve the occupancy forward through N numbers of timesteps.
 
 	m.def("evolveTimesteps", &evolveTimesteps, evolveTimestepsdoc,
 				py::arg("timesteps"), py::arg("occupancy"), py::arg("beta"),
-				py::arg("minEdgeIndex"), py::arg("maxEdgeIndex"), py::arg("N"),
-				py::arg("smallCutoff")=pow(2, 53));
+				py::arg("prevMinIndex"), py::arg("prevMaxIndex"), py::arg("N"),
+				py::arg("smallCutoff")=smallCutoff, py::arg("largeCutoff")=largeCutoff);
 
 	const char * iterateTimestepdoc = R"V0G0N(
 Move the occupancy forward through one timestep. Appends the new edge positions
@@ -445,11 +436,11 @@ edges vector.
 )V0G0N";
 
 	const char * findNumberParticlesdoc = R"V0G0N(
-
-	)V0G0N"
+Sum over occupancy to find the current number of particles.
+)V0G0N";
 
 	py::class_<Diffusion>(m, "Diffusion")
-		.def(py::init<const double, const double, const double>())
+		.def(py::init<const double, const double, const double, const double>())
 		.def("getOccupancy", &Diffusion::getOccupancy)
 		.def("setOccupancy", &Diffusion::setOccupancy, py::arg("occupancy"))
 		.def("getN", &Diffusion::getN)
@@ -457,8 +448,10 @@ edges vector.
 		.def("setBeta", &Diffusion::setBeta, py::arg("beta"))
 		.def("getsmallCutoff", &Diffusion::getsmallCutoff)
 		.def("setsmallCutoff", &Diffusion::setsmallCutoff, py::arg("smallCutoff"))
+		.def("getlargeCutoff", &Diffusion::getlargeCutoff)
+		.def("setlargeCutoff", &Diffusion::setlargeCutoff, py::arg("largeCutoff"))
 		.def("getEdges", &Diffusion::getEdges)
 		.def("iterateTimestep", &Diffusion::iterateTimestep, iterateTimestepdoc)
 		.def("evolveTimesteps", &Diffusion::evolveTimesteps, classevolveTimestepsdoc, py::arg("iterations"))
-		.def("findNumberParticles", &Diffusion::findNumberParticles);
+		.def("findNumberParticles", &Diffusion::findNumberParticles, findNumberParticlesdoc);
 }

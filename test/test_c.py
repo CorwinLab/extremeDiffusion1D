@@ -12,8 +12,8 @@ def test_neg_occupation():
 
     occupation = np.array([-10, 0, 5])
     with pytest.raises(RuntimeError) as excinfo:
-        edges, occ = cdiff.floatEvolveTimeStep(occupation, beta=1, smallCutoff=0,
-                                                minEdgeIndex=0, maxEdgeIndex=2)
+        edges, occ = cdiff.floatEvolveTimeStep(occupation, beta=1, prevMinIndex=0,
+                                                prevMaxIndex=2, N=5)
     assert "Occupancy must be > 0" in str(excinfo.value)
 
 def test_min_greater_max():
@@ -23,7 +23,7 @@ def test_min_greater_max():
     occupation = np.array([10, 0, 10])
     with pytest.raises(RuntimeError) as excinfo:
         edges, occ  = cdiff.floatEvolveTimeStep(occupation, beta=1, smallCutoff=0,
-                                                minEdgeIndex=2, maxEdgeIndex=0)
+                                                prevMinIndex=2, prevMaxIndex=0, N=20)
     assert "Minimum edge must be greater than maximum edge" in str(excinfo.value)
 
 def test_max_greater_array_length():
@@ -33,10 +33,10 @@ def test_max_greater_array_length():
     Need to check when this actually breaks the for loop!
     '''
     occupation = np.array([10, 10, 10])
-    with pytest.raises(RuntimeError) as excinfo:
-        edges, occ = cdiff.floatEvolveTimeStep(occupation, beta=1, minEdgeIndex=0,
-                                                maxEdgeIndex=3, smallCutoff=0)
-    assert "Maximum edge exceeds size of vector" in str(excinfo.value)
+    with pytest.raises(IndexError) as excinfo:
+        edges, occ = cdiff.floatEvolveTimeStep(occupation, beta=1, prevMinIndex=0,
+                                                prevMaxIndex=3, smallCutoff=0, N=30)
+    assert "vector::_M_range_check" in str(excinfo.value)
 
 def test_neg_min_edge():
     '''
@@ -45,8 +45,8 @@ def test_neg_min_edge():
     '''
     occupation = np.array([10, 10, 10])
     with pytest.raises(TypeError) as excinfo:
-        edges, occ = cdiff.floatEvolveTimeStep(occupation, beta=1, minEdgeBound=-1,
-                                                maxEdgeBound=2, smallCutoff=0)
+        edges, occ = cdiff.floatEvolveTimeStep(occupation, beta=1, prevMinIndex=-1,
+                                                prevMaxIndex=2, smallCutoff=0, N=30)
     assert "incompatible function arguments" in str(excinfo.value)
 
 def test_all_zeros():
@@ -54,7 +54,7 @@ def test_all_zeros():
     Ensure that it returns all zeros if only zeros input.
     '''
     occupation = np.array([0, 0, 0, 0])
-    edges, occupation = cdiff.floatEvolveTimeStep(occupation, 1, 0, 3, 5)
+    edges, occupation = cdiff.floatEvolveTimeStep(occupation, 1, 0, 3, 5, 0)
     zeros = np.array([0, 0, 0, 0, 0])
     assert np.all(occupation == zeros)
 
@@ -70,8 +70,8 @@ def test_single_occupation_filled():
     '''
 
     occupation = np.array([10, 0, 0])
-    edges, occupied = cdiff.floatEvolveTimeStep(occupation, beta=1, minEdgeIndex=0,
-                                                maxEdgeIndex=1, smallCutoff=5)
+    edges, occupied = cdiff.floatEvolveTimeStep(occupation, beta=1, prevMinIndex=0,
+                                                prevMaxIndex=1, smallCutoff=5, N=10)
     assert edges[1] == 1, f"Farthest edge is not 1: {occupied}"
 
 def test_smallCutoff_optional():
@@ -80,16 +80,15 @@ def test_smallCutoff_optional():
     so going to test why here.
     '''
     occupation = np.array([10, 0, 0])
-    edges, occ = cdiff.floatEvolveTimeStep(occupation, beta=1, minEdgeIndex=0,
-                                            maxEdgeIndex=1)
-
+    edges, occ = cdiff.floatEvolveTimeStep(occupation, beta=1, prevMinIndex=0,
+                                            prevMaxIndex=1, N=10)
 
 def test_diffusion_constructor():
     '''
     Make sure the Diffusion object is being initialized correctly. Looks a little
     messy because we want to check all the variables are initialized correctly.
     '''
-    d = cdiff.Diffusion(1, 1, 1)
+    d = cdiff.Diffusion(1, 1, 1, 1)
 
     # Create a list of all the errors that occur
     errors = []
@@ -106,5 +105,4 @@ def test_diffusion_constructor():
     assert not errors, "Errors occured:\n{}".format("\n".join(errors))
 
 if __name__ == '__main__':
-    Diff_obj = cdiff.Diffusion(1, 1, 1)
     pytest.main(['./test_c.py'])
