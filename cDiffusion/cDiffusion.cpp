@@ -169,13 +169,25 @@ class Diffusion{
 		std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > edges;
 
 	public:
-		Diffusion(const double numberOfParticles, const double b, const double scutoff=pow(2, 31)-2, const double lcutoff=1e31){
+		Diffusion(
+			const double numberOfParticles,
+			const double b,
+			const double scutoff=pow(2, 31)-2,
+			const double lcutoff=1e31){
 			N = numberOfParticles;
 			smallCutoff = scutoff;
 			largeCutoff = lcutoff;
 			edges.first.push_back(0), edges.second.push_back(1);
 			boost::random::beta_distribution<>::param_type params(b, b);
 			betaParams = params;
+		}
+
+		void initializeOccupation(){
+			double logN = log(N);
+			double numTimeSteps = pow(logN, 5.0/2.0);
+			unsigned long int size = llround(numTimeSteps);
+			occupancy.resize(size);
+			occupancy[0] = N;
 		}
 
 		std::vector<double> getOccupancy(){
@@ -327,6 +339,7 @@ Sum over occupancy to find the current number of particles.
 		.def(py::init<const double, const double, const double, const double>(),
 					py::arg("numberOfParticles"), py::arg("beta"), py::arg("smallCutoff")=smallCutoff,
 					py::arg("largeCutoff")=largeCutoff)
+		.def("initializeOccupation", &Diffusion::initializeOccupation)
 		.def("getOccupancy", &Diffusion::getOccupancy)
 		.def("setOccupancy", &Diffusion::setOccupancy, py::arg("occupancy"))
 		.def("getN", &Diffusion::getN)
