@@ -156,67 +156,6 @@ std::pair<std::pair<unsigned long int, unsigned long int>, std::vector<double> >
 	return returnVal;
 }
 
-// Evolve an occupancy through multiple timesteps and return history of the edges.
-std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > evolveTimesteps(
-	const unsigned long int timesteps,
-	std::vector<double> & occupancy,
-	const double beta,
-	const double prevMinIndex,
-	const double prevMaxIndex,
-	const double N,
-	const double smallCutoff=smallCutoff,
-	const double largeCutoff=largeCutoff
-)
-{
-	std::vector<unsigned long int> minEdges(N);
-	std::vector<unsigned long int> maxEdges(N);
-	minEdges[0] = prevMinIndex;
-	maxEdges[0] = prevMaxIndex;
-	boost::random::beta_distribution<>::param_type betaParams(beta, beta);
-
-	for (unsigned long int i = 0; i<timesteps; i++){
-		std::pair<unsigned int, unsigned int> edges = floatEvolveTimeStep(
-			occupancy,
-			betaParams,
-			minEdges[i],
-			maxEdges[i],
-			N,
-			smallCutoff,
-			largeCutoff);
-		minEdges[i] = edges.first;
-		maxEdges[i] = edges.second;
-	}
-
-	std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > edgesHistory(minEdges, maxEdges);
-	return edgesHistory;
-}
-
-// Initializes an array of size N and initializes the occupancy to have N walkers
-// at index 0. Then evolves the occupancy for N timesteps.
-std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > initializeAndEvolveTimesteps(
-	const unsigned long int N,
-	const double beta,
-	const double smallCutoff=smallCutoff,
-	const double largeCutoff=largeCutoff
-)
-{
-	std::vector<unsigned long int> minEdge(N);
-	std::vector<unsigned long int> maxEdge(N);
-	std::vector<double> occ(N);
-	occ[0] = N;
-	boost::random::beta_distribution<>::param_type betaParams(beta, beta);
-
-	std::pair<unsigned int, unsigned int> edges(0, 1);
-	for (unsigned long int i=0; i != N; i++){
-		edges = floatEvolveTimeStep(occ, betaParams, edges.first, edges.second, N, smallCutoff, largeCutoff);
-		minEdge[i] = edges.first;
-		maxEdge[i] = edges.second;
-	}
-
-	std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > edgesHistory(minEdge, maxEdge);
-	return edgesHistory;
-}
-
 // Class to take make a diffusion experiment easier. All the date is handled on
 // the C++ side of things so that the occupancy array is only called when python
 // calls for an array.
@@ -354,15 +293,6 @@ occupancy : numpy array
 				py::arg("occupancy"), py::arg("beta"), py::arg("prevMinIndex"),
 				py::arg("prevMaxIndex"), py::arg("N"), py::arg("smallCutoff")=smallCutoff,
 				py::arg("largeCutoff")=largeCutoff);
-
-	const char * evolveTimestepsdoc = R"V0G0N(
-Evolve the occupancy forward through N numbers of timesteps.
-)V0G0N";
-
-	m.def("evolveTimesteps", &evolveTimesteps, evolveTimestepsdoc,
-				py::arg("timesteps"), py::arg("occupancy"), py::arg("beta"),
-				py::arg("prevMinIndex"), py::arg("prevMaxIndex"), py::arg("N"),
-				py::arg("smallCutoff")=smallCutoff, py::arg("largeCutoff")=largeCutoff);
 
 	const char * iterateTimestepdoc = R"V0G0N(
 Move the occupancy forward through one timestep. Appends the new edge positions
