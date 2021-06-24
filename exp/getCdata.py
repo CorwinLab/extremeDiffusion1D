@@ -25,15 +25,18 @@ def runExperiment(N, beta, filename):
     d = Diffusion(numberOfParticles=N, beta=beta)
     d.initializeOccupation()
     num_of_steps = round(np.log(N) ** (5/2))
-    d.evolveTimesteps(num_of_steps)
+    d.evolveTimesteps(int(num_of_steps))
     edges = np.array(d.getEdges()).T
     np.savetxt(filename, edges)
 
 if __name__ == '__main__':
     topDir = sys.argv[1]
     numWalkersStr = sys.argv[2]
-    numWalkers = int( numWalkersStr )
+    numWalkers = int(float( numWalkersStr ))
     beta = float(sys.argv[3])
     sysID = sys.argv[4]
+    check_dir = f'{topDir}/{beta}/{numWalkers}/'
+    if not os.path.exists(check_dir):
+        os.makedirs(check_dir)
     save_file = f'{topDir}/{beta}/{numWalkers}/Edges{sysID}.txt'
     runExperiment(numWalkers, beta, save_file)
