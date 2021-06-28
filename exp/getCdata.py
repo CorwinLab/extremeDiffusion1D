@@ -24,7 +24,7 @@ def runExperiment(N, beta, filename):
 
     d = Diffusion(numberOfParticles=N, beta=beta)
     d.initializeOccupation()
-    num_of_steps = round(np.log(N) ** (5/2))
+    num_of_steps = round(np.log(float(N)) ** (5/2))
     d.evolveTimesteps(int(num_of_steps))
     edges = np.array(d.getEdges()).T
     np.savetxt(filename, edges)
@@ -35,8 +35,9 @@ if __name__ == '__main__':
     numWalkers = int(float( numWalkersStr ))
     beta = float(sys.argv[3])
     sysID = sys.argv[4]
-    check_dir = f'{topDir}/{beta}/{numWalkers}/'
+    numWalkers_string = "{:.2e}".format(numWalkers).replace("+", "_")
+    check_dir = f'{topDir}/{beta}/' + numWalkers_string
     if not os.path.exists(check_dir):
         os.makedirs(check_dir)
-    save_file = f'{topDir}/{beta}/{numWalkers}/Edges{sysID}.txt'
+    save_file = f'{topDir}/{beta}/' + numWalkers_string + f'/Edges{sysID}.txt'
     runExperiment(numWalkers, beta, save_file)

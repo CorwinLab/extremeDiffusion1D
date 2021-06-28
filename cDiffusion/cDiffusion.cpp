@@ -49,6 +49,14 @@ void print_generic(Temp vec) {
 double gettoNextSite(const double occ, const double bias,
 																const double smallCutoff=smallCutoff,
 																const double largeCutoff=largeCutoff) {
+	if (bias >= 0.999999){
+		return round(occ * bias);
+	}
+
+	if (bias <= 0.000001){
+	       return round(occ * bias);
+	}	       
+	
 	if (occ < smallCutoff) {
 		// If small enough to use integer representations use binomial distribution
 	  return binomial(gen, boost::random::binomial_distribution<>::param_type(occ, bias));
@@ -119,7 +127,7 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 			}
 		}
 
-		if (toNextSite < 0 || toNextSite > prevOcc || bias < 0.0 || bias > 1.0 || *occ < 0 || *occ > N){
+		if (toNextSite < 0 || toNextSite > prevOcc || bias < 0.0 || bias > 1.0 || *occ < 0 || *occ > N || isnan(*occ)){
 			throw std::runtime_error("One or more variables out of bounds: Right shift= "
 			+ std::to_string(toNextSite) + ", occupancy=" + std::to_string(*occ)
 			+ ", bias=" + std::to_string(bias) + ", smallCutoff=" + std::to_string(smallCutoff)
@@ -268,8 +276,14 @@ class Diffusion{
 		}
 };
 
+double generateBeta(double beta){
+	boost::random::beta_distribution<>::param_type params(beta, beta);
+	return beta_dist(gen, params);
+}
+
 PYBIND11_MODULE(cDiffusion, m){
 	m.doc() = "C++ diffusion";
+	m.def("generateRandomBeta", &generateBeta, py::arg("beta"));
 
 	const char * pyfloatdoc = R"V0G0N(
 Evolve the occupancy forward one timestep drawing from the provided beta distribution.
