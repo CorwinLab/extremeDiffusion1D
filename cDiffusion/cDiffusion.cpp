@@ -55,8 +55,8 @@ double gettoNextSite(const double occ, const double bias,
 
 	if (bias <= 0.000001){
 	       return round(occ * bias);
-	}	       
-	
+	}
+
 	if (occ < smallCutoff) {
 		// If small enough to use integer representations use binomial distribution
 	  return binomial(gen, boost::random::binomial_distribution<>::param_type(occ, bias));
@@ -109,6 +109,76 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 		double bias = 0;
 		if (*occ != 0) {
 			bias = beta_dist(gen, betaParams);
+			toNextSite = gettoNextSite(*occ, bias, smallCutoff, largeCutoff);
+		}
+		else{
+			toNextSite = 0;
+		}
+
+		double prevOcc = *occ; // For error checking below
+		*occ += fromLastSite - toNextSite;
+		fromLastSite = toNextSite;
+
+		if (*occ != 0) {
+			maxEdge = i;
+			if (firstNonzero) {
+				minEdge = i;
+				firstNonzero = false;
+			}
+		}
+
+		if (toNextSite < 0 || toNextSite > prevOcc || bias < 0.0 || bias > 1.0 || *occ < 0 || *occ > N || isnan(*occ)){
+			throw std::runtime_error("One or more variables out of bounds: Right shift= "
+			+ std::to_string(toNextSite) + ", occupancy=" + std::to_string(*occ)
+			+ ", bias=" + std::to_string(bias) + ", smallCutoff=" + std::to_string(smallCutoff)
+			+ ", N=" + std::to_string(N));
+		}
+	}
+
+	if (minEdge == maxEdge){
+		// Only one state occupied so add 1 to maxEdge to ensure loop runs next step.
+		maxEdge += 1;
+	}
+
+	std::pair<unsigned long int, unsigned long int> edges(minEdge, maxEdge);
+
+	return edges;
+}
+
+// Iterate one time step according to Einstein Diffusion or bias=0.5
+std::pair<unsigned long int, unsigned long int> floatEvolveEinstein(
+	std::vector<double>& occupancy,
+	const unsigned long int prevMinIndex,
+	const unsigned long int prevMaxIndex,
+	const double N,
+	const double smallCutoff=smallCutoff,
+	const double largeCutoff=largeCutoff
+)
+{
+	if (prevMinIndex >= prevMaxIndex) {
+		throw std::runtime_error("Minimum edge must be greater than maximum edge: (" + std::to_string(prevMinIndex) + ", " + std::to_string(prevMaxIndex) + ")");
+	}
+
+	// If iterating over the whole array extend the occupancy.
+	if ((prevMaxIndex+1) == occupancy.size()){
+		occupancy.push_back(0);
+	}
+
+	// If we keep the occupancy the same throughout the whole experiment we probably
+	// only need to construct this distribution once but w/e
+
+	double fromLastSite = 0;
+	double toNextSite = 0;
+	unsigned long int minEdge = 0;
+	unsigned long int maxEdge = 0;
+	bool firstNonzero = true;
+
+	for (auto i = prevMinIndex; i < prevMaxIndex+2; i++) {
+
+		double* occ = &occupancy.at(i);
+
+		double bias = 0.5;
+		if (*occ != 0) {
 			toNextSite = gettoNextSite(*occ, bias, smallCutoff, largeCutoff);
 		}
 		else{
@@ -270,6 +340,20 @@ class Diffusion{
 			}
 		}
 
+		void evolveEinstein(const unsigned int iterations){
+			unsigned int edgesLength = edges.first.size();
+			edges.first.resize(iterations + edgesLength);
+			edges.second.resize(iterations + edgesLength);
+
+			for (unsigned long int i = edgesLength-1; i < edges.first.size()-1; i++){
+				unsigned long int minIndex = edges.first[i];
+				unsigned long int maxIndex = edges.second[i];
+				std::pair<unsigned long int, unsigned long int> newEdges = floatEvolveEinstein(occupancy, minIndex, maxIndex, N, smallCutoff, largeCutoff);
+				edges.first[i+1] = newEdges.first;
+				edges.second[i+1] = newEdges.second;
+			}
+		}
+
 		unsigned int findNumberParticles(){
 			double sum = std::accumulate(occupancy.begin(), occupancy.end(), 0);
 			return sum;
@@ -366,5 +450,6 @@ Sum over occupancy to find the current number of particles.
 		.def("getEdges", &Diffusion::getEdges)
 		.def("iterateTimestep", &Diffusion::iterateTimestep, iterateTimestepdoc)
 		.def("evolveTimesteps", &Diffusion::evolveTimesteps, classevolveTimestepsdoc, py::arg("iterations"))
+		.def("evolveEinstein", &Diffusion::evolveEinstein, py::arg("iterations"))
 		.def("findNumberParticles", &Diffusion::findNumberParticles, findNumberParticlesdoc);
 }
