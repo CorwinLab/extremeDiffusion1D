@@ -10,6 +10,7 @@ class Diffusion(cdiff.Diffusion):
     '''
     Helper class for C++ Diffusion object.
     '''
+
     def __str__(self):
         return f"Diffusion(N={self.getN()}, beta={self.getBeta()})"
 
@@ -17,12 +18,8 @@ class Diffusion(cdiff.Diffusion):
         return self.__str__()
 
     @property
-    def time(self):
-        return len(self.getEdges()[0])
-
-    @property
     def center(self):
-        return np.arange(self.time) * 0.5
+        return np.arange(self.getTime()) * 0.5
 
     @property
     def minDistance(self):
@@ -33,6 +30,32 @@ class Diffusion(cdiff.Diffusion):
     def maxDistance(self):
         maxEdge = self.getEdges()[1]
         return maxEdge - self.center
+
+    def evolveSaveOccupancy(self, times):
+        '''
+        Evolve the system forward in "chuncks" of time and save the occupancy after
+        each chunk of time.
+
+        Parameters
+        ----------
+        times : list
+            Time steps to save the occupancy at.
+
+        Returns
+        -------
+        occupancies : list
+            Occupancy at each time
+        '''
+        self.edges = self.resizeNumElemEdges(times[-1])
+        self.occpancy = self.resizeNumElemEdges(times[-1])
+        occupancies = []
+        dt = np.diff(times)
+        for t in dt:
+            self.evolveTimesteps(t, inplace=True)
+            occ = self.getOccupancy()
+            occupancies.append(occ)
+
+        return occupancies
 
     def saveEdges(self, filename=None):
         '''

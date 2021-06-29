@@ -104,5 +104,86 @@ def test_diffusion_constructor():
 
     assert not errors, "Errors occured:\n{}".format("\n".join(errors))
 
+def test_diffusion_initializeOccupancyAndEdges():
+    '''
+    Make sure that the initialization makes everything to length log(N)**5/2
+    '''
+    N = 1e20
+    num_of_elements = round(np.log(N) ** (5/2))
+    d = cdiff.Diffusion(N, 1.0)
+    d.initializeOccupationAndEdges()
+    edges = d.getEdges()
+    occ = d.getOccupancy()
+
+    assert (num_of_elements == len(edges[0])
+            & num_of_elements == len(edges[1])
+            & num_of_elements == len(occ))
+
+def test_diffusion_iterateTimestepInplaceFalse():
+    '''
+    Make sure iterateTimestep with inplace=False appends edges correctly.
+    '''
+    N = 1e20
+    occ = [N]
+    d = cdiff.Diffusion(N, 1.0)
+    d.setOccupancy(occ)
+    d.iterateTimestep(inplace=False)
+    edges = d.getEdges()
+    occ = d.getOccupancy()
+    num_of_elements = 2
+    assert (num_of_elements == len(edges[0])
+            and num_of_elements == len(edges[1])
+            and num_of_elements+1 == len(occ)) # I think occupancy gets pushback once in iterateTimestep and another time in floatEvolveTimeStep
+
+def test_diffusion_iterateTimestepInplaceTrue():
+    '''
+    Make sure iterateTimestep with inplace=True works correctly. Does not
+    change the size of the occupancy or the edges.
+    '''
+    N = 1e20
+    d = cdiff.Diffusion(N, 1.0)
+    d.initializeOccupationAndEdges()
+    num_of_elements = len(d.getOccupancy())
+    d.iterateTimestep(inplace=True)
+    occ = d.getOccupancy()
+    minEdge, maxEdge = d.getEdges()
+    assert (num_of_elements == len(occ) and num_of_elements == len(minEdge) and num_of_elements == len(maxEdge))
+
+def test_diffusion_iterateTimestepInplaceTrueEdges():
+    '''
+    Make sure iterateTimestep with inplace=True makes the second edge index nonzero.
+    '''
+    N = 1e20
+    d = cdiff.Diffusion(N, 1.0)
+    d.initializeOccupationAndEdges()
+    d.iterateTimestep(inplace=True)
+    minEdges, maxEdges = d.getEdges()
+    nonzeros = np.nonzero(maxEdges)[0]
+    assert np.all(nonzeros == [0, 1])
+
+def test_diffusion_evolveTimestepsInplaceTrue():
+    '''
+    Make sure that evolveTimesteps w/ inplace = True doesn't change the length of the
+    edges or occupaction.
+    '''
+    N = 1e10
+    d = cdiff.Diffusion(N, 1.0)
+    num_of_steps = round(np.log(N) ** (5/2))
+    d.initializeOccupationAndEdges()
+    edges_length = len(d.getEdges()[0])
+    d.evolveTimesteps(num_of_steps, inplace=True)
+    assert (edges_length == len(d.getEdges()[0]))
+
+def test_diffusion_evolveTimestepsInplaceFalse():
+    '''
+    Make sure that evolveTimesteps w/ inplace = False changes the length of the
+    edges and occupation appropriately.
+    '''
+    N = 1e50
+    d = cdiff.Diffusion(N, 1.0)
+    num_of_steps = 1000
+    d.evolveTimesteps(num_of_steps, inplace=False)
+
+
 if __name__ == '__main__':
     pytest.main(['./test_c.py'])

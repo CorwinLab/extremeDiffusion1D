@@ -5,7 +5,7 @@ sys.path.append('../cDiffusion')
 import cDiffusion as cdiff
 import time
 
-N = 1e50
+N = 1e25
 logN = np.log(N)
 num_of_steps = logN ** (5/2)
 num_of_steps = round(num_of_steps)
@@ -13,12 +13,12 @@ print(num_of_steps)
 occ = np.zeros(num_of_steps)
 occ[0] = int(N)
 
-steps = np.arange(1, num_of_steps+1) * 0.5
+steps = np.arange(1, num_of_steps) * 0.5
 start = time.time()
 
 d = cdiff.Diffusion(int(N), 1)
-d.setOccupancy(occ)
-d.evolveEinstein(num_of_steps)
+d.initializeOccupationAndEdges()
+d.evolveTimesteps(num_of_steps, inplace=True)
 
 minEdges, maxEdges = d.getEdges()
 minDistance = abs(minEdges[1:] - steps)

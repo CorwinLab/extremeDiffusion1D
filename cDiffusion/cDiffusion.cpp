@@ -245,6 +245,7 @@ class Diffusion{
 		double smallCutoff;
 		double largeCutoff;
 		std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > edges;
+		unsigned long int time;
 
 	public:
 		Diffusion(
@@ -258,14 +259,23 @@ class Diffusion{
 			edges.first.push_back(0), edges.second.push_back(1);
 			boost::random::beta_distribution<>::param_type params(b, b);
 			betaParams = params;
+			time = 0;
 		}
 
-		void initializeOccupation(){
-			double logN = log(N);
-			double numTimeSteps = pow(logN, 5.0/2.0);
-			unsigned long int size = llround(numTimeSteps);
+		void initializeOccupationAndEdges(unsigned long int size=0){
+			if (size==0){
+				size = getLogN52();
+			}
 			occupancy.resize(size);
 			occupancy[0] = N;
+			edges.first.resize(size);
+			edges.second.resize(size);
+		}
+
+		unsigned long int getLogN52(){
+			double logN = log(N);
+			double numTimeSteps = pow(logN, 5.0/2.0);
+			return llround(numTimeSteps);
 		}
 
 		std::vector<double> getOccupancy(){
@@ -309,48 +319,66 @@ class Diffusion{
 			largeCutoff = l;
 		}
 
+		unsigned long int getTime(){
+			return time;
+		}
+
 		std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > getEdges(){
 			return edges;
 		}
 
 		// Move the occupancy forward one step in time. Requires push_back for the edges
 		// which might slow it down a lot.
-		void iterateTimestep(){
-			unsigned long int minIndex = edges.first.back();
-			unsigned long int maxIndex = edges.second.back();
-			std::pair<unsigned long int, unsigned long int> newEdges = floatEvolveTimeStep(occupancy, betaParams, minIndex, maxIndex, N, smallCutoff, largeCutoff);
-			edges.first.push_back(newEdges.first);
-			edges.second.push_back(newEdges.second);
+		void iterateTimestep(bool inplace=false){
+			if (!inplace){
+				edges.first.push_back(0);
+				edges.second.push_back(0);
+				occupancy.push_back(0);
+			}
+			auto newEdges = floatEvolveTimeStep(
+				occupancy,
+				betaParams,
+				edges.first[time],
+				edges.second[time],
+				N,
+				smallCutoff,
+				largeCutoff);
+			edges.first[time+1] = newEdges.first;
+			edges.second[time+1] = newEdges.second;
+			time += 1;
 		}
 
-		// Move the ocupancy forward N steps in time. Edges extended initially so
-		// we avoid push_back one by one so it should be faster than running
-		// iterateTimestep N times.
-		void evolveTimesteps(const unsigned int iterations){
-			unsigned int edgesLength = edges.first.size();
-			edges.first.resize(iterations + edgesLength);
-			edges.second.resize(iterations + edgesLength);
-
-			for (unsigned long int i = edgesLength-1; i < edges.first.size()-1; i++){
-				unsigned long int minIndex = edges.first[i];
-				unsigned long int maxIndex = edges.second[i];
-				std::pair<unsigned long int, unsigned long int> newEdges = floatEvolveTimeStep(occupancy, betaParams, minIndex, maxIndex, N, smallCutoff, largeCutoff);
-				edges.first[i+1] = newEdges.first;
-				edges.second[i+1] = newEdges.second;
+		// Move the ocupancy forward N steps in time.
+		void evolveTimesteps(const unsigned long int iterations, bool inplace=false){
+			if (!inplace){
+				unsigned int edgesLength = edges.first.size();
+				edges.first.resize(iterations + edgesLength);
+				edges.second.resize(iterations + edgesLength);
+				occupancy.resize(iterations + occupancy.size());
+			}
+			unsigned long int max = time+iterations;
+			for (unsigned long int i = time; i < max-1; i++){
+				iterateTimestep(inplace=true);
 			}
 		}
 
-		void evolveEinstein(const unsigned int iterations){
-			unsigned int edgesLength = edges.first.size();
-			edges.first.resize(iterations + edgesLength);
-			edges.second.resize(iterations + edgesLength);
-
-			for (unsigned long int i = edgesLength-1; i < edges.first.size()-1; i++){
-				unsigned long int minIndex = edges.first[i];
-				unsigned long int maxIndex = edges.second[i];
-				std::pair<unsigned long int, unsigned long int> newEdges = floatEvolveEinstein(occupancy, minIndex, maxIndex, N, smallCutoff, largeCutoff);
+		void evolveEinstein(const unsigned int iterations, bool inplace=false){
+			if (!inplace){
+				unsigned int edgesLength = edges.first.size();
+				edges.first.resize(iterations + edgesLength);
+				edges.second.resize(iterations + edgesLength);
+			}
+			for (unsigned long int i = time; i < time + iterations; i++){
+				auto newEdges = floatEvolveEinstein(
+					occupancy,
+					edges.first[i],
+					edges.second[i],
+					N,
+					smallCutoff,
+					largeCutoff);
 				edges.first[i+1] = newEdges.first;
 				edges.second[i+1] = newEdges.second;
+				time += 1;
 			}
 		}
 
@@ -358,7 +386,21 @@ class Diffusion{
 			double sum = std::accumulate(occupancy.begin(), occupancy.end(), 0);
 			return sum;
 		}
+
+		void addNumElemEdges(unsigned long int num){
+			edges.first.resize(num + edges.first.size());
+			edges.second.resize(num + edges.second.size());
+		}
 };
+
+std::vector<unsigned long int> getKEdges(const std::vector<double>& occupancy, const double walkers, const unsigned long int maxIdx){
+	std::vector<unsigned long int> walkerIdx = {maxIdx};
+	double sum = occupancy.at(maxIdx);
+	while (sum < walkers) {
+		//Do something
+	}
+	return walkerIdx;
+}
 
 double generateBeta(double beta){
 	boost::random::beta_distribution<>::param_type params(beta, beta);
@@ -430,14 +472,16 @@ edges vector.
 )V0G0N";
 
 	const char * findNumberParticlesdoc = R"V0G0N(
-Sum over occupancy to find the current number of particles.
+Sum over occupancy to find the current number of particles. Could probably just sum
+from minEdge to maxEdge.
 )V0G0N";
 
 	py::class_<Diffusion>(m, "Diffusion")
 		.def(py::init<const double, const double, const double, const double>(),
 					py::arg("numberOfParticles"), py::arg("beta"), py::arg("smallCutoff")=smallCutoff,
 					py::arg("largeCutoff")=largeCutoff)
-		.def("initializeOccupation", &Diffusion::initializeOccupation)
+		.def("initializeOccupationAndEdges", &Diffusion::initializeOccupationAndEdges, py::arg("size")=0)
+		.def("getLogN52", &Diffusion::getLogN52)
 		.def("getOccupancy", &Diffusion::getOccupancy)
 		.def("setOccupancy", &Diffusion::setOccupancy, py::arg("occupancy"))
 		.def("getN", &Diffusion::getN)
@@ -448,8 +492,8 @@ Sum over occupancy to find the current number of particles.
 		.def("getlargeCutoff", &Diffusion::getlargeCutoff)
 		.def("setlargeCutoff", &Diffusion::setlargeCutoff, py::arg("largeCutoff"))
 		.def("getEdges", &Diffusion::getEdges)
-		.def("iterateTimestep", &Diffusion::iterateTimestep, iterateTimestepdoc)
-		.def("evolveTimesteps", &Diffusion::evolveTimesteps, classevolveTimestepsdoc, py::arg("iterations"))
-		.def("evolveEinstein", &Diffusion::evolveEinstein, py::arg("iterations"))
+		.def("iterateTimestep", &Diffusion::iterateTimestep, iterateTimestepdoc, py::arg("inplace")=false)
+		.def("evolveTimesteps", &Diffusion::evolveTimesteps, classevolveTimestepsdoc, py::arg("iterations"), py::arg("inplace")=false)
+		.def("evolveEinstein", &Diffusion::evolveEinstein, py::arg("iterations"), py::arg("inplace")=false)
 		.def("findNumberParticles", &Diffusion::findNumberParticles, findNumberParticlesdoc);
 }
