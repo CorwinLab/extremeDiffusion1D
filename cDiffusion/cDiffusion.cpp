@@ -91,6 +91,7 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 	// If iterating over the whole array extend the occupancy.
 	if ((prevMaxIndex+1) == occupancy.size()){
 		occupancy.push_back(0);
+		std::cout << "Warning: pushing back occupancy size. If this happens a lot it may effect performance." << std::endl;
 	}
 
 	// If we keep the occupancy the same throughout the whole experiment we probably
@@ -162,6 +163,7 @@ std::pair<unsigned long int, unsigned long int> floatEvolveEinstein(
 	// If iterating over the whole array extend the occupancy.
 	if ((prevMaxIndex+1) == occupancy.size()){
 		occupancy.push_back(0);
+		std::cout << "Warning: pushing back occupancy size. If this happens a lot it may effect performance." << std::endl;
 	}
 
 	// If we keep the occupancy the same throughout the whole experiment we probably
@@ -356,9 +358,14 @@ class Diffusion{
 				edges.second.resize(iterations + edgesLength);
 				occupancy.resize(iterations + occupancy.size());
 			}
-			unsigned long int max = time+iterations;
-			for (unsigned long int i = time; i < max-1; i++){
+			if (iterations == 1){
 				iterateTimestep(inplace=true);
+			}
+			else{
+				unsigned long int max = time+iterations;
+				for (unsigned long int i = time; i < max-1; i++){
+					iterateTimestep(inplace=true);
+				}
 			}
 		}
 
@@ -367,8 +374,10 @@ class Diffusion{
 				unsigned int edgesLength = edges.first.size();
 				edges.first.resize(iterations + edgesLength);
 				edges.second.resize(iterations + edgesLength);
+				occupancy.resize(iterations + occupancy.size());
 			}
-			for (unsigned long int i = time; i < time + iterations; i++){
+			unsigned long int max = time + iterations;
+			for (unsigned long int i = time; i < max - 1; i++){
 				auto newEdges = floatEvolveEinstein(
 					occupancy,
 					edges.first[i],
@@ -392,15 +401,6 @@ class Diffusion{
 			edges.second.resize(num + edges.second.size());
 		}
 };
-
-std::vector<unsigned long int> getKEdges(const std::vector<double>& occupancy, const double walkers, const unsigned long int maxIdx){
-	std::vector<unsigned long int> walkerIdx = {maxIdx};
-	double sum = occupancy.at(maxIdx);
-	while (sum < walkers) {
-		//Do something
-	}
-	return walkerIdx;
-}
 
 double generateBeta(double beta){
 	boost::random::beta_distribution<>::param_type params(beta, beta);
@@ -446,9 +446,44 @@ occupancy : numpy array
 				py::arg("prevMaxIndex"), py::arg("N"), py::arg("smallCutoff")=smallCutoff,
 				py::arg("largeCutoff")=largeCutoff);
 
+const char * initdoc = R"V0G0N(
+Helper class to run diffusion experiments with. Stores the occoupancy and edges
+in C++ only when they are called from Python. This makes it a lot faster than passing
+variables between C++ and Python which is a lot slower.
+
+Examples
+--------
+>>> from cDiffusion import Diffusion
+>>> d = Diffusion(10, 1.0)
+>>> d.initializeOccupationAndEdges(size=5)
+>>> print(d.getOccupancy())
+[10.0, 0.0, 0.0, 0.0, 0.0]
+>>> d.iterateTimestep(inplace=True)
+>>> print(d.getOccupancy())
+[3.0, 7.0, 0.0, 0.0, 0.0]
+
+)V0G0N";
+
 	const char * iterateTimestepdoc = R"V0G0N(
 Move the occupancy forward through one timestep. Appends the new edge positions
 to the edges vector.
+
+Parameters
+----------
+inplace : bool (False)
+	Whether or not to push back the edges/occupancy or not. If true, it will push back
+	the edges & occupancy by 1. If false doesn't push back the edges & occupancy so
+	the edges and occupancy must be large enough to support one timestep.
+
+Example
+-------
+>>> from cDiffusion import Diffusion
+>>> d = Diffusion(10, 1.0)
+>>> d.setOccupancy([10])
+>>> d.iterateTimestep()
+>>> print(d.getOccupancy())
+Warning: pushing back occupancy size. If this happens a lot it may effect performance.
+[2.0, 8.0, 0.0]
 
 Note
 ----
@@ -465,6 +500,20 @@ Parameters
 iterations : int
 	Number of iterations to move the system forward int time
 
+inplace : bool (False)
+	Whether or not to extend the occupancy and edges by iterations. If true, occupancy
+	and edges remain the same length so they must be at least size=len(iterations).
+	If false, changes the length of edges/ocupancy to length=original length + iterations.
+
+Examples
+--------
+>>> from cDiffusion import Diffusion
+>>> d = Diffusion(10, 1.0)
+>>> d.setOccupancy([10])
+>>> d.evolveTimesteps(10)
+>>> print(d.getOccupancy())
+[0.0, 0.0, 0.0, 2.0, 0.0, 2.0, 2.0, 4.0, 0.0, 0.0, 0.0]
+
 Note
 ----
 Much faster than iterateTimestep method because it preallocates needed space in
@@ -476,11 +525,53 @@ Sum over occupancy to find the current number of particles. Could probably just 
 from minEdge to maxEdge.
 )V0G0N";
 
+const char * initializeOccupationAndEdgesdoc = R"V0G0N(
+Resizes the occupancy and edges to a specified size and puts all N particles in the
+first occupancy position. Default size is Log(N) ** (5/2)
+
+Parameters
+----------
+size : int
+	Size to change the occupantion and edges to. Defaults to Log(N) ** (5/2)
+
+Examples
+--------
+>>> from cDiffusion import Diffusion
+>>> d = Diffusion(10, 1.0)
+>>> d.initializeOccupationAndEdges(size=5)
+>>> print(d.getOccupancy())
+[10.0, 0.0, 0.0, 0.0, 0.0]
+)V0G0N";
+
+const char * evolveEinsteinddoc = R"V0G0N(
+Evolve the occupancy forward N times according to Einstein diffusion or bias=0.5.
+
+Parameters
+----------
+iterations : int
+	Number of time steps to evolve the system
+
+inplace : bool
+	Whether or not to extend the occupancy and edges by iterations. If true, occupancy
+	and edges remain the same length so they must be at least size=len(iterations).
+	If false, changes the length of edges/ocupancy to length=original length + iterations.
+
+Examples
+--------
+>>> from cDiffusion import Diffusion
+>>> d = Diffusion(10, 1.0)
+>>> d.setOccupancy([10])
+>>> d.evolveEinstein(10)
+>>> print(d.getOccupancy())
+[0.0, 0.0, 0.0, 1.0, 3.0, 2.0, 0.0, 3.0, 1.0, 0.0, 0.0]
+
+)V0G0N";
+
 	py::class_<Diffusion>(m, "Diffusion")
-		.def(py::init<const double, const double, const double, const double>(),
+		.def(py::init<const double, const double, const double, const double>(), initdoc,
 					py::arg("numberOfParticles"), py::arg("beta"), py::arg("smallCutoff")=smallCutoff,
 					py::arg("largeCutoff")=largeCutoff)
-		.def("initializeOccupationAndEdges", &Diffusion::initializeOccupationAndEdges, py::arg("size")=0)
+		.def("initializeOccupationAndEdges", &Diffusion::initializeOccupationAndEdges, initializeOccupationAndEdgesdoc, py::arg("size")=0)
 		.def("getLogN52", &Diffusion::getLogN52)
 		.def("getOccupancy", &Diffusion::getOccupancy)
 		.def("setOccupancy", &Diffusion::setOccupancy, py::arg("occupancy"))
@@ -494,6 +585,6 @@ from minEdge to maxEdge.
 		.def("getEdges", &Diffusion::getEdges)
 		.def("iterateTimestep", &Diffusion::iterateTimestep, iterateTimestepdoc, py::arg("inplace")=false)
 		.def("evolveTimesteps", &Diffusion::evolveTimesteps, classevolveTimestepsdoc, py::arg("iterations"), py::arg("inplace")=false)
-		.def("evolveEinstein", &Diffusion::evolveEinstein, py::arg("iterations"), py::arg("inplace")=false)
+		.def("evolveEinstein", &Diffusion::evolveEinstein, evolveEinsteinddoc, py::arg("iterations"), py::arg("inplace")=false)
 		.def("findNumberParticles", &Diffusion::findNumberParticles, findNumberParticlesdoc);
 }

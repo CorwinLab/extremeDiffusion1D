@@ -46,11 +46,10 @@ class Diffusion(cdiff.Diffusion):
         occupancies : list
             Occupancy at each time
         '''
-        self.edges = self.resizeNumElemEdges(times[-1])
-        self.occpancy = self.resizeNumElemEdges(times[-1])
         occupancies = []
         dt = np.diff(times)
         for t in dt:
+            print(t)
             self.evolveTimesteps(t, inplace=True)
             occ = self.getOccupancy()
             occupancies.append(occ)
@@ -101,3 +100,11 @@ class Diffusion(cdiff.Diffusion):
                 writer.writerow(vars)
 
         np.savetxt(filename, edges)
+
+if __name__ == '__main__':
+    N = 100
+    times = np.geomspace(1, round(np.log(N) ** (5/2)), 1000, dtype=np.int64)
+    times = np.unique(times)
+    d = Diffusion(N, 1.0)
+    d.initializeOccupationAndEdges()
+    occs = d.evolveSaveOccupancy(times)

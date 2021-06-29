@@ -10,8 +10,6 @@ logN = np.log(N)
 num_of_steps = logN ** (5/2)
 num_of_steps = round(num_of_steps)
 print(num_of_steps)
-occ = np.zeros(num_of_steps)
-occ[0] = int(N)
 
 steps = np.arange(1, num_of_steps) * 0.5
 start = time.time()

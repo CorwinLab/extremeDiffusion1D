@@ -184,6 +184,5 @@ def test_diffusion_evolveTimestepsInplaceFalse():
     num_of_steps = 1000
     d.evolveTimesteps(num_of_steps, inplace=False)
 
-
 if __name__ == '__main__':
     pytest.main(['./test_c.py'])
