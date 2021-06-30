@@ -50,11 +50,11 @@ double gettoNextSite(const double occ, const double bias,
 																const double smallCutoff=smallCutoff,
 																const double largeCutoff=largeCutoff) {
 	if (bias >= 0.999999){
-		return round(occ * bias);
+		return (occ * bias);
 	}
 
 	if (bias <= 0.000001){
-		return round(occ * bias);
+		return (occ * bias);
 	}
 
 	if (occ < smallCutoff) {
@@ -63,12 +63,12 @@ double gettoNextSite(const double occ, const double bias,
 	}
 	else if (occ > largeCutoff) {
 		// If so large that sqrt(N) is less than precision just use occupancy
-		return round(occ * bias);
+		return (occ * bias);
 	}
 	else {
 		// If in sqrt(N) precision use gaussian approximation.
 		double mediumVariance = sqrt(occ * bias * (1 - bias));
-		return round(normal(gen, boost::random::normal_distribution<>::param_type(occ * bias, mediumVariance)));
+		return (normal(gen, boost::random::normal_distribution<>::param_type(occ * bias, mediumVariance)));
 	}
 }
 
@@ -236,6 +236,59 @@ std::pair<std::pair<unsigned long int, unsigned long int>, std::vector<double> >
 	return returnVal;
 }
 
+// Get the Nth quartile of the occupancy vector. The minIdx and maxIdx help
+// narrow down the search range.
+double getNthquartileDoublesided(
+		const std::vector<double>& occupancy,
+		const double centerIdx,
+		const unsigned long int minIdx,
+		const unsigned long int maxIdx,
+		const double N
+)
+{
+	double right_dist = maxIdx - centerIdx;
+	double left_dist = centerIdx - minIdx;
+	double dist;
+
+	unsigned long int right_idx = maxIdx;
+	unsigned long int left_idx = minIdx;
+
+	double sum = 0;
+
+	while (sum < N){
+		if (right_dist >= left_dist){
+			dist = right_dist;
+			sum += occupancy[right_idx];
+			right_idx -= 1;
+			right_dist -= 1.0;
+		}
+		else{
+			dist = left_dist;
+			sum += occupancy[left_idx];
+			left_idx += 1;
+			left_dist -= 1.0;
+		}
+	}
+	return dist;
+}
+
+double getNthquartileSingleSided(
+	const std::vector<double>& occupancy,
+	const double centerIdx,
+	unsigned long int maxIdx,
+	const double N
+)
+{
+	double dist = maxIdx - centerIdx;
+	double sum = occupancy[maxIdx];
+	while (sum < N){
+		maxIdx -= 1;
+		dist -= 1;
+		sum += occupancy[maxIdx];
+	}
+	return dist;
+}
+
 // Class to take make a diffusion experiment easier. All the date is handled on
 // the C++ side of things so that the occupancy array is only called when python
 // calls for an array.
@@ -400,43 +453,12 @@ class Diffusion{
 			edges.first.resize(num + edges.first.size());
 			edges.second.resize(num + edges.second.size());
 		}
+
+		double getNthquartile(const double N){
+			unsigned long int maxEdge = edges.second[time];
+			return getNthquartileSingleSided(occupancy, time * 0.5, maxEdge, N);
+		}
 };
-
-// Get the Nth quartile of the occupancy vector. The minIdx and maxIdx help
-// narrow down the search range. 
-double getNthquartile(
-		const std::vector<double>& occupancy,
-		const double centerIdx,
-		const unsigned long int minIdx,
-		const unsigned long int maxIdx,
-		const double N
-)
-{
-	double right_dist = maxIdx - centerIdx;
-	double left_dist = centerIdx - minIdx;
-	double dist;
-
-	unsigned long int right_idx = maxIdx;
-	unsigned long int left_idx = minIdx;
-
-	double sum = 0;
-
-	while (sum < N){
-		if (right_dist >= left_dist){
-			dist = right_dist;
-			sum += occupancy[right_idx];
-			right_idx -= 1;
-			right_dist -= 1.0;
-		}
-		else{
-			dist = left_dist;
-			sum += occupancy[left_idx];
-			left_idx += 1;
-			left_dist -= 1.0;
-		}
-	}
-	return dist;
-}
 
 double generateBeta(double beta){
 	boost::random::beta_distribution<>::param_type params(beta, beta);
@@ -446,8 +468,10 @@ double generateBeta(double beta){
 PYBIND11_MODULE(cDiffusion, m){
 	m.doc() = "C++ diffusion";
 	m.def("generateRandomBeta", &generateBeta, py::arg("beta"));
-	m.def("getNthquartile", &getNthquartile, py::arg("occupancy"), py::arg("centerIdx"),
+	m.def("getNthquartileDoublesided", &getNthquartileDoublesided, py::arg("occupancy"), py::arg("centerIdx"),
 				py::arg("minIdx"), py::arg("maxIdx"), py::arg("N"));
+	m.def("getNthquartileSingleSided", &getNthquartileSingleSided, py::arg("occupancy"), py::arg("centerIdx"),
+				py::arg("maxIdx"), py::arg("N"));
 
 	const char * pyfloatdoc = R"V0G0N(
 Evolve the occupancy forward one timestep drawing from the provided beta distribution.
@@ -624,5 +648,6 @@ Examples
 		.def("iterateTimestep", &Diffusion::iterateTimestep, iterateTimestepdoc, py::arg("inplace")=false)
 		.def("evolveTimesteps", &Diffusion::evolveTimesteps, classevolveTimestepsdoc, py::arg("iterations"), py::arg("inplace")=false)
 		.def("evolveEinstein", &Diffusion::evolveEinstein, evolveEinsteinddoc, py::arg("iterations"), py::arg("inplace")=false)
-		.def("findNumberParticles", &Diffusion::findNumberParticles, findNumberParticlesdoc);
+		.def("findNumberParticles", &Diffusion::findNumberParticles, findNumberParticlesdoc)
+		.def("getNthquartile", &Diffusion::getNthquartile, py::arg("N"));
 }
