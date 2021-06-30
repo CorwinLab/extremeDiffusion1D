@@ -54,7 +54,7 @@ double gettoNextSite(const double occ, const double bias,
 	}
 
 	if (bias <= 0.000001){
-	       return round(occ * bias);
+		return round(occ * bias);
 	}
 
 	if (occ < smallCutoff) {
@@ -402,6 +402,42 @@ class Diffusion{
 		}
 };
 
+// Get the Nth quartile of the occupancy vector. The minIdx and maxIdx help
+// narrow down the search range. 
+double getNthquartile(
+		const std::vector<double>& occupancy,
+		const double centerIdx,
+		const unsigned long int minIdx,
+		const unsigned long int maxIdx,
+		const double N
+)
+{
+	double right_dist = maxIdx - centerIdx;
+	double left_dist = centerIdx - minIdx;
+	double dist;
+
+	unsigned long int right_idx = maxIdx;
+	unsigned long int left_idx = minIdx;
+
+	double sum = 0;
+
+	while (sum < N){
+		if (right_dist >= left_dist){
+			dist = right_dist;
+			sum += occupancy[right_idx];
+			right_idx -= 1;
+			right_dist -= 1.0;
+		}
+		else{
+			dist = left_dist;
+			sum += occupancy[left_idx];
+			left_idx += 1;
+			left_dist -= 1.0;
+		}
+	}
+	return dist;
+}
+
 double generateBeta(double beta){
 	boost::random::beta_distribution<>::param_type params(beta, beta);
 	return beta_dist(gen, params);
@@ -410,6 +446,8 @@ double generateBeta(double beta){
 PYBIND11_MODULE(cDiffusion, m){
 	m.doc() = "C++ diffusion";
 	m.def("generateRandomBeta", &generateBeta, py::arg("beta"));
+	m.def("getNthquartile", &getNthquartile, py::arg("occupancy"), py::arg("centerIdx"),
+				py::arg("minIdx"), py::arg("maxIdx"), py::arg("N"));
 
 	const char * pyfloatdoc = R"V0G0N(
 Evolve the occupancy forward one timestep drawing from the provided beta distribution.
