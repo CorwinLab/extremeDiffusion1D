@@ -13,6 +13,7 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include <assert.h>
+#include "diffusion.hpp"
 
 namespace py = pybind11;
 
@@ -245,7 +246,11 @@ class Diffusion{
 		std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > edges;
 
 	public:
-		Diffusion(const double numberOfParticles, const double b, const double scutoff=pow(2, 31)-2, const double lcutoff=1e31){
+		Diffusion(
+			const double numberOfParticles,
+			const double b,
+			const double scutoff=pow(2, 31)-2,
+			const double lcutoff=1e31) {
 			N = numberOfParticles;
 			beta = b;
 			smallCutoff = scutoff;
