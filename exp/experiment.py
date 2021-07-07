@@ -33,7 +33,7 @@ def runExperiment(beta, save_file):
     for t in dt: 
         d.evolveTimesteps(t, inplace=True) 
         quart = [d.getNthquartile(N / i) for i in Ns]
-        quartiles.append(quart)
+        quartiles.append(quart)Quartiles Shape: (1, 1)
     times = times - 1
     minEdges, maxEdges = d.getEdges()
     maxEdges = np.array(maxEdges)
@@ -47,11 +47,13 @@ def runExperiment(beta, save_file):
     np.savetxt(save_file, return_array)
 
 if __name__ == '__main__':
+    '''
     topDir = sys.argv[1]
     sysID = sys.argv[2]
     save_dir = f'{topDir}/1.0/1Large/' 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     save_file = save_dir + f'Quartiles{sysID}.txt'
-    runExperiment(1.0, save_file)
+    '''
+    runExperiment(1.0, 'Data.txt')
     

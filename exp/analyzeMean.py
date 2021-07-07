@@ -73,8 +73,8 @@ for i in range(len(Ns)):
     Nstr = '{:.0e}'.format(Ns[i])
     ax.plot(times/np.log(Ns[i]), var[:, i]/(np.log(Ns[i])**(2/3)), label='N='+Nstr)
     N = Ns[i]
-    theory = (2*np.log(N))**(2/3) * (times/np.log(N)-1)**(4/3) / (2*times/np.log(N)-1)
-    ax.plot(times/np.log(N), theory/(np.log(N) **(2/3)), label='Theory')
+    theory = (np.log(N))**(1/2) * (times/np.log(N)-1)**(3/2) / (2*times/np.log(N)-1)
+    ax.plot(times/np.log(N), theory/(np.log(N) **(1/2)), label='Theory')
     ax.legend()
     ax.set_xscale('log')
     ax.set_yscale('log')

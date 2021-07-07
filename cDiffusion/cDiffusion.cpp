@@ -18,7 +18,7 @@
 namespace py = pybind11;
 
 std::random_device rd;
-boost::mt19937 gen(rd());
+boost::random::mt19937_64 gen(rd());
 std::uniform_real_distribution<> dis(0.0, 1.0);
 boost::random::binomial_distribution<> binomial;
 boost::random::normal_distribution<> normal;
@@ -26,8 +26,9 @@ boost::random::beta_distribution<> beta_dist;
 const double smallCutoff = pow(2, 31) - 2;
 const double largeCutoff = 1e31;
 
-double generateBeta(double beta){
+double generateBeta(boost::random::beta_distribution<>::param_type params){
 	// If beta = 0 return either 0 or 1
+	double beta = params.beta();
 	if (beta == 0.0){
 		return round(dis(gen));
 	}
@@ -36,7 +37,6 @@ double generateBeta(double beta){
 		return dis(gen);
 	}
 	else{
-		boost::random::beta_distribution<>::param_type params(beta, beta);
 		return beta_dist(gen, params);
 	}
 }
@@ -125,7 +125,7 @@ std::pair<unsigned long int, unsigned long int> floatEvolveTimeStep(
 
 		double bias = 0;
 		if (*occ != 0) {
-			bias = beta_dist(gen, betaParams);
+			bias = generateBeta(betaParams);
 			toNextSite = gettoNextSite(*occ, bias, smallCutoff, largeCutoff);
 		}
 		else{
