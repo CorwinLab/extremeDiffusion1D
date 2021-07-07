@@ -438,6 +438,11 @@ class Diffusion{
 			}
 		}
 
+		void evolveToTime(const unsigned long int t, bool inplace=false){
+			unsigned long int dt = t - time;
+			evolveTimesteps(dt, inplace);
+		}
+
 		void evolveEinstein(const unsigned int iterations, bool inplace=false){
 			if (!inplace){
 				unsigned int edgesLength = edges.first.size();
@@ -660,5 +665,6 @@ Examples
 		.def("evolveTimesteps", &Diffusion::evolveTimesteps, classevolveTimestepsdoc, py::arg("iterations"), py::arg("inplace")=false)
 		.def("evolveEinstein", &Diffusion::evolveEinstein, evolveEinsteinddoc, py::arg("iterations"), py::arg("inplace")=false)
 		.def("findNumberParticles", &Diffusion::findNumberParticles, findNumberParticlesdoc)
-		.def("getNthquartile", &Diffusion::getNthquartile, py::arg("N"));
+		.def("getNthquartile", &Diffusion::getNthquartile, py::arg("N"))
+		.def("evolveToTime", &Diffusion::evolveToTime, py::arg("time"), py::arg("inplace")=false);
 }

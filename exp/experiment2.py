@@ -21,22 +21,19 @@ def runExperiment(beta, save_file):
     filename : str
         Where to save the edges to.
     '''
-    N = 1e50
+    N = 1e10
     d = Diffusion(N, beta=beta, smallCutoff=0, largeCutoff=0)
     num_of_steps = int( 3 * (np.log(float(N)) ** (5/2)) )
     d.initializeOccupationAndEdges(num_of_steps)
     times = np.geomspace(1, num_of_steps, 5000, dtype=np.int64)
     times = np.unique(times)
-    save_times = times - 1
-    save_times = save_times[1:]
-    dt = np.diff(times)
     Ns = np.geomspace(1e20, 1e280, 14)
     quartiles = []
     count = 0
     elapsed_time = 0
     prev_idx = 0
-    for j, t in enumerate(dt):
-        d.evolveTimesteps(t, inplace=True)
+    for j, t in enumerate(times):
+        d.evolveToTime(t, inplace=True)
         quart = [d.getNthquartile(N / i) for i in Ns]
         quartiles.append(quart)
 
@@ -46,7 +43,7 @@ def runExperiment(beta, save_file):
             count = (elapsed_time // 100)
 
             _, maxEdges = d.getEdges()
-            append_times = save_times[prev_idx : j + 1]
+            append_times = times[prev_idx : j + 1] - 1
             maxEdges = np.asarray(maxEdges)
             maxEdges = maxEdges[append_times]
 
@@ -59,7 +56,6 @@ def runExperiment(beta, save_file):
 
             f = open(save_file, 'a')
             np.savetxt(f, return_array)
-            f.write("\n")
             f.close()
 
             quartiles = []
@@ -67,6 +63,7 @@ def runExperiment(beta, save_file):
 
     data = np.loadtxt(save_file)
     t = data[:, 0]
+    assert np.all(t == (times-1))
 
 if __name__ == '__main__':
     '''
