@@ -1,86 +1,110 @@
-# @Author: Eric Corwin <ecorwin>
-# @Date:   2020-08-17T11:58:36-07:00
-# @Email:  eric.corwin@gmail.com
-# @Filename: BarraquandCorwin.py
-# @Last modified by:   ecorwin
-# @Last modified time: 2021-01-18T13:24:49-08:00
-
 import numpy as np
+import sys
+sys.path.append('../cDiffusion')
+import cDiffusion as cdiff
+from datetime import datetime
+import os
+import csv
 
-def einsteinBias(N):
-    return np.zeros(N) + .5
-
-def betaBias(N, alpha=1, beta=1):
-    return np.random.beta(alpha, beta, size=N)
-
-def uniformBias(N):
-    return np.random.uniform(size=N)
-
-def floatEvolveTimeStep(occupancy, biases, smallCutoff = 1e9):
+class Diffusion(cdiff.Diffusion):
     '''
-    args:
-    occupancy (array of floats): How many walkers are at each element
-    biases (array of floats): Weight of our weighted coin at each element for this timestep
-    smallCutoff (float): The precision of our floating point number
+    Helper class for C++ Diffusion object.
     '''
-    # Motion in 1d on the positive number line, shifting by 1/2 step in space each time step
-    # Small numbers can be treated like an integer using binomial
-    small = occupancy < smallCutoff
-    # Giant numbers we don't need to worry about variance since it won't matter anyway
-    giant = occupancy > smallCutoff**2
-    # Medium numbers we can use the gaussian approximation
-    medium = np.logical_and(~small, ~giant)
 
-    rightShift = np.zeros(shape=len(occupancy)+1)
-    # If we're so large that sqrt(N) is less than the precision
-    rightShift[np.hstack([False, giant])] = np.round(biases[giant] * occupancy[giant])
-    # If sqrt(N) is within precision, but we're too big to use binomial then use the gaussian appx
-    mediumVariance = occupancy[medium] * biases[medium] * (1-biases[medium])
-    rightShift[np.hstack([False, medium])] = np.ceil(np.random.normal( loc=biases[medium]*occupancy[medium], scale = np.sqrt(mediumVariance) ))
-    # If we're small enough to use integer representations then use binomial
-    rightShift[np.hstack([False, small])] = np.random.binomial(occupancy[small].astype(int), biases[small])
+    def __str__(self):
+        return f"Diffusion(N={self.getN()}, beta={self.getBeta()})"
 
-    # return occupancy - rightShift + np.roll(rightShift,1)
-    returnData = np.round(occupancy - rightShift[1:] + rightShift[:-1])
-    # enforce that the returnData is always positive
+    def __repr__(self):
+        return self.__str__()
 
-    return returnData #np.round(occupancy + (- rightShift[1:] + rightShift[:-1]))
+    @property
+    def center(self):
+        return np.arange(self.getTime()) * 0.5
 
-def floatRunFixedTime(maxTime, biasFunction, numWalkers=None, dtype=np.float):
-    # This is useful for running things in parallel
-    np.random.seed()
-    # Start w/ the smallest system possible
-    occupancy = np.zeros(2, dtype=dtype)
-    origin = 0
+    @property
+    def minDistance(self):
+        minEdge = self.getEdges()[0]
+        return minEdge - self.center
 
-    if numWalkers:
-        occupancy[0] = numWalkers
-    else:
-        occupancy[0] = np.finfo(dtype).max
+    @property
+    def maxDistance(self):
+        maxEdge = self.getEdges()[1]
+        return maxEdge - self.center
 
-    edges = np.empty( (maxTime,2) )
-    # start = time.time()
+    def evolveSaveOccupancy(self, times):
+        '''
+        Evolve the system forward in "chuncks" of time and save the occupancy after
+        each chunk of time.
 
-    for t in range(maxTime):
-        # The origin shifts by 1/2 a step for each iteration
-        origin += .5
+        Parameters
+        ----------
+        times : list
+            Time steps to save the occupancy at.
 
-        biases = biasFunction(len(occupancy))
-        # occupancy = numbaFloatEvolveTimeStep(occupancy, biases)
-        occupancy = floatEvolveTimeStep(occupancy, biases)
-        # Find the filled region, the first index tells us to extract the list from what where gives us
-        # The second list gives us the first [0] and last [-1] element
-        endPoints = np.where(occupancy)[0][[0,-1]]
-        lenFilled = endPoints[1]-endPoints[0] + 1
-        # Trim the occupancy
-        newOcc = np.zeros(lenFilled + 1)
-        newOcc[:lenFilled] = occupancy[endPoints[0]:(endPoints[1]+1)]
-        occupancy = newOcc
-        edges[t,:] = endPoints - origin
-        # Shift the origin
-        origin -= endPoints[0]
+        Returns
+        -------
+        occupancies : list
+            Occupancy at each time
+        '''
+        occupancies = []
+        dt = np.diff(times)
+        for t in dt:
+            print(t)
+            self.evolveTimesteps(t, inplace=True)
+            occ = self.getOccupancy()
+            occupancies.append(occ)
 
-        # if t % 10000 == 0:
-        #     print(t)
-    # print('Finished in', time.time()-start )
-    return edges#, occupancy
+        return occupancies
+
+    def saveEdges(self, filename=None):
+        '''
+        Saves the edges to a txt file. If no filename is provided defaults
+        to saving as the date and time. Also stores metadata about the simulation
+        such as N, beta, smallCutoff, largeCutoff to a csv called "metadata.csv".
+
+        Parameters
+        ----------
+        filename : str
+            Edges save filename
+
+        Examples
+        --------
+        >>> d = Diffusion(50, 1)
+        >>> occ = np.zeros(50)
+        >>> occ[0] = 50
+        >>> d.setOccupancy(occ)
+        >>> d.evolveTimesteps(10)
+        >>> edges = d.getEdges()
+        >>> d.saveEdges('./myEdges.txt')
+        '''
+
+        edges = np.array(self.getEdges()).T
+        if filename is None:
+            filename = datetime.now().strftime('%y-%m-%d--%H-%M-%S.txt')
+        vars = {'filename': os.path.basename(filename), 'N': self.getN(),
+                'beta': self.getBeta(), 'smallCutoff': self.getsmallCutoff(),
+                'largeCutoff': self.getlargeCutoff()}
+
+        meta_filename = 'metadata.csv'
+        filepath = os.path.abspath(filename)
+        dir = os.path.dirname(filepath)
+        meta_filename = os.path.join(dir, meta_filename)
+        if os.path.isfile(meta_filename):
+            with open(meta_filename, 'a') as file:
+                writer = csv.DictWriter(file, fieldnames=vars.keys())
+                writer.writerow(vars)
+        else:
+            with open(meta_filename, 'w', newline='') as file:
+                writer = csv.DictWriter(file, fieldnames=vars.keys())
+                writer.writeheader()
+                writer.writerow(vars)
+
+        np.savetxt(filename, edges)
+
+if __name__ == '__main__':
+    N = 100
+    times = np.geomspace(1, round(np.log(N) ** (5/2)), 1000, dtype=np.int64)
+    times = np.unique(times)
+    d = Diffusion(N, 1.0)
+    d.initializeOccupationAndEdges()
+    occs = d.evolveSaveOccupancy(times)
