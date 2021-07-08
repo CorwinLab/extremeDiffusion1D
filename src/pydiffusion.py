@@ -42,7 +42,7 @@ class Diffusion(cdiff.Diffusion):
     def evolveAndSaveQuartile(self, time, quartiles, file):
         '''
         Looks like this is a bit faster than the evolveAndSave method which
-        saves everything to a numpy array and then saves it. 
+        saves everything to a numpy array and then saves it.
         '''
         f = open(file, 'w')
         writer = csv.writer(f)
@@ -65,18 +65,3 @@ class Diffusion(cdiff.Diffusion):
             row = [self.getTime(), maxEdge] + NthQuartile
             save_array[row_num, :] = row
         np.savetxt(file, save_array)
-
-if __name__ == '__main__':
-    import time
-    ex_times = []
-    for _ in range(10):
-        start = time.time()
-        N = 1e25
-        times = np.geomspace(1, round(np.log(N) ** (5/2)), 1000, dtype=np.int64)
-        times = np.unique(times)
-        size = round(np.log(N) ** (5/2)) + 1
-        d = Diffusion(N, 1.0, size)
-        d.evolveAndSaveQuartile(times, [1/1e2, 1/1e5, 1/1e10], 'what')
-        ex_times.append(time.time() - start)
-    print(np.mean(ex_times))
-    print(np.var(ex_times))
