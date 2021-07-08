@@ -6,6 +6,9 @@
 
 namespace py = pybind11;
 
+std::random_device rd;
+boost::random::mt19937_64 gen(rd());
+
 //Constuctor
 Diffusion::Diffusion(
   const double _nParticles,
@@ -19,12 +22,19 @@ Diffusion::Diffusion(
     largeCutoff(_largeCutoff),
     ProbDistFlag(_probDistFlag)
 {
-  edges.first.push_back(0), edges.second.push_back(1);
+  edges.first.resize(occupancySize+1), edges.second.resize(occupancySize+1);
+  edges.first[0] = 0, edges.second[0] = 1;
+
+  occupancy.resize(occupancySize);
+  occupancy[0] = nParticles;
+
   boost::random::beta_distribution<>::param_type params(_beta, _beta);
   betaParams = params;
+  std::uniform_real_distribution<>::param_type unifParams(0.0, 1.0);
+  dis.param(unifParams);
+  gen.seed(rd());
+
   time = 0;
-  boost::random::mt19937_64 gen(rd());
-  std::uniform_real_distribution<> dis(0.0, 1.0);
 }
 
 double Diffusion::toNextSite(double currentSite, double bias){
@@ -129,9 +139,25 @@ void Diffusion::iterateTimestep()
 
   edges.first[time+1] = minEdge;
   edges.second[time+1] = maxEdge;
+  time += 1;
 }
 
-PYBIND11_MODULE(cDiffusion, m){
+double Diffusion::NthquartileSingleSided(const double NQuart)
+{
+  unsigned long int maxIdx = edges.second[time];
+  double centerIdx = time * 0.5;
+
+	double dist = maxIdx - centerIdx;
+	double sum = occupancy[maxIdx];
+	while (sum < NQuart){
+		maxIdx -= 1;
+		dist -= 1;
+		sum += occupancy[maxIdx];
+	}
+	return dist;
+}
+
+PYBIND11_MODULE(diffusion, m){
 	m.doc() = "C++ diffusion";
 
 	py::class_<Diffusion>(m, "Diffusion")
@@ -161,5 +187,6 @@ PYBIND11_MODULE(cDiffusion, m){
     .def("getProbDistFlat", &Diffusion::getProbDistFlag)
 		.def("getEdges", &Diffusion::getEdges)
     .def("getTime", &Diffusion::getTime)
-		.def("iterateTimestep", &Diffusion::iterateTimestep);
+		.def("iterateTimestep", &Diffusion::iterateTimestep)
+    .def("NthquartileSingleSided", &Diffusion::NthquartileSingleSided);
 }

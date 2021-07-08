@@ -23,10 +23,9 @@ class Diffusion{
     // It would be nice if this could be a generic distribution as:
     // boost::random::distribution bias
 		boost::random::beta_distribution<>::param_type betaParams;
-    std::random_device rd;
 
-    //boost::random::mt19937_64 gen(rd());
-    boost::random::mt19937_64 gen;
+		std::random_device rd;
+		boost::random::mt19937_64 gen;
 
 		//std::uniform_real_distribution<> dis(0.0, 1.0);
     std::uniform_real_distribution<> dis;
@@ -73,6 +72,8 @@ class Diffusion{
     //Functions that do things
 
     void iterateTimestep();
+
+		double NthquartileSingleSided(const double NQuart);
   };
 
 #endif /* DIFFUSION_HPP_ */

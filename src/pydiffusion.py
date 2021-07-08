@@ -1,0 +1,82 @@
+import numpy as np
+import sys
+sys.path.append('../cDiffusion')
+import diffusion as cdiff
+from datetime import datetime
+import os
+import csv
+
+class Diffusion(cdiff.Diffusion):
+    '''
+    Helper class for C++ Diffusion object.
+    '''
+
+    def __str__(self):
+        return f"Diffusion(N={self.getNParticles()}, beta={self.getBeta()}, size={len(self.getEdges()[0])}, time={self.getTime()})"
+
+    def __repr__(self):
+        return self.__str__()
+
+    @property
+    def center(self):
+        return np.arange(self.getTime()) * 0.5
+
+    @property
+    def minDistance(self):
+        minEdge = self.getEdges()[0]
+        return minEdge - self.center
+
+    @property
+    def maxDistance(self):
+        maxEdge = self.getEdges()[1]
+        return maxEdge - self.center
+
+    def evolveTimeSteps(self, iterations):
+        for _ in iterations:
+            self.iterateTimestep()
+
+    def evolveToTime(self, time):
+        while (self.getTime() < time):
+            self.iterateTimestep()
+
+    def evolveAndSaveQuartile(self, time, quartiles, file):
+        '''
+        Looks like this is a bit faster than the evolveAndSave method which
+        saves everything to a numpy array and then saves it. 
+        '''
+        f = open(file, 'w')
+        writer = csv.writer(f)
+        header = ['time', 'MaxEdge'] + ['{:.0e}'.format(1/i) for i in quartiles]
+        writer.writerow(header)
+        for t in time:
+            self.evolveToTime(t)
+            NthQuartile = [self.NthquartileSingleSided(self.getNParticles() * q) for q in quartiles]
+            maxEdge = self.getEdges()[1][t]
+            row = [self.getTime(), maxEdge] + NthQuartile
+            writer.writerow(row)
+        f.close()
+
+    def evolveAndSave(self, time, quartiles, file):
+        save_array = np.zeros(shape=(len(time), len(quartiles)+2))
+        for row_num, t in enumerate(time):
+            self.evolveToTime(t)
+            NthQuartile = [self.NthquartileSingleSided(self.getNParticles() * q) for q in quartiles]
+            maxEdge = self.getEdges()[1][t]
+            row = [self.getTime(), maxEdge] + NthQuartile
+            save_array[row_num, :] = row
+        np.savetxt(file, save_array)
+
+if __name__ == '__main__':
+    import time
+    ex_times = []
+    for _ in range(10):
+        start = time.time()
+        N = 1e25
+        times = np.geomspace(1, round(np.log(N) ** (5/2)), 1000, dtype=np.int64)
+        times = np.unique(times)
+        size = round(np.log(N) ** (5/2)) + 1
+        d = Diffusion(N, 1.0, size)
+        d.evolveAndSaveQuartile(times, [1/1e2, 1/1e5, 1/1e10], 'what')
+        ex_times.append(time.time() - start)
+    print(np.mean(ex_times))
+    print(np.var(ex_times))

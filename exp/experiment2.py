@@ -1,6 +1,6 @@
 import sys
 sys.path.append('../src')
-from cdiffusion import Diffusion
+from pydiffusion import Diffusion
 import numpy as np
 import os
 import time
@@ -21,49 +21,13 @@ def runExperiment(beta, save_file):
     filename : str
         Where to save the edges to.
     '''
-    N = 1e10
-    d = Diffusion(N, beta=beta, smallCutoff=0, largeCutoff=0)
-    num_of_steps = int( 3 * (np.log(float(N)) ** (5/2)) )
-    d.initializeOccupationAndEdges(num_of_steps)
-    times = np.geomspace(1, num_of_steps, 5000, dtype=np.int64)
-    times = np.unique(times)
-    Ns = np.geomspace(1e20, 1e280, 14)
-    quartiles = []
-    count = 0
-    elapsed_time = 0
-    prev_idx = 0
-    for j, t in enumerate(times):
-        d.evolveToTime(t, inplace=True)
-        quart = [d.getNthquartile(N / i) for i in Ns]
-        quartiles.append(quart)
-
-        # Save quartiles every couple of steps in time
-        elapsed_time += t
-        if (elapsed_time // 100) > count:
-            count = (elapsed_time // 100)
-
-            _, maxEdges = d.getEdges()
-            append_times = times[prev_idx : j + 1] - 1
-            maxEdges = np.asarray(maxEdges)
-            maxEdges = maxEdges[append_times]
-
-            maxEdges = np.reshape(maxEdges, (len(maxEdges), 1))
-            append_times = np.reshape(append_times, (len(append_times), 1))
-            quartiles = np.asarray(quartiles)
-
-            return_array = np.hstack((maxEdges, quartiles))
-            return_array = np.hstack((append_times, return_array))
-
-            f = open(save_file, 'a')
-            np.savetxt(f, return_array)
-            f.close()
-
-            quartiles = []
-            prev_idx = j + 1
-
-    data = np.loadtxt(save_file)
-    t = data[:, 0]
-    assert np.all(t == (times-1))
+    N = 1e25
+    num_of_steps = round(3 * np.log(N) ** (5/2))
+    d = Diffusion(N, beta=beta, occupancySize=num_of_steps+1, smallCutoff=0, largeCutoff=0)
+    save_times = np.geomspace(1, num_of_steps, 1000, dtype=np.int64)
+    save_times = np.unique(save_times)
+    quartiles = [1/1e2, 1/1e5, 1/1e10, 1/1e15, 1/1e25]
+    d.evolveAndSaveQuartile(save_times, quartiles, save_file)
 
 if __name__ == '__main__':
     '''
