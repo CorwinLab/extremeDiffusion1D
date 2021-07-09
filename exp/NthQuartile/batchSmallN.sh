@@ -8,4 +8,4 @@
 #SBATCH --output=/home/jhass2/Data/log/LargeQuartile.%A-%a.out
 
 TOPDIR=/home/jhass2/Data/
-python3 /home/jhass2/Code/extremeDiffusion1D/exp/getSmallNData.py $TOPDIR $SLURM_ARRAY_TASK_ID
+python3 /home/jhass2/Code/extremeDiffusion1D/exp/NthQuartile/N300DataScript.py $TOPDIR $SLURM_ARRAY_TASK_ID

@@ -1,10 +1,10 @@
 import numpy as np
 import sys
-sys.path.append('../cDiffusion')
-import diffusion as cdiff
-from datetime import datetime
 import os
+sys.path.append(os.path.abspath('../cDiffusion'))
+import diffusion as cdiff
 import csv
+import time
 
 class Diffusion(cdiff.Diffusion):
     '''

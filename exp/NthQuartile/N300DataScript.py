@@ -1,9 +1,9 @@
 import sys
-sys.path.append('../src')
+import os
+sys.path.append(os.path.abspath('../../src'))
+sys.path.append(os.path.abspath('../../cDiffusion'))
 from pydiffusion import Diffusion
 import numpy as np
-import os
-import time
 
 def runExperiment(beta, save_file):
     '''
@@ -21,21 +21,21 @@ def runExperiment(beta, save_file):
     filename : str
         Where to save the edges to.
     '''
-    N = 1e25
+    N = 1e300
     num_of_steps = round(3 * np.log(N) ** (5/2))
-    d = Diffusion(N, beta=beta, occupancySize=num_of_steps+1, smallCutoff=0, largeCutoff=0)
+    d = Diffusion(N, beta=beta, occupancySize=num_of_steps, smallCutoff=0, largeCutoff=0)
     save_times = np.geomspace(1, num_of_steps, 1000, dtype=np.int64)
     save_times = np.unique(save_times)
-    quartiles = [1/1e2, 1/1e5, 1/1e10, 1/1e15, 1/1e25]
+    quartiles = [10 ** i for i in range(20, 280, 20)]
+    quartiles = [1/i for i in quartiles]
     d.evolveAndSaveQuartile(save_times, quartiles, save_file)
 
 if __name__ == '__main__':
-    '''
     topDir = sys.argv[1]
     sysID = sys.argv[2]
     save_dir = f'{topDir}/1.0/1Large/'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     save_file = save_dir + f'Quartiles{sysID}.txt'
-    '''
-    runExperiment(1.0, 'Data.txt')
+    save_file = os.path.abspath(save_file)
+    runExperiment(1.0, save_file)

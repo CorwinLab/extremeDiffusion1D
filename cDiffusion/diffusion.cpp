@@ -25,7 +25,7 @@ Diffusion::Diffusion(
   edges.first.resize(occupancySize+1), edges.second.resize(occupancySize+1);
   edges.first[0] = 0, edges.second[0] = 1;
 
-  occupancy.resize(occupancySize);
+  occupancy.resize(occupancySize+1);
   occupancy[0] = nParticles;
 
   boost::random::beta_distribution<>::param_type params(_beta, _beta);
@@ -148,11 +148,11 @@ double Diffusion::NthquartileSingleSided(const double NQuart)
   double centerIdx = time * 0.5;
 
 	double dist = maxIdx - centerIdx;
-	double sum = occupancy[maxIdx];
+	double sum = occupancy.at(maxIdx);
 	while (sum < NQuart){
 		maxIdx -= 1;
 		dist -= 1;
-		sum += occupancy[maxIdx];
+		sum += occupancy.at(maxIdx);
 	}
 	return dist;
 }
