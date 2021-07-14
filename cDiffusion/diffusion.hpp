@@ -75,6 +75,8 @@ class Diffusion{
     void iterateTimestep();
 
 		double NthquartileSingleSided(const double NQuart);
+
+		double pGreaterThanX(const unsigned long int x);
   };
 
 #endif /* DIFFUSION_HPP_ */

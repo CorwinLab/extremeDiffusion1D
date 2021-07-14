@@ -56,6 +56,19 @@ class Diffusion(cdiff.Diffusion):
             writer.writerow(row)
         f.close()
 
+    def evolveAndSaveV(self, time, vs, file):
+        f = open(file, 'w')
+        writer = csv.writer(f)
+        header = ['time'] + [str(v) for v in vs]
+        writer.writerow(header)
+        for t in time:
+            self.evolveToTime(t)
+            idx = self.getTime() * vs + self.getTime() * 0.5
+            pos = [self.pGreaterThanX(int(i)) for i in idx]
+            row = [self.getTime()] + pos
+            writer.writerow(row)
+        f.close()
+
     def evolveAndSave(self, time, quartiles, file):
         save_array = np.zeros(shape=(len(time), len(quartiles)+2))
         for row_num, t in enumerate(time):

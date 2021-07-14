@@ -165,6 +165,17 @@ double Diffusion::NthquartileSingleSided(const double NQuart)
 	return dist;
 }
 
+double Diffusion::pGreaterThanX(const unsigned long int idx)
+{
+  unsigned long int maxIdx = edges.second[time];
+  double Nabove = 0.0;
+  while (maxIdx >= idx){
+    Nabove += occupancy.at(maxIdx);
+    maxIdx-=1;
+  }
+  return Nabove / nParticles;
+}
+
 PYBIND11_MODULE(diffusion, m){
 	m.doc() = "C++ diffusion";
 
@@ -196,5 +207,6 @@ PYBIND11_MODULE(diffusion, m){
 		.def("getEdges", &Diffusion::getEdges)
     .def("getTime", &Diffusion::getTime)
 		.def("iterateTimestep", &Diffusion::iterateTimestep)
-    .def("NthquartileSingleSided", &Diffusion::NthquartileSingleSided);
+    .def("NthquartileSingleSided", &Diffusion::NthquartileSingleSided)
+    .def("pGreaterThanX", &Diffusion::pGreaterThanX, py::arg("idx"));
 }
