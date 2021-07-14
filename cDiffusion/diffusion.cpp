@@ -20,16 +20,20 @@ Diffusion::Diffusion(
   : nParticles(_nParticles),
     smallCutoff(_smallCutoff),
     largeCutoff(_largeCutoff),
-    ProbDistFlag(_probDistFlag)
+    ProbDistFlag(_probDistFlag),
+    beta(_beta)
 {
   edges.first.resize(occupancySize+1), edges.second.resize(occupancySize+1);
-  edges.first[0] = 0, edges.second[0] = 1;
+  edges.first[0] = 0, edges.second[0] = 0;
 
   occupancy.resize(occupancySize+1);
   occupancy[0] = nParticles;
 
-  boost::random::beta_distribution<>::param_type params(_beta, _beta);
-  betaParams = params;
+  if (_beta != 0 ){
+    boost::random::beta_distribution<>::param_type params(_beta, _beta);
+    betaParams = params;
+  }
+
   std::uniform_real_distribution<>::param_type unifParams(0.0, 1.0);
   dis.param(unifParams);
   gen.seed(rd());
@@ -63,7 +67,6 @@ double Diffusion::toNextSite(double currentSite, double bias){
 
 double Diffusion::generateBeta(){
 	// If beta = 0 return either 0 or 1
-	double beta = betaParams.beta();
 	if (beta == 0.0){
 		return round(dis(gen));
 	}
@@ -80,7 +83,7 @@ void Diffusion::iterateTimestep()
 {
   unsigned long int prevMinIndex = edges.first[time];
   unsigned long int prevMaxIndex = edges.second[time];
-	if (prevMinIndex >= prevMaxIndex) {
+	if (prevMinIndex > prevMaxIndex) {
 		throw std::runtime_error("Minimum edge must be greater than maximum edge: (" + std::to_string(prevMinIndex) + ", " + std::to_string(prevMaxIndex) + ")");
 	}
 
@@ -107,6 +110,9 @@ void Diffusion::iterateTimestep()
 		if (*occ != 0) {
 			bias = Diffusion::generateBeta();
 			toNextSite = Diffusion::toNextSite(*occ, bias);
+      if (!ProbDistFlag){
+        toNextSite = round(toNextSite);
+      }
 		}
 		else{
 			toNextSite = 0;
@@ -132,10 +138,12 @@ void Diffusion::iterateTimestep()
 		}
 	}
 
+  /*
 	if (minEdge == maxEdge){
 		// Only one state occupied so add 1 to maxEdge to ensure loop runs next step.
 		maxEdge += 1;
 	}
+  */
 
   edges.first[time+1] = minEdge;
   edges.second[time+1] = maxEdge;
@@ -173,7 +181,7 @@ PYBIND11_MODULE(diffusion, m){
       py::arg("occupancySize"),
       py::arg("smallCutoff")=pow(2,31)-2,
 			py::arg("largeCutoff")=1e31,
-      py::arg("probDistFlat")=false)
+      py::arg("probDistFlag")=true)
 
 		.def("getOccupancy", &Diffusion::getOccupancy)
 		.def("setOccupancy", &Diffusion::setOccupancy, py::arg("occupancy"))

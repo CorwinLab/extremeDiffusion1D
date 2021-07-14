@@ -19,6 +19,7 @@ class Diffusion{
 		double smallCutoff;
 		double largeCutoff;
 		bool ProbDistFlag;
+		double beta;
 
     // It would be nice if this could be a generic distribution as:
     // boost::random::distribution bias
@@ -46,7 +47,7 @@ class Diffusion{
       const unsigned long int occupancySize,
       const double _smallCutoff=pow(2, 31)-2,
       const double _largeCutoff=1e31,
-      const bool _probDistFlag=false);
+      const bool _probDistFlag=true);
     ~Diffusion() {};
 
     double getNParticles(){ return nParticles; };

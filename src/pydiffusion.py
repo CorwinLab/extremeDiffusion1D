@@ -19,7 +19,7 @@ class Diffusion(cdiff.Diffusion):
 
     @property
     def center(self):
-        return np.arange(self.getTime()) * 0.5
+        return np.arange(0, self.getTime()+1) * 0.5
 
     @property
     def minDistance(self):
@@ -32,7 +32,7 @@ class Diffusion(cdiff.Diffusion):
         return maxEdge - self.center
 
     def evolveTimeSteps(self, iterations):
-        for _ in iterations:
+        for _ in range(iterations):
             self.iterateTimestep()
 
     def evolveToTime(self, time):
