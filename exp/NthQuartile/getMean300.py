@@ -5,16 +5,19 @@ from matplotlib import pyplot as plt
 import glob
 import os
 
-files = glob.glob('/home/jhass2/Data/1.0/1/Q*.txt')
-data = np.loadtxt('/home/jhass2/Data/1.0/1/Quartiles1.txt')
-times = data[:, 0]
-Ns = np.geomspace(1e10, 1e50, 9)
+files = glob.glob('/home/jhass2/Data/1.0/1Large/Q*.txt')
+Ns = [float(10**i) for i in range(20, 300, 20)]
 running_sum = None
 running_sum_squared = None
-
-if not os.path.isfile('/home/jhass2/Data/1.0/1/mean.txt') or True:
+count = 0
+if (not os.path.isfile('/home/jhass2/Data/1.0/1Large/mean.txt')) or True:
     for f in files:
-        data = np.loadtxt(f)
+        basename = os.path.basename(f)
+        name = basename.split('.')[0]
+        num = name.replace('Quartiles', '')
+        if int(num) > 89:
+            continue
+        data = np.loadtxt(f, delimiter=',', skiprows=1)
         times = data[:, 0]
         maxEdge = data[:, 1]
         data = data[:, 2:]
@@ -27,17 +30,17 @@ if not os.path.isfile('/home/jhass2/Data/1.0/1/mean.txt') or True:
             running_sum_squared = (2*data) ** 2 
         else:
             running_sum_squared += (2*data) ** 2
-        print(f)
+        count += 1
 
-    mean = running_sum / len(files)
-    var = running_sum_squared / len(files) - mean ** 2 
+    mean = running_sum / count
+    var = running_sum_squared / count - mean ** 2 
 
-    np.savetxt('/home/jhass2/Data/1.0/1/mean.txt', mean)
-    np.savetxt('/home/jhass2/Data/1.0/1/var.txt', var)
+    np.savetxt('/home/jhass2/Data/1.0/1Large/mean.txt', mean)
+    np.savetxt('/home/jhass2/Data/1.0/1Large/var.txt', var)
 
 else: 
-    mean = np.loadtxt('/home/jhass2/Data/1.0/1/mean.txt')
-    var = np.loadtxt('/home/jhass2/Data/1.0/1/var.txt')
+    mean = np.loadtxt('/home/jhass2/Data/1.0/1Large/mean.txt')
+    var = np.loadtxt('/home/jhass2/Data/1.0/1Large/var.txt')
 
 for i in range(len(Ns)):
     fig, ax = plt.subplots()
@@ -104,6 +107,8 @@ ax.set_ylabel('Residual')
 ax.set_title(f'Number of Systems = {len(files)}')
 ax.set_xscale('log')
 ax.set_yscale('log')
+cm = plt.get_cmap('gist_heat')
+ax.set_color_cycle([cm(1. * i /len(Ns)) for i in range(len(Ns))])
 
 for i in range(len(Ns)):
     N = Ns[i]
