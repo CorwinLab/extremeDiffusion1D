@@ -63,8 +63,8 @@ class Diffusion(cdiff.Diffusion):
         writer.writerow(header)
         for t in time:
             self.evolveToTime(t)
-            idx = self.getTime() * vs
-            idx = idx.astype(int)
+            idx = (self.getTime() * vs + self.getTime()) / 2
+            idx = np.round(idx)
             pos = [self.pGreaterThanX(i) for i in idx]
             row = [self.getTime()] + pos
             writer.writerow(row)
@@ -84,16 +84,23 @@ class Diffusion(cdiff.Diffusion):
         '''
         Troubleshooting function to make sure that pGreaterThanX function
         works properly.
+
+        Examples
+        --------
+        >>> N = 1e300
+        >>> d = Diffusion(N, beta=1, occupancySize=10, smallCutoff=0, largeCutoff=0, probDistFlag=True)
+        >>> d.ProbBiggerX(np.array([0.5, 1]), 1)
         '''
         for _ in range(timesteps):
             self.iterateTimestep()
 
         # it looks like this produces the proper indeces we are looking for!
-        idx = self.getTime() * vs
-        idx = idx.astype(int)
+        idx = (self.getTime() * vs + self.getTime()) / 2
+        idx = np.round(idx).astype(np.int64)
 
         nonzeros = np.nonzero(self.getOccupancy())[0]
         Ns = [self.pGreaterThanX(i) for i in idx]
-        print('Prob Bigger than Index:', Ns)
+        print('Bigger than Index:', Ns)
         print('Indices: ', idx)
         print('Occupancy:', np.array(self.getOccupancy())[nonzeros])
+        print('Prob: ', np.array(Ns)/1e300)
