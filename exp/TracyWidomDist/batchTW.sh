@@ -4,7 +4,7 @@
 #SBATCH --error=/home/jhass2/Data/log/TW/TW.%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --array=0-500
+#SBATCH --array=0-1000
 #SBATCH --output=/home/jhass2/Data/log/TW/TW.%A-%a.out
 
 TOPDIR=/home/jhass2/Data/

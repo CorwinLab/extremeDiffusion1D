@@ -172,7 +172,7 @@ double Diffusion::pGreaterThanX(const unsigned long int idx)
   for (unsigned long int j = idx; j <= i; j++){
     Nabove += occupancy.at(j);
   }
-  return Nabove / nParticles; 
+  return Nabove; 
 }
 
 PYBIND11_MODULE(diffusion, m){
