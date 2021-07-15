@@ -167,13 +167,12 @@ double Diffusion::NthquartileSingleSided(const double NQuart)
 
 double Diffusion::pGreaterThanX(const unsigned long int idx)
 {
-  unsigned long int maxIdx = edges.second[time];
+  unsigned long int i = time;
   double Nabove = 0.0;
-  while (maxIdx >= idx){
-    Nabove += occupancy.at(maxIdx);
-    maxIdx-=1;
+  for (unsigned long int j = idx; j <= i; j++){
+    Nabove += occupancy.at(j);
   }
-  return Nabove / nParticles;
+  return Nabove / nParticles; 
 }
 
 PYBIND11_MODULE(diffusion, m){

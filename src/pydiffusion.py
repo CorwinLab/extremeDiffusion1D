@@ -64,7 +64,8 @@ class Diffusion(cdiff.Diffusion):
         for t in time:
             self.evolveToTime(t)
             idx = self.getTime() * vs
-            pos = [self.pGreaterThanX(int(i)) for i in idx]
+            idx = idx.astype(int)
+            pos = [self.pGreaterThanX(i) for i in idx]
             row = [self.getTime()] + pos
             writer.writerow(row)
         f.close()
@@ -78,3 +79,21 @@ class Diffusion(cdiff.Diffusion):
             row = [self.getTime(), maxEdge] + NthQuartile
             save_array[row_num, :] = row
         np.savetxt(file, save_array)
+
+    def ProbBiggerX(self, vs, timesteps):
+        '''
+        Troubleshooting function to make sure that pGreaterThanX function
+        works properly.
+        '''
+        for _ in range(timesteps):
+            self.iterateTimestep()
+
+        # it looks like this produces the proper indeces we are looking for!
+        idx = self.getTime() * vs
+        idx = idx.astype(int)
+
+        nonzeros = np.nonzero(self.getOccupancy())[0]
+        Ns = [self.pGreaterThanX(i) for i in idx]
+        print('Prob Bigger than Index:', Ns)
+        print('Indices: ', idx)
+        print('Occupancy:', np.array(self.getOccupancy())[nonzeros])
