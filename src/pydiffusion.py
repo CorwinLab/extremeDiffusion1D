@@ -63,7 +63,7 @@ class Diffusion(cdiff.Diffusion):
         writer.writerow(header)
         for t in time:
             self.evolveToTime(t)
-            idx = self.getTime() * vs + self.getTime() * 0.5
+            idx = self.getTime() * vs
             pos = [self.pGreaterThanX(int(i)) for i in idx]
             row = [self.getTime()] + pos
             writer.writerow(row)
