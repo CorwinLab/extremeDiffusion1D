@@ -8,7 +8,69 @@ import time
 
 class Diffusion(cdiff.Diffusion):
     '''
-    Helper class for C++ Diffusion object.
+    Helper class for C++ Diffusion object. Allows simulating random walks with
+    biases drawn from a beta distribution. Includes multiple helper functions to
+    return important data such as maximum distance and quartiles.
+
+    Parameters
+    ----------
+    numberOfParticles : int or float
+        Number of particles to include in the simulation.
+
+    beta : int or float
+        Value of the beta distribution to use. Must satisfy 0 <= beta <= 1.
+
+    occupancySize : int
+        Size of the edges and occupancy arrays to initialize to. This needs to
+        be at least the size of the number of timesteps that are planned to run.
+
+    smallCutoff : int or float (2**51 - 2)
+        Cutoff for when to use binomial distribution when calculating shift in
+        occupancy. This is deprecated and generally set to zero.
+
+    largeCutoff : int or float (1e31)
+        Cutoff for when to use occ * bias when calculating shift in occupancy.
+        This is also generally set to zero so we always use occ * bias.
+
+    probDistFlag : bool (true)
+        Whether or not to include fractional particles or not. If True doesn't
+        round the particles shifting and if False then rounds the particles so
+        there is always a whole number of particles.
+
+    Attributes
+    ----------
+    center : numpy array
+        Center of the occupancy over time.
+
+    minDistance : numpy array
+        The distance from the left side of the occupancy over time.
+
+    maxDistance : numpy array
+        The distance from the right side of the occupancy over time. This
+        is generally the one we care about.
+
+    occupancy : numpy array
+        Number of particles at each position in the system. More formally, this
+        is referred to as the partition function.
+
+    nParticles : float
+        Number of particles in the system
+
+    beta : float
+        Beta value of the beta distribution
+
+    smallCutoff : float
+        Cutoff for when to use binomial distribution when calculating shift in
+        occupancy. This is deprecated and generally set to zero.
+
+    largeCutoff : float
+        Cutoff for when to use occ * bias when calculating shift in occupancy.
+        This is also generally set to zero so we always use occ * bias.
+
+    probDistFlag : bool
+        Whether or not to include fractional particles or not. If True doesn't
+        round the particles shifting and if False then rounds the particles so
+        there is always a whole number of particles.
     '''
 
     def __str__(self):
@@ -19,30 +81,95 @@ class Diffusion(cdiff.Diffusion):
 
     @property
     def center(self):
-        '''
-        Returns center of the occupancy over time.
-        '''
-
         return np.arange(0, self.getTime()+1) * 0.5
 
     @property
     def minDistance(self):
-        '''
-        Returns the distance from the left side of the occupancy over time.
-        '''
-
         minEdge = self.getEdges()[0]
         return minEdge - self.center
 
     @property
     def maxDistance(self):
-        '''
-        Returns the distance from the right side of the occupancy over time. This
-        is generally the one we care about.
-        '''
-
         maxEdge = self.getEdges()[1]
         return maxEdge - self.center
+
+    @property
+    def occupancy(self):
+        return np.array(self.getOccupancy())
+
+    @occupancy.setter
+    def occupancy(self, occupancy):
+        self.setOccupancy(occupancy)
+
+    @property
+    def nParticles(self):
+        return self.getNParticles()
+
+    @property
+    def beta(self):
+        return self.getBeta()
+
+    @property
+    def smallCutoff(self):
+        return self.getSmallCutoff()
+
+    @smallCutoff.setter
+    def smallCutoff(self, smallCutoff):
+        self.setSmallCutoff(smallCutoff)
+
+    @property
+    def largeCutoff(self):
+        return self.getLargeCutoff()
+
+    @largeCutoff.setter
+    def largeCutoff(self, largeCutoff):
+        self.setLargeCutoff(largeCutoff)
+
+    @property
+    def probDistFlag(self):
+        return self.getProbDistFlag()
+
+    @probDistFlag.setter
+    def probDistFlag(self, flag):
+        self.setProbDistFlag(flag)
+
+    def iterateTimestep(self):
+        '''
+        Move the occupancy forward one timestep drawing biases from the beta
+        distribution.
+        '''
+
+        super().iterateTimestep()
+
+    def NthquartileSingleSided(self, NQuart):
+        '''
+        Get the rightmost Nth quartile of the occupancy.
+
+        Parameters
+        ----------
+        NQuart : float
+            Nth quartile to find. Must satisfy 0 < NQuart < nParticles.
+
+        Returns
+        -------
+        float
+            Distance from the center of the Nth quartile position.
+        '''
+
+        return super().NthquartileSingleSided(NQuart)
+
+    def pGreaterThanX(self, idx):
+        '''
+        Get the number of particles greater than index x.
+
+        Parameters
+        ----------
+        idx : int
+            Index to find the number of particles in the occupancy that are greater
+            than the index position.
+        '''
+
+        return super().pGreaterThanX(idx)
 
     def evolveTimeSteps(self, iterations):
         '''
