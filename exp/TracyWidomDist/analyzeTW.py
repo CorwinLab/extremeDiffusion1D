@@ -12,12 +12,10 @@ with open(files[0]) as g:
 squared_sum = None
 reg_sum = None
 
-for f in files[:5]:
-    print(f)
+for f in files:
     data = np.loadtxt(f, delimiter=',', skiprows=1)
     time = data[:, 0]
     data = data[:, 1:]
-    print(data[0, :])
     data = np.log(data/1e300) # subtract of N=1e300
 
     if squared_sum is None:
