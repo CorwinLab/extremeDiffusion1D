@@ -5,7 +5,7 @@ import numpy as np
 import glob
 
 files = glob.glob('/home/jhass2/Data/1.0/TracyWidom/T*.txt')
-with open(files[0]) as g: 
+with open(files[0]) as g:
     vs = g.readline().split(',')[1:]
     vs = [float(i) for i in vs]
 
@@ -29,7 +29,6 @@ for f in files:
         reg_sum += data
 
 mean = reg_sum / len(files)
-print(mean[0,:])
 var = squared_sum / len(files) - mean ** 2
 np.savetxt('/home/jhass2/Data/1.0/TracyWidom/mean.txt', mean)
 np.savetxt('/home/jhass2/Data/1.0/TracyWidom/var.txt', var)
