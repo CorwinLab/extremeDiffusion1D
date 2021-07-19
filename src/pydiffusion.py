@@ -4,7 +4,6 @@ import os
 sys.path.append(os.path.abspath('../cDiffusion'))
 import diffusion as cdiff
 import csv
-import time
 
 class Diffusion(cdiff.Diffusion):
     '''
@@ -80,8 +79,12 @@ class Diffusion(cdiff.Diffusion):
         return self.__str__()
 
     @property
+    def time(self):
+        return np.arange(0, self.getTime() + 1)
+
+    @property
     def center(self):
-        return np.arange(0, self.getTime()+1) * 0.5
+        return self.time * 0.5
 
     @property
     def minDistance(self):
@@ -132,6 +135,18 @@ class Diffusion(cdiff.Diffusion):
     @probDistFlag.setter
     def probDistFlag(self, flag):
         self.setProbDistFlag(flag)
+
+    def setBetaSeed(self, seed):
+        '''
+        Set the random generator seed for the beta distribution.
+
+        Parameters
+        ----------
+        seed : int
+            Seed for random beta distribution generator
+        '''
+
+        self.setBetaSeed(seed)
 
     def iterateTimestep(self):
         '''
@@ -371,3 +386,24 @@ class Diffusion(cdiff.Diffusion):
         print('Indices: ', idx)
         print('Occupancy:', np.array(self.getOccupancy())[nonzeros])
         print('Prob: ', np.array(Ns)/self.getNParticles())
+
+    def theoreticalNthQuart(self, N):
+        '''
+        Returns the predicted position of the 1/Nth quartile. Remember that the
+        predicted position is twice the distance we're recording.
+
+        Parameters
+        ----------
+        N : float
+            1/Nth quartile to measure. Should be > 1
+
+        Returns
+        -------
+        theory : numpy array
+            Theoretical 1/Nth quartile as a function of time predicted by the
+            BC model for diffusion.
+        '''
+
+        theory = np.piecewise(self.time, [self.time < np.log(N), self.time >= np.log(N)],
+                              [lambda x: x, lambda x: x*np.sqrt(1-(1-np.log(N)/x)**2)])
+        return theory

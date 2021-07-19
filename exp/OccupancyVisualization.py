@@ -1,56 +1,61 @@
 import sys
 sys.path.append('../src/')
-from cdiffusion import Diffusion
-import matplotlib 
+from pydiffusion import Diffusion
+import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 import numpy as np
 
-
-N = 1e25
+N = 10000
 numSteps = np.log(N) ** (5/2)
 numSteps = int(numSteps)
-d = Diffusion(N, 0.01)
-d.initializeOccupation()
-allOcc = np.zeros(shape=(numSteps, numSteps))
+d = Diffusion(N, 1, numSteps)
+allOcc = np.zeros(shape=(numSteps+1, numSteps+1))
 
 for i in range(numSteps):
     d.iterateTimestep()
     occ = d.getOccupancy()
-    if (np.sum(np.isnan(occ)))> 0:
-        print(occ)
-        break
     occ = np.array(occ, dtype=np.float64)
-    isna = np.sum(np.isnan(occ))
-    if isna > 0:
-        print(occ)
-        print(isna)
-        break
     allOcc[i, :] = occ
-    if i%100 == 0:
-        print(i)
 
-im = allOcc > 0.0
+# Plot the Occupancy with a threshold to highlight outliers
+threshold = 2
+greater = (allOcc * (allOcc > threshold))
+less = (allOcc * (allOcc <= threshold))
+
+alpha = (less > 0).astype(float)
+vmax = N / 10
 
 fig, ax = plt.subplots()
-ax.imshow(im, cmap='Greys', interpolation='None')
+cax = ax.imshow(greater, cmap='gist_heat_r', vmin=0, vmax=vmax)
+ax.imshow(less>0, cmap='Blues', alpha=alpha, label='Positions w/ <2 Particles')
+ax.plot(d.center, range(allOcc.shape[0]), 'g--', label='Center')
 ax.set_ylabel('Time')
 ax.set_xlabel('Distance')
+ax.legend()
+fig.colorbar(cax, ax=ax, label='Number of Particles')
 fig.savefig('Occupation.png')
 
-'''
-minEdge, maxEdge = d.getEdges()
-center = np.arange(1, len(minEdge) + 1) * 0.5
-minDistance = abs(minEdge - center)
-maxDistance = abs(maxEdge - center)
+NthQuart = N
+times = d.center * 2
+theory = np.piecewise(times, [times < np.log(NthQuart), times >= np.log(NthQuart)], [lambda x: x, lambda x: x*np.sqrt(1-(1-np.log(NthQuart)/x)**2)])
+theory = theory / 2
 
+for i in range(allOcc.shape[0]):
+    occ = allOcc[i, :]
+    idx_shift = int((max(d.center) - d.center[i]))
+    occ = np.roll(occ, idx_shift)
+    allOcc[i, :] = occ
+
+# Plot the raw Occupancy
 fig, ax = plt.subplots()
-ax.set_xlabel('Time')
-ax.set_ylabel('Distance to Origin')
-ax.set_xscale('log')
-ax.set_yscale('log')
-ax.plot(center * 2, minDistance, c='r', label='Minimum')
-ax.plot(center * 2, maxDistance, c='k', label='Maximum')
-ax.legend()
-fig.savefig('test.png')
-'''
+cax = ax.imshow(allOcc, cmap='gist_heat_r', vmin=0, vmax=vmax)
+ax.plot([max(d.center), max(d.center)], [0, allOcc.shape[0]], c='g', ls='--', label='Center')
+ax.plot(theory+max(d.center), times, c='b', ls='--', label='Theoretical\nMaximum Particle')
+ax.plot(max(d.center) - theory, times, c='b', ls='--')
+ax.set_ylabel('Time')
+ax.set_xlabel('Distance')
+ax.legend(fontsize=8, loc='lower left')
+ax.set_ylim([0, allOcc.shape[0]])
+fig.colorbar(cax, ax=ax, label='Number of Particles')
+fig.savefig('Occupation_No_Threshold.png')

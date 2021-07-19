@@ -6,9 +6,6 @@
 
 namespace py = pybind11;
 
-std::random_device rd;
-boost::random::mt19937_64 gen(rd());
-
 //Constuctor
 Diffusion::Diffusion(
   const double _nParticles,
