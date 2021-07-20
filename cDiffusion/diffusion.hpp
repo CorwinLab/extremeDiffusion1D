@@ -8,16 +8,19 @@
 #include <random>
 #include <utility>
 #include <assert.h>
+#include <boost/multiprecision/float128.hpp>
+
+typedef double RealType;
 
 #ifndef DIFFUSION_HPP_
 #define DIFFUSION_HPP_
 
 class Diffusion{
 	private:
-		std::vector<double> occupancy;
-		double nParticles;
-		double smallCutoff;
-		double largeCutoff;
+		std::vector<RealType> occupancy;
+		RealType nParticles;
+		RealType smallCutoff;
+		RealType largeCutoff;
 		bool ProbDistFlag;
 		double beta;
 
@@ -30,41 +33,31 @@ class Diffusion{
 
 		//std::uniform_real_distribution<> dis(0.0, 1.0);
     std::uniform_real_distribution<> dis;
-    boost::random::binomial_distribution<> binomial;
-    boost::random::normal_distribution<> normal;
     boost::random::beta_distribution<> beta_dist;
 
 		std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > edges;
 		unsigned long int time;
 
-    double toNextSite(double currentSite, double bias);
+    RealType toNextSite(RealType currentSite, RealType bias);
 		double generateBeta();
 
 	public:
     Diffusion(
-      const double _nParticles,
+      const RealType _nParticles,
       const double _beta,
       const unsigned long int occupancySize,
-      const double _smallCutoff=pow(2, 31)-2,
-      const double _largeCutoff=1e31,
       const bool _probDistFlag=true);
     ~Diffusion() {};
 
-    double getNParticles(){ return nParticles; };
+    RealType getNParticles(){ return nParticles; };
 
     double getBeta(){ return betaParams.beta(); };
-
-    void setSmallCutoff(double _smallCutoff){ smallCutoff = _smallCutoff; };
-    double getSmallCutoff(){ return smallCutoff; };
-
-    void setLargeCutoff(double _largeCutoff){ largeCutoff = _largeCutoff; };
-    double getLargeCutoff(){ return largeCutoff; };
 
     void setProbDistFlag(bool _probDistFlag){ ProbDistFlag = _probDistFlag; };
     bool getProbDistFlag(){ return ProbDistFlag; };
 
-    void setOccupancy(const std::vector<double> _occupancy){ occupancy = _occupancy; };
-    std::vector<double> getOccupancy(){ return occupancy; };
+    void setOccupancy(const std::vector<RealType> _occupancy){ occupancy = _occupancy; };
+    std::vector<RealType> getOccupancy(){ return occupancy; };
 
 		void setBetaSeed(const unsigned int seed){ gen.seed(seed); };
 
@@ -76,9 +69,9 @@ class Diffusion{
 
     void iterateTimestep();
 
-		double NthquartileSingleSided(const double NQuart);
+		double NthquartileSingleSided(const RealType NQuart);
 
-		double pGreaterThanX(const unsigned long int x);
+		RealType pGreaterThanX(const unsigned long int idx);
   };
 
 #endif /* DIFFUSION_HPP_ */

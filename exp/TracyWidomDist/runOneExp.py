@@ -6,17 +6,19 @@ from pydiffusion import Diffusion
 import numpy as np
 
 def runExperiment(beta, save_file):
-    N = 1e300
-    num_of_steps = 100_000
-    d = Diffusion(N, beta=beta, occupancySize=num_of_steps, smallCutoff=0, largeCutoff=0, probDistFlag=True)
+    N = 1e10
+    num_of_steps = 1000
+    d = Diffusion(N, beta=beta, occupancySize=num_of_steps, probDistFlag=True)
     save_times = np.geomspace(1, num_of_steps, 1000, dtype=np.int64)
     save_times = np.unique(save_times)
     vs = np.geomspace(1e-7, 1, 50)
     d.evolveAndSaveV(save_times, vs, save_file)
 
 if __name__ == '__main__':
-    topDir = sys.argv[1]
-    sysId = sys.argv[2]
+    #topDir = sys.argv[1]
+    #sysId = sys.argv[2]
+    topDir = '.'
+    sysId = '1'
     save_dir = os.path.join(topDir, '1.0/TracyWidom')
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)

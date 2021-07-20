@@ -23,14 +23,6 @@ class Diffusion(cdiff.Diffusion):
         Size of the edges and occupancy arrays to initialize to. This needs to
         be at least the size of the number of timesteps that are planned to run.
 
-    smallCutoff : int or float (2**51 - 2)
-        Cutoff for when to use binomial distribution when calculating shift in
-        occupancy. This is deprecated and generally set to zero.
-
-    largeCutoff : int or float (1e31)
-        Cutoff for when to use occ * bias when calculating shift in occupancy.
-        This is also generally set to zero so we always use occ * bias.
-
     probDistFlag : bool (true)
         Whether or not to include fractional particles or not. If True doesn't
         round the particles shifting and if False then rounds the particles so
@@ -38,6 +30,9 @@ class Diffusion(cdiff.Diffusion):
 
     Attributes
     ----------
+    time : numpy array
+        Time of the system
+
     center : numpy array
         Center of the occupancy over time.
 
@@ -57,14 +52,6 @@ class Diffusion(cdiff.Diffusion):
 
     beta : float
         Beta value of the beta distribution
-
-    smallCutoff : float
-        Cutoff for when to use binomial distribution when calculating shift in
-        occupancy. This is deprecated and generally set to zero.
-
-    largeCutoff : float
-        Cutoff for when to use occ * bias when calculating shift in occupancy.
-        This is also generally set to zero so we always use occ * bias.
 
     probDistFlag : bool
         Whether or not to include fractional particles or not. If True doesn't
@@ -111,22 +98,6 @@ class Diffusion(cdiff.Diffusion):
     @property
     def beta(self):
         return self.getBeta()
-
-    @property
-    def smallCutoff(self):
-        return self.getSmallCutoff()
-
-    @smallCutoff.setter
-    def smallCutoff(self, smallCutoff):
-        self.setSmallCutoff(smallCutoff)
-
-    @property
-    def largeCutoff(self):
-        return self.getLargeCutoff()
-
-    @largeCutoff.setter
-    def largeCutoff(self, largeCutoff):
-        self.setLargeCutoff(largeCutoff)
 
     @property
     def probDistFlag(self):
