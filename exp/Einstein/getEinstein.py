@@ -23,9 +23,8 @@ def runExperiment(N, filename):
         Where to save the edges to.
     '''
 
-    d = Diffusion(numberOfParticles=N, beta=1.0)
-    d.initializeOccupation()
     num_of_steps = round(np.log(float(N)) ** (5/2))
+    d = Diffusion(N, beta=1.0, occupationSize=num_of_steps)
     d.evolveEinstein(int(num_of_steps))
     edges = np.array(d.getEdges()).T
     np.savetxt(filename, edges)
