@@ -4,6 +4,7 @@ import os
 sys.path.append(os.path.abspath('../cDiffusion'))
 import diffusion as cdiff
 import csv
+import npquad
 
 class Diffusion(cdiff.Diffusion):
     '''
