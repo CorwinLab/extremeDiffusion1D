@@ -24,7 +24,6 @@ def runExperiment(N, filename):
     '''
 
     d = Diffusion(numberOfParticles=N, beta=1.0)
-    d.initializeOccupation()
     num_of_steps = round(np.log(float(N)) ** (5/2))
     d.evolveEinstein(int(num_of_steps))
     edges = np.array(d.getEdges()).T

@@ -146,7 +146,7 @@ class Diffusion(cdiff.Diffusion):
 
     def pGreaterThanX(self, idx):
         '''
-        Get the number of particles greater than index x.
+        Get the probability of a particle being greater than index x.
 
         Parameters
         ----------
@@ -156,6 +156,42 @@ class Diffusion(cdiff.Diffusion):
         '''
 
         return super().pGreaterThanX(idx)
+
+    def calcVsAndPb(self, num):
+        '''
+        Calculate the velocity and probability being greater than v*t at the
+        current time for a given number of points. Accrues velocities by moving
+        from greatest filled index inward.
+
+        Parameters
+        ----------
+        num : int
+            Number of velocities to calculate
+
+        Returns
+        -------
+        tuple(numpy array, numpy array)
+            Velocities and logged probabilities or ln(Pb(vt, t)) as a tuple (v, ln(Pb))
+        '''
+
+        return super().calcVsAndPb(num)
+
+    def VsAndPv(self, minv=0.0):
+        '''
+        Calculate velocities and ln(Pb(vt, t)) until minimum velocity is reached.
+
+        Parameters
+        ----------
+        minv : float (0.0)
+            Minimum velocity to calculate to
+
+        Returns
+        -------
+        tuple(numpy array, numpy array)
+            Velocities and logged probabilities or ln(Pb(vt, t)) as a tuple (v, ln(Pb))
+        '''
+
+        return super().VsAndPb(minv)
 
     def evolveTimeSteps(self, iterations):
         '''
@@ -378,3 +414,45 @@ class Diffusion(cdiff.Diffusion):
         theory = np.piecewise(self.time, [self.time < np.log(N), self.time >= np.log(N)],
                               [lambda x: x, lambda x: x*np.sqrt(1-(1-np.log(N)/x)**2)])
         return theory
+
+    def theoreticalPb(self, vs):
+        '''
+        Get the theoretically predicted ln(Pb(vt, t)) (probability greater than
+        index vt at current time)
+
+        Parameters
+        ----------
+        v : numpy array
+            List of velocities
+
+        Returns
+        -------
+        lnPbs : numpy array
+            Natural log of probabilities greater than vt
+        '''
+        t = self.getTime()
+        M = -1.77 # Mean of TW distribution for beta=1, I think
+        I = 1 - np.sqrt(1 - vs**2)
+        sigma = ((2 * I**2) / (1 - I)) ** (1/3)
+        return -I * t + t**(1/3) * sigma * M
+
+    def theoreticalPbCurve(self, v):
+        '''
+        For a specified v get the probability of being greater than vt over time.
+        Otherwise known as ln(Pb(vt, t))
+
+        Parameters
+        ----------
+        v : float
+            Velocity to get probability of. Must satisfy 0 < v < 1.
+
+        Returns
+        -------
+        numpy array
+            Logged probability of being greater than vt or ln(Pb(vt, t)).
+        '''
+
+        M = -1.77
+        I = 1 - np.sqrt(1 - v**2)
+        sigma = ((2 * I**2) / (1-I))**(1/3)
+        return -I * self.time + self.time**(1/3) * sigma * M

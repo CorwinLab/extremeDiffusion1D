@@ -10,7 +10,7 @@
 #include <assert.h>
 #include <boost/multiprecision/float128.hpp>
 
-typedef double RealType;
+typedef boost::multiprecision::float128 RealType;
 
 #ifndef DIFFUSION_HPP_
 #define DIFFUSION_HPP_
@@ -19,8 +19,6 @@ class Diffusion{
 	private:
 		std::vector<RealType> occupancy;
 		RealType nParticles;
-		RealType smallCutoff;
-		RealType largeCutoff;
 		bool ProbDistFlag;
 		double beta;
 
@@ -43,7 +41,7 @@ class Diffusion{
 
 	public:
     Diffusion(
-      const RealType _nParticles,
+      const double _nParticles,
       const double _beta,
       const unsigned long int occupancySize,
       const bool _probDistFlag=true);
@@ -72,6 +70,10 @@ class Diffusion{
 		double NthquartileSingleSided(const RealType NQuart);
 
 		RealType pGreaterThanX(const unsigned long int idx);
-  };
+
+		std::pair<std::vector<double>, std::vector<RealType> > calcVsAndPb(const unsigned long int num);
+
+		std::pair<std::vector<double>, std::vector<RealType> > VsAndPb(const double v); 
+	};
 
 #endif /* DIFFUSION_HPP_ */

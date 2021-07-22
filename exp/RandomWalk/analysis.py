@@ -10,7 +10,7 @@ sum = None
 squared_sum = None
 
 if not os.path.isfile('./Data/mean.txt'):
-    for f in files[:]:
+    for f in files:
         data = np.loadtxt(f, max_rows=10_000)
         time = data[:, 0]
         data = 2 * data[:, 1]

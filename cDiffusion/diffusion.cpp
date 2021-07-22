@@ -3,20 +3,21 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include "diffusion.hpp"
+#include "pybindutils.hpp"
 #include <boost/multiprecision/float128.hpp>
 #include <limits>
 #include <cmath>
 
-typedef double RealType;
+typedef boost::multiprecision::float128 RealType;
 namespace py = pybind11;
 
 //Constuctor
 Diffusion::Diffusion(
-  const RealType _nParticles,
+  const double _nParticles,
   const double _beta,
   const unsigned long int occupancySize,
   const bool _probDistFlag)
-  : nParticles(_nParticles),
+  : nParticles(RealType(_nParticles)),
     ProbDistFlag(_probDistFlag),
     beta(_beta)
 {
@@ -51,6 +52,7 @@ double Diffusion::generateBeta(){
 	else if (beta == 1.0){
 		return dis(gen);
 	}
+  // If beta = inf return 0.5
   else if (isinf(beta)){
     return 0.5;
   }
@@ -136,12 +138,48 @@ double Diffusion::NthquartileSingleSided(const RealType NQuart)
 
 RealType Diffusion::pGreaterThanX(const unsigned long int idx)
 {
-  unsigned long int i = time;
   RealType Nabove = 0.0;
-  for (unsigned long int j = idx; j <= i; j++){
+  for (unsigned long int j = idx; j <= time; j++){
     Nabove += occupancy.at(j);
   }
-  return Nabove;
+  return Nabove / nParticles;
+}
+
+std::pair<std::vector<double>, std::vector<RealType> > Diffusion::calcVsAndPb(const unsigned long int num)
+{
+  std::vector<double> vs;
+  std::vector<RealType> Pbs;
+  unsigned long int maxIdx = edges.second[time];
+  RealType Nabove = 0.0;
+  for (unsigned long int i = maxIdx; i > (maxIdx - num); i--){
+    Nabove += occupancy.at(i);
+    RealType probAbove = Nabove / nParticles;
+    double v = (2. * i - time) / time;
+    vs.push_back(v);
+    Pbs.push_back(probAbove);
+  }
+  std::pair<std::vector<double>, std::vector<RealType> > returnTuple(vs, Pbs);
+  return returnTuple;
+}
+
+std::pair<std::vector<double>, std::vector<RealType> > Diffusion::VsAndPb(const double v)
+{
+  std::vector<double> vs;
+  std::vector<RealType> Pbs;
+  unsigned long int idx = edges.second[time];
+  RealType Nabove = 0.0;
+  double currentV = (2. * idx - time) / time;
+  while (currentV >= v){
+    Nabove += occupancy.at(idx);
+    RealType probAbove = Nabove / nParticles;
+    vs.push_back(currentV);
+    Pbs.push_back(probAbove);
+
+    idx -= 1;
+    currentV = (2. * idx - time) / time;
+  }
+  std::pair<std::vector<double>, std::vector<RealType> > returnTuple(vs, Pbs);
+  return returnTuple;
 }
 
 PYBIND11_MODULE(diffusion, m){
@@ -149,7 +187,7 @@ PYBIND11_MODULE(diffusion, m){
 
 	py::class_<Diffusion>(m, "Diffusion")
 		.def(py::init<
-      const RealType,
+      const double,
       const double,
       const unsigned long int,
       const bool>(),
@@ -168,5 +206,7 @@ PYBIND11_MODULE(diffusion, m){
     .def("getTime", &Diffusion::getTime)
 		.def("iterateTimestep", &Diffusion::iterateTimestep)
     .def("NthquartileSingleSided", &Diffusion::NthquartileSingleSided)
-    .def("pGreaterThanX", &Diffusion::pGreaterThanX, py::arg("idx"));
+    .def("pGreaterThanX", &Diffusion::pGreaterThanX, py::arg("idx"))
+    .def("calcVsAndPb", &Diffusion::calcVsAndPb, py::arg("num"))
+    .def("VsAndPb", &Diffusion::VsAndPb, py::arg("v"));
 }
