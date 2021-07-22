@@ -3,6 +3,22 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Folders
+cDiffusion/.vs/
+cDiffusion/.vs/cDiffusion/v16/Browse.VC.db
+N50/
+times/
+
+#Files
+test_one_liner.cpp
+
+# Data
+*.txt
+*.png
+
+# Keep example files
+!/examples/*
+
 # C extensions
 *.out
 *.so
@@ -133,16 +149,3 @@ dmypy.json
 
 # Editor files
 *~
-
-# Folders
-cDiffusion/.vs/
-cDiffusion/.vs/cDiffusion/v16/Browse.VC.db
-N50/
-times/
-
-#Files
-test_one_liner.cpp
-
-# Data
-*.txt
-*.png

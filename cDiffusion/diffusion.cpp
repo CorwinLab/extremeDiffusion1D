@@ -6,9 +6,6 @@
 
 namespace py = pybind11;
 
-std::random_device rd;
-boost::random::mt19937_64 gen(rd());
-
 //Constuctor
 Diffusion::Diffusion(
   const double _nParticles,
@@ -172,7 +169,7 @@ double Diffusion::pGreaterThanX(const unsigned long int idx)
   for (unsigned long int j = idx; j <= i; j++){
     Nabove += occupancy.at(j);
   }
-  return Nabove; 
+  return Nabove;
 }
 
 PYBIND11_MODULE(diffusion, m){

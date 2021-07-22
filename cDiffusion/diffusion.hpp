@@ -66,6 +66,8 @@ class Diffusion{
     void setOccupancy(const std::vector<double> _occupancy){ occupancy = _occupancy; };
     std::vector<double> getOccupancy(){ return occupancy; };
 
+		void setBetaSeed(const unsigned int seed){ gen.seed(seed); };
+
     double getTime(){ return time; };
 
     std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > getEdges(){ return edges; };

@@ -7,7 +7,7 @@ import glob
 import os
 
 files = glob.glob('/home/jhass2/Data/1.0/TracyWidom/T*.txt')
-with open(files[0]) as g: 
+with open(files[0]) as g:
     vs = g.readline().split(',')[1:]
     vs = [float(i) for i in vs]
 
@@ -31,6 +31,7 @@ if not os.path.exists('/home/jhass2/Data/1.0/TracyWidom/mean.txt'):
         else:
             reg_sum += data
 
+<<<<<<< HEAD
     mean = reg_sum / len(files)
     var = squared_sum / len(files) - mean ** 2
     np.savetxt('/home/jhass2/Data/1.0/TracyWidom/mean.txt', mean)
@@ -40,6 +41,12 @@ else:
     var = np.loadtxt('/home/jhass2/Data/1.0/TracyWidom/var.txt')
     data = np.loadtxt(files[0], delimiter=',', skiprows=1)
     time = data[:, 0]
+=======
+mean = reg_sum / len(files)
+var = squared_sum / len(files) - mean ** 2
+np.savetxt('/home/jhass2/Data/1.0/TracyWidom/mean.txt', mean)
+np.savetxt('/home/jhass2/Data/1.0/TracyWidom/var.txt', var)
+>>>>>>> f2503093ddd96d05ddbf8522ff061fd7626831c2
 
 for i in range(len(vs)):
     v = vs[i]

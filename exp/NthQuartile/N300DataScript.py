@@ -12,9 +12,6 @@ def runExperiment(beta, save_file):
 
     Parameters
     ----------
-    N : integer
-        Number of particles in experiment
-
     beta : float
         Value of beta for beta distribution
 
