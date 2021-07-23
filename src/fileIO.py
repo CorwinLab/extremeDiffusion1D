@@ -6,7 +6,6 @@
 # @Last modified time: 2019-01-22T17:03:17-08:00
 
 
-
 # -*- coding: utf-8 -*-
 """
 pyCudaPacking
@@ -78,15 +77,13 @@ def load2DArray(fileName, dtype):
     """
     with open(fileName, "r") as file:
         line = file.__next__()
-        array = np.empty(
-            (1 + sum(1 for line in file), len(line.split())),
-            dtype=dtype
-            )
+        array = np.empty((1 + sum(1 for line in file), len(line.split())), dtype=dtype)
     with open(fileName, "r") as file:
         for i, line in enumerate(file):
             for j, element in enumerate(line.split()):
                 array[i, j] = dtype(element)
     return array
+
 
 def saveNDArray(fileName, array, sep="\t"):
     """
@@ -140,23 +137,21 @@ def saveSparseArray(fileName, array):
         array = array.tocoo()
         fArray = array.astype(np.float64)
         symmetry = (
-            "general" if array.shape[0] != array.shape[1] else
-            "symmetric" if not (fArray != fArray.transpose()).sum() else
-            "skew-symmetric" if not (fArray != -fArray.transpose()).sum() else
             "general"
-            )
+            if array.shape[0] != array.shape[1]
+            else "symmetric"
+            if not (fArray != fArray.transpose()).sum()
+            else "skew-symmetric"
+            if not (fArray != -fArray.transpose()).sum()
+            else "general"
+        )
         if symmetry == "symmetric" or symmetry == "skew-symmetric":
             array = sparse.tril(array)
         with open(fileName, "w") as file:
-            file.write(
-                "%%MatrixMarket matrix coordinate real {}\n%\n"
-                .format(symmetry)
-                )
+            file.write("%%MatrixMarket matrix coordinate real {}\n%\n".format(symmetry))
             # Only the lower triangle of symmetric and skew-symmetric matrices
             # are stored
-            file.write("{} {} {}\n".format(
-                array.shape[0], array.shape[1], array.nnz
-                ))
+            file.write("{} {} {}\n".format(array.shape[0], array.shape[1], array.nnz))
             for i, j, value in zip(array.row, array.col, array.data):
                 file.write("{}\t{}\t{}\n".format(i + 1, j + 1, str(value)))
     # Boolean matrices disrupt symmetry checking, so they are coerced to ints
@@ -181,15 +176,20 @@ def loadSparseArray(fileName, dtype):
         with open(fileName, "r") as file:
             # Scans first line
             line = file.__next__()
-            assert line.lower().split()[:4] == \
-                ["%%matrixmarket", "matrix", "coordinate", "real"], \
-                "invalid MatrixMarket description for quad matrix"
+            assert line.lower().split()[:4] == [
+                "%%matrixmarket",
+                "matrix",
+                "coordinate",
+                "real",
+            ], "invalid MatrixMarket description for quad matrix"
             symmetry = line.split()[4].lower()
             sym = (
-                1 if symmetry == "symmetric"
-                else -1 if symmetry == "skew-symmetric"
+                1
+                if symmetry == "symmetric"
+                else -1
+                if symmetry == "skew-symmetric"
                 else 0
-                )
+            )
             # Skips through comments to shape
             for line in file:
                 if line[0] != "%":
@@ -213,16 +213,15 @@ def loadSparseArray(fileName, dtype):
             col.resize(i)
             data.resize(i)
             return sparse.coo_matrix(
-                (data, (row, col)),
-                shape=(shape0, shape1),
-                dtype=np.quad
-                )
+                (data, (row, col)), shape=(shape0, shape1), dtype=np.quad
+            )
     elif dtype == np.bool:
         return io.mmread(fileName).astype(np.bool)
     else:
         return io.mmread(fileName)
 
-def saveScalar(packingFile,scalarString,scalar):
+
+def saveScalar(packingFile, scalarString, scalar):
     """
     Append to the scalars.dat file of a packing
 
@@ -232,8 +231,9 @@ def saveScalar(packingFile,scalarString,scalar):
     scalar: The scalar you wish to save
     """
     scalarsFile = packingFile + "/scalars.dat"
-    with open(scalarsFile,"a+") as sf:
+    with open(scalarsFile, "a+") as sf:
         sf.write(scalarString + "\t" + str(scalar) + "\n")
+
 
 def loadScalar(packingFile, scalarString):
     """
@@ -249,13 +249,14 @@ def loadScalar(packingFile, scalarString):
     """
 
     scalarValue = None
-    with open(packingFile + "/scalars.dat","r") as file:
+    with open(packingFile + "/scalars.dat", "r") as file:
         for line in file:
             name, value = line.strip().split("\t")
             if name == scalarString:
                 scalarValue = value
                 break
     return scalarValue
+
 
 # Old file formats ------------------------------------------------------------
 def readWhiteSpaceFile(fileName):

@@ -1,6 +1,7 @@
 import numpy as np
 import npquad
 import sys
+
 sys.path.append("../src")
 import pydiffusion as diff
 

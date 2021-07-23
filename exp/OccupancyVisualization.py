@@ -1,16 +1,18 @@
 import sys
-sys.path.append('../src/')
+
+sys.path.append("../src/")
 from pydiffusion import Diffusion
 import matplotlib
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 import numpy as np
 
 N = 10000
-numSteps = np.log(N) ** (5/2)
+numSteps = np.log(N) ** (5 / 2)
 numSteps = int(numSteps)
 d = Diffusion(N, 1, numSteps)
-allOcc = np.zeros(shape=(numSteps+1, numSteps+1))
+allOcc = np.zeros(shape=(numSteps + 1, numSteps + 1))
 
 for i in range(numSteps):
     d.iterateTimestep()
@@ -20,7 +22,11 @@ for i in range(numSteps):
 
 NthQuart = N
 times = d.time
-theory = np.piecewise(times, [times < np.log(NthQuart), times >= np.log(NthQuart)], [lambda x: x, lambda x: x*np.sqrt(1-(1-np.log(NthQuart)/x)**2)])
+theory = np.piecewise(
+    times,
+    [times < np.log(NthQuart), times >= np.log(NthQuart)],
+    [lambda x: x, lambda x: x * np.sqrt(1 - (1 - np.log(NthQuart) / x) ** 2)],
+)
 theory = theory / 2
 vmax = N / 10
 
@@ -35,22 +41,22 @@ v01dist = (0.1 * times) / 2 + max(d.center)
 v02dist = (0.15 * times) / 2 + max(d.center)
 # Plot the raw Occupancy
 fig, ax = plt.subplots()
-cax = ax.imshow(allOcc, cmap='gist_heat_r', vmin=0, vmax=vmax)
-#ax.plot([max(d.center), max(d.center)], [0, allOcc.shape[0]], c='g', ls='--', label='Center')
-#ax.plot(theory+max(d.center), times, c='b', ls='--', label='Theoretical\nMaximum Particle')
-#ax.plot(max(d.center) - theory, times, c='b', ls='--')
-ax.plot(v01dist, times, c='b', ls='--')
-ax.plot(v05dist, times, c='b', ls='--')
-ax.plot(v02dist, times, c='b', ls='--')
-ax.set_ylabel('Time')
-ax.set_xlabel('Distance')
-ax.set_title('Partition Function vs Time')
+cax = ax.imshow(allOcc, cmap="gist_heat_r", vmin=0, vmax=vmax)
+# ax.plot([max(d.center), max(d.center)], [0, allOcc.shape[0]], c='g', ls='--', label='Center')
+# ax.plot(theory+max(d.center), times, c='b', ls='--', label='Theoretical\nMaximum Particle')
+# ax.plot(max(d.center) - theory, times, c='b', ls='--')
+ax.plot(v01dist, times, c="b", ls="--")
+ax.plot(v05dist, times, c="b", ls="--")
+ax.plot(v02dist, times, c="b", ls="--")
+ax.set_ylabel("Time")
+ax.set_xlabel("Distance")
+ax.set_title("Partition Function vs Time")
 ax.set_ylim([0, allOcc.shape[0]])
 ax.get_xaxis().set_ticks([])
-fig.colorbar(cax, ax=ax, label='Number of Particles')
-fig.savefig('Occupation_No_Threshold.png')
+fig.colorbar(cax, ax=ax, label="Number of Particles")
+fig.savefig("Occupation_No_Threshold.png")
 
-'''
+"""
 # Plot the Occupancy with a threshold to highlight outliers
 threshold = 2
 greater = (allOcc * (allOcc > threshold))
@@ -68,4 +74,4 @@ ax.set_xlabel('Distance')
 ax.legend()
 fig.colorbar(cax, ax=ax, label='Number of Particles')
 fig.savefig('Occupation.png')
-'''
+"""

@@ -1,13 +1,14 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import sys
-sys.path.append('../cDiffusion')
+
+sys.path.append("../cDiffusion")
 import cDiffusion as cdiff
 import time
 
 N = 1e25
 logN = np.log(N)
-num_of_steps = logN ** (5/2)
+num_of_steps = logN ** (5 / 2)
 num_of_steps = round(num_of_steps)
 print(num_of_steps)
 
@@ -23,11 +24,11 @@ minDistance = abs(minEdges[1:] - steps)
 maxDistance = abs(maxEdges[1:] - steps)
 distance = np.max(np.vstack((minDistance, maxDistance)), 0)
 
-np.savetxt('mean.txt', distance)
+np.savetxt("mean.txt", distance)
 
 fig, ax = plt.subplots()
 ax.plot(steps, distance)
-ax.set_xscale('log')
-ax.set_yscale('log')
-fig.savefig('var.png')
-print('Total Time:', time.time() - start)
+ax.set_xscale("log")
+ax.set_yscale("log")
+fig.savefig("var.png")
+print("Total Time:", time.time() - start)

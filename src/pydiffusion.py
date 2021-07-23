@@ -1,14 +1,16 @@
 import numpy as np
 import sys
 import os
-sys.path.append(os.path.abspath('../cDiffusion'))
+
+sys.path.append(os.path.abspath("../cDiffusion"))
 import diffusion as cdiff
 import csv
 import npquad
 import fileIO
 
+
 class Diffusion(cdiff.Diffusion):
-    '''
+    """
     Helper class for C++ Diffusion object. Allows simulating random walks with
     biases drawn from a beta distribution. Includes multiple helper functions to
     return important data such as maximum distance and quartiles.
@@ -59,7 +61,7 @@ class Diffusion(cdiff.Diffusion):
         Whether or not to include fractional particles or not. If True doesn't
         round the particles shifting and if False then rounds the particles so
         there is always a whole number of particles.
-    '''
+    """
 
     def __str__(self):
         return f"Diffusion(N={self.getNParticles()}, beta={self.getBeta()}, size={len(self.getEdges()[0])}, time={self.getTime()})"
@@ -110,27 +112,27 @@ class Diffusion(cdiff.Diffusion):
         self.setProbDistFlag(flag)
 
     def setBetaSeed(self, seed):
-        '''
+        """
         Set the random generator seed for the beta distribution.
 
         Parameters
         ----------
         seed : int
             Seed for random beta distribution generator
-        '''
+        """
 
         self.setBetaSeed(seed)
 
     def iterateTimestep(self):
-        '''
+        """
         Move the occupancy forward one timestep drawing biases from the beta
         distribution.
-        '''
+        """
 
         super().iterateTimestep()
 
     def NthquartileSingleSided(self, NQuart):
-        '''
+        """
         Get the rightmost Nth quartile of the occupancy.
 
         Parameters
@@ -142,12 +144,12 @@ class Diffusion(cdiff.Diffusion):
         -------
         float
             Distance from the center of the Nth quartile position.
-        '''
+        """
 
         return super().NthquartileSingleSided(NQuart)
 
     def pGreaterThanX(self, idx):
-        '''
+        """
         Get the probability of a particle being greater than index x.
 
         Parameters
@@ -155,12 +157,12 @@ class Diffusion(cdiff.Diffusion):
         idx : int
             Index to find the number of particles in the occupancy that are greater
             than the index position.
-        '''
+        """
 
         return super().pGreaterThanX(idx)
 
     def calcVsAndPb(self, num):
-        '''
+        """
         Calculate the velocity and probability being greater than v*t at the
         current time for a given number of points. Accrues velocities by moving
         from greatest filled index inward.
@@ -174,12 +176,12 @@ class Diffusion(cdiff.Diffusion):
         -------
         tuple(numpy array, numpy array)
             Velocities and logged probabilities or ln(Pb(vt, t)) as a tuple (v, ln(Pb))
-        '''
+        """
 
         return super().calcVsAndPb(num)
 
     def VsAndPv(self, minv=0.0):
-        '''
+        """
         Calculate velocities and ln(Pb(vt, t)) until minimum velocity is reached.
 
         Parameters
@@ -191,25 +193,25 @@ class Diffusion(cdiff.Diffusion):
         -------
         tuple(numpy array, numpy array)
             Velocities and logged probabilities or ln(Pb(vt, t)) as a tuple (v, ln(Pb))
-        '''
+        """
 
         return super().VsAndPb(minv)
 
     def evolveTimeSteps(self, iterations):
-        '''
+        """
         Evolves the system forward a specified number of timesteps.
 
         Parameters
         ----------
         iterations : int
             Number of timesteps to iterate forward
-        '''
+        """
 
         for _ in range(iterations):
             self.iterateTimestep()
 
     def evolveToTime(self, time):
-        '''
+        """
         Evolve the system to a specified time. If the input time is greater than
         the system's current time it won't actually do anything.
 
@@ -217,13 +219,13 @@ class Diffusion(cdiff.Diffusion):
         ----------
         time : int
             System time to evolve the system forward to
-        '''
+        """
 
-        while (self.getTime() < time):
+        while self.getTime() < time:
             self.iterateTimestep()
 
     def evolveAndSaveQuartile(self, time, quartiles, file):
-        '''
+        """
         Incrementally evolves the system forward to the specified times and saves
         the specified quartiles after each increment.
 
@@ -254,22 +256,24 @@ class Diffusion(cdiff.Diffusion):
         -----
         Looks like this is a bit faster than the evolveAndSave method which
         stores everything to a numpy array and then saves it.
-        '''
+        """
 
-        f = open(file, 'w')
+        f = open(file, "w")
         writer = csv.writer(f)
-        header = ['time', 'MaxEdge'] + ['{:.0e}'.format(1/i) for i in quartiles]
+        header = ["time", "MaxEdge"] + ["{:.0e}".format(1 / i) for i in quartiles]
         writer.writerow(header)
         for t in time:
             self.evolveToTime(t)
-            NthQuartile = [self.NthquartileSingleSided(self.getNParticles() * q) for q in quartiles]
+            NthQuartile = [
+                self.NthquartileSingleSided(self.getNParticles() * q) for q in quartiles
+            ]
             maxEdge = self.getEdges()[1][t]
             row = [self.getTime(), maxEdge] + NthQuartile
             writer.writerow(row)
         f.close()
 
     def evolveAndSaveV(self, time, vs, file):
-        '''
+        """
         Incrementally evolves the system forward to the specified times and saves
         the number of particles greater than position v * time after each increment.
         This is to evaluate Pb(vt, t) at the specified times where Pb(x, t) is the
@@ -309,11 +313,11 @@ class Diffusion(cdiff.Diffusion):
         To get the index we use the formula:
                         idx = round((v * t + t) / 2)
         which satisfies the constraints mentioned in the velocity definition.
-        '''
+        """
 
-        f = open(file, 'w')
+        f = open(file, "w")
         writer = csv.writer(f)
-        header = ['time'] + [str(v) for v in vs]
+        header = ["time"] + [str(v) for v in vs]
         writer.writerow(header)
         for t in time:
             self.evolveToTime(t)
@@ -325,7 +329,7 @@ class Diffusion(cdiff.Diffusion):
         f.close()
 
     def evolveAndSave(self, time, quartiles, file):
-        '''
+        """
         Incrementally evolves the system forward to the specified times and saves
         the specified quartiles after each increment. The data is stored as a
         numpy array which may make it slower than the evolveAndSaveQuartile method.
@@ -345,19 +349,21 @@ class Diffusion(cdiff.Diffusion):
         -----
         Looks like this is a bit slower than the evolveAndSaveQuartile method which
         stores writes to the file incrementally.
-        '''
+        """
 
-        save_array = np.zeros(shape=(len(time), len(quartiles)+2))
+        save_array = np.zeros(shape=(len(time), len(quartiles) + 2))
         for row_num, t in enumerate(time):
             self.evolveToTime(t)
-            NthQuartile = [self.NthquartileSingleSided(self.getNParticles() * q) for q in quartiles]
+            NthQuartile = [
+                self.NthquartileSingleSided(self.getNParticles() * q) for q in quartiles
+            ]
             maxEdge = self.getEdges()[1][t]
             row = [self.getTime(), maxEdge] + NthQuartile
             save_array[row_num, :] = row
         fileIO.saveNDArray(file, save_array)
 
     def ProbBiggerX(self, vs, timesteps):
-        '''
+        """
         Troubleshooting function to make sure that pGreaterThanX function
         works properly.
 
@@ -380,7 +386,7 @@ class Diffusion(cdiff.Diffusion):
         Indices:  [1 1]
         Occupancy: [6.94104591e+299 3.05895409e+299]
         Prob:  [0.30589541 0.30589541]
-        '''
+        """
 
         for _ in range(timesteps):
             self.iterateTimestep()
@@ -391,13 +397,13 @@ class Diffusion(cdiff.Diffusion):
 
         nonzeros = np.nonzero(self.getOccupancy())[0]
         Ns = [self.pGreaterThanX(i) for i in idx]
-        print('Bigger than Index:', Ns)
-        print('Indices: ', idx)
-        print('Occupancy:', np.array(self.getOccupancy())[nonzeros])
-        print('Prob: ', np.array(Ns)/self.getNParticles())
+        print("Bigger than Index:", Ns)
+        print("Indices: ", idx)
+        print("Occupancy:", np.array(self.getOccupancy())[nonzeros])
+        print("Prob: ", np.array(Ns) / self.getNParticles())
 
     def theoreticalNthQuart(self, N):
-        '''
+        """
         Returns the predicted position of the 1/Nth quartile. Remember that the
         predicted position is twice the distance we're recording.
 
@@ -411,14 +417,17 @@ class Diffusion(cdiff.Diffusion):
         theory : numpy array
             Theoretical 1/Nth quartile as a function of time predicted by the
             BC model for diffusion.
-        '''
+        """
 
-        theory = np.piecewise(self.time, [self.time < np.log(N), self.time >= np.log(N)],
-                              [lambda x: x, lambda x: x*np.sqrt(1-(1-np.log(N)/x)**2)])
+        theory = np.piecewise(
+            self.time,
+            [self.time < np.log(N), self.time >= np.log(N)],
+            [lambda x: x, lambda x: x * np.sqrt(1 - (1 - np.log(N) / x) ** 2)],
+        )
         return theory
 
     def theoreticalPb(self, vs):
-        '''
+        """
         Get the theoretically predicted ln(Pb(vt, t)) (probability greater than
         index vt at current time)
 
@@ -431,15 +440,15 @@ class Diffusion(cdiff.Diffusion):
         -------
         lnPbs : numpy array
             Natural log of probabilities greater than vt
-        '''
+        """
         t = self.getTime()
-        M = -1.77 # Mean of TW distribution for beta=1, I think
-        I = 1 - np.sqrt(1 - vs**2)
-        sigma = ((2 * I**2) / (1 - I)) ** (1/3)
-        return -I * t + t**(1/3) * sigma * M
+        M = -1.77  # Mean of TW distribution for beta=1, I think
+        I = 1 - np.sqrt(1 - vs ** 2)
+        sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
+        return -I * t + t ** (1 / 3) * sigma * M
 
     def theoreticalPbCurve(self, v):
-        '''
+        """
         For a specified v get the probability of being greater than vt over time.
         Otherwise known as ln(Pb(vt, t))
 
@@ -452,16 +461,17 @@ class Diffusion(cdiff.Diffusion):
         -------
         numpy array
             Logged probability of being greater than vt or ln(Pb(vt, t)).
-        '''
+        """
 
         M = -1.77
-        I = 1 - np.sqrt(1 - v**2)
-        sigma = ((2 * I**2) / (1-I))**(1/3)
-        return -I * self.time + self.time**(1/3) * sigma * M
+        I = 1 - np.sqrt(1 - v ** 2)
+        sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
+        return -I * self.time + self.time ** (1 / 3) * sigma * M
 
-def loadArrayQuad(file, shape, skiprows=0, delimiter=','):
+
+def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
     arr = np.empty(shape, dtype=np.quad)
-    with open(file, 'r') as f:
+    with open(file, "r") as f:
         if skiprows > 0:
             for _ in range(skiprows):
                 f.readline()
@@ -471,12 +481,14 @@ def loadArrayQuad(file, shape, skiprows=0, delimiter=','):
             line = line.strip().split(delimiter)
             for col, elem in enumerate(line):
                 elem = np.quad(elem)
-                #arr[row, col] = np.quad("0.0")
+                # always core dumps whenever I try to write to the array
+                # arr[row, col] = elem
     return arr
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     N = 100
     d = Diffusion(N, 1, 100)
     d.iterateTimestep()
-    d.evolveAndSaveV(np.array([1, 5, 50]), np.array([0.5, 1]), 'Data.txt')
-    data = np.loadtxt('Data.txt', delimiter=',', skiprows=1)
+    d.evolveAndSaveV(np.array([1, 5, 50]), np.array([0.5, 1]), "Data.txt")
+    data = np.loadtxt("Data.txt", delimiter=",", skiprows=1)

@@ -1,9 +1,11 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import sys
-sys.path.append('../cDiffusion')
+
+sys.path.append("../cDiffusion")
 import cDiffusion as cdiff
-sys.path.append('../src')
+
+sys.path.append("../src")
 import diffusion as diff
 
 beta = 1
@@ -12,9 +14,9 @@ occ = np.zeros(N)
 occ[0] = N
 num_of_steps = 1250
 print(num_of_steps)
-steps = np.arange(1, num_of_steps+1) * 0.5
+steps = np.arange(1, num_of_steps + 1) * 0.5
 
-d = cdiff.Diffusion(N, beta, int(N*10))
+d = cdiff.Diffusion(N, beta, int(N * 10))
 d.setOccupancy(occ)
 d.evolveTimesteps(num_of_steps)
 
@@ -31,8 +33,8 @@ maxPyEdges = edges[:, 1]
 avgPy = (minPyEdges + maxPyEdges) / 2
 
 fig, ax = plt.subplots()
-ax.plot(steps * 2, avgPy, label='Python Code')
-ax.plot(steps * 2, avgC, label='C++ code')
-ax.set_xlabel('Time')
-ax.set_ylabel('Average Distance from Origin')
-fig.savefig('CvsPy.png')
+ax.plot(steps * 2, avgPy, label="Python Code")
+ax.plot(steps * 2, avgC, label="C++ code")
+ax.set_xlabel("Time")
+ax.set_ylabel("Average Distance from Origin")
+fig.savefig("CvsPy.png")
