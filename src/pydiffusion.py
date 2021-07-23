@@ -481,14 +481,5 @@ def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
             line = line.strip().split(delimiter)
             for col, elem in enumerate(line):
                 elem = np.quad(elem)
-                # always core dumps whenever I try to write to the array
-                # arr[row, col] = elem
+                arr[row, col] = elem
     return arr
-
-
-if __name__ == "__main__":
-    N = 100
-    d = Diffusion(N, 1, 100)
-    d.iterateTimestep()
-    d.evolveAndSaveV(np.array([1, 5, 50]), np.array([0.5, 1]), "Data.txt")
-    data = np.loadtxt("Data.txt", delimiter=",", skiprows=1)
