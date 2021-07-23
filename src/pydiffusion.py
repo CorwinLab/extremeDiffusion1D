@@ -5,6 +5,7 @@ sys.path.append(os.path.abspath('../cDiffusion'))
 import diffusion as cdiff
 import csv
 import npquad
+import fileIO
 
 class Diffusion(cdiff.Diffusion):
     '''
@@ -353,7 +354,7 @@ class Diffusion(cdiff.Diffusion):
             maxEdge = self.getEdges()[1][t]
             row = [self.getTime(), maxEdge] + NthQuartile
             save_array[row_num, :] = row
-        np.savetxt(file, save_array)
+        fileIO.saveNDArray(file, save_array)
 
     def ProbBiggerX(self, vs, timesteps):
         '''
@@ -457,3 +458,25 @@ class Diffusion(cdiff.Diffusion):
         I = 1 - np.sqrt(1 - v**2)
         sigma = ((2 * I**2) / (1-I))**(1/3)
         return -I * self.time + self.time**(1/3) * sigma * M
+
+def loadArrayQuad(file, shape, skiprows=0, delimiter=','):
+    arr = np.empty(shape, dtype=np.quad)
+    with open(file, 'r') as f:
+        if skiprows > 0:
+            for _ in range(skiprows):
+                f.readline()
+        for row, line in enumerate(f):
+            # strip first to get rid of "/n" and then replace delimiter with
+            # whitespace to read in with np.quad
+            line = line.strip().split(delimiter)
+            for col, elem in enumerate(line):
+                elem = np.quad(elem)
+                #arr[row, col] = np.quad("0.0")
+    return arr
+
+if __name__ == '__main__':
+    N = 100
+    d = Diffusion(N, 1, 100)
+    d.iterateTimestep()
+    d.evolveAndSaveV(np.array([1, 5, 50]), np.array([0.5, 1]), 'Data.txt')
+    data = np.loadtxt('Data.txt', delimiter=',', skiprows=1)
