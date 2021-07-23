@@ -30,7 +30,7 @@ functions are written in C++ and then ported to Python using [PyBind11](https://
 
 * test
 
-  Contains some early tests to make sure the algorithms were running properly.
+  Doesn't currently contain any tests since the code has been changing so quickly.
   It has been difficult to create tests as the biases are drawn randomly for each
   experiment.
 
@@ -59,6 +59,8 @@ There are only two steps needed to setup the library and start running simulatio
 
   If it runs successfully it should make a diffusion.so and diffusion.hpp.gch
   file.
+
+3. Install [Numpy_Quad](https://github.com/SimonsGlass/numpy_quad)
 
 ## Importing to Python
   After compiling the library need to add the cDiffuion folder to your Python
