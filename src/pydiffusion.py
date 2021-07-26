@@ -360,7 +360,7 @@ class Diffusion(cdiff.Diffusion):
             maxEdge = self.getEdges()[1][t]
             row = [self.getTime(), maxEdge] + NthQuartile
             save_array[row_num, :] = row
-        fileIO.saveNDArray(file, save_array)
+        np.savetxt(file, save_array)
 
     def ProbBiggerX(self, vs, timesteps):
         """
@@ -476,8 +476,7 @@ def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
             for _ in range(skiprows):
                 f.readline()
         for row, line in enumerate(f):
-            # strip first to get rid of "/n" and then replace delimiter with
-            # whitespace to read in with np.quad
+            # strip first to get rid of "/n"
             line = line.strip().split(delimiter)
             for col, elem in enumerate(line):
                 elem = np.quad(elem)

@@ -43,13 +43,16 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 } // namespace pybind11
 
 // Constuctor
-Diffusion::Diffusion(const double _nParticles,
+Diffusion::Diffusion(const RealType _nParticles,
                      const double _beta,
                      const unsigned long int occupancySize,
                      const bool _probDistFlag)
     : nParticles(RealType(_nParticles)), ProbDistFlag(_probDistFlag),
       beta(_beta)
 {
+  if (isnan(nParticles)){
+    throw std::runtime_error("Number of particles initialized to NaN");
+  }
   edges.first.resize(occupancySize + 1), edges.second.resize(occupancySize + 1);
   edges.first[0] = 0, edges.second[0] = 0;
 
@@ -148,6 +151,10 @@ void Diffusion::iterateTimestep()
 
     if (toNextSite < 0 || toNextSite > prevOcc || bias < 0.0 || bias > 1.0 ||
         *occ < 0 || *occ > nParticles || isnan(*occ)) {
+      std::cout << "Time:" << time << "\n";
+      std::cout << "Occupancy: " << *occ << "\n";
+      std::cout << "Next site: "  << toNextSite << "\n";
+      std::cout << "Bias: "  << bias << std::endl;
       throw std::runtime_error("One or more variables out of bounds: ");
     }
   }

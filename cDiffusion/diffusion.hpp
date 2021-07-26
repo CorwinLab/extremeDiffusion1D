@@ -41,7 +41,7 @@ private:
   double generateBeta();
 
 public:
-  Diffusion(const double _nParticles,
+  Diffusion(const RealType _nParticles,
             const double _beta,
             const unsigned long int occupancySize,
             const bool _probDistFlag = true);

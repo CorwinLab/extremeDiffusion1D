@@ -9,8 +9,8 @@ import npquad
 
 
 def runExperiment(beta, save_file):
-    N = 1e300
-    num_of_steps = int(np.log(N) ** (5 / 2))
+    N = 1e3000
+    num_of_steps = int(10e7) 
     d = Diffusion(N, beta=beta, occupancySize=num_of_steps, probDistFlag=True)
     save_times = np.geomspace(1, num_of_steps, 5000, dtype=np.int64)
     save_times = np.unique(save_times)
@@ -19,9 +19,11 @@ def runExperiment(beta, save_file):
 
 
 if __name__ == "__main__":
-    topDir = sys.argv[1]
-    sysId = sys.argv[2]
-    save_dir = os.path.join(topDir, "1.0/TracyWidomQuad")
+    #topDir = sys.argv[1]
+    #sysId = sys.argv[2]
+    topDir = '.'
+    sysId = 0
+    save_dir = os.path.join(topDir, "1.0/TracyWidomQuad2")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     save_file = os.path.join(save_dir, f"TracyData{sysId}.txt")
