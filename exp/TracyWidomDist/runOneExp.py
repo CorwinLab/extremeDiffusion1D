@@ -9,8 +9,8 @@ import npquad
 
 
 def runExperiment(beta, save_file):
-    N = 1e3000
-    num_of_steps = int(10e7) 
+    N = np.quad('1e1000')
+    num_of_steps = int(10e7)
     d = Diffusion(N, beta=beta, occupancySize=num_of_steps, probDistFlag=True)
     save_times = np.geomspace(1, num_of_steps, 5000, dtype=np.int64)
     save_times = np.unique(save_times)

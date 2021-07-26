@@ -47,10 +47,10 @@ Diffusion::Diffusion(const RealType _nParticles,
                      const double _beta,
                      const unsigned long int occupancySize,
                      const bool _probDistFlag)
-    : nParticles(RealType(_nParticles)), ProbDistFlag(_probDistFlag),
+    : nParticles(_nParticles), ProbDistFlag(_probDistFlag),
       beta(_beta)
 {
-  if (isnan(nParticles)){
+  if (isnan(nParticles) || isinf(nParticles)){
     throw std::runtime_error("Number of particles initialized to NaN");
   }
   edges.first.resize(occupancySize + 1), edges.second.resize(occupancySize + 1);
@@ -232,7 +232,7 @@ PYBIND11_MODULE(diffusion, m)
   m.doc() = "C++ diffusion";
 
   py::class_<Diffusion>(m, "Diffusion")
-      .def(py::init<const double,
+      .def(py::init<const RealType,
                     const double,
                     const unsigned long int,
                     const bool>(),
