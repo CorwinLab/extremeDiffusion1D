@@ -6,7 +6,6 @@ sys.path.append(os.path.abspath("../cDiffusion"))
 import diffusion as cdiff
 import csv
 import npquad
-import fileIO
 
 
 class Diffusion(cdiff.Diffusion):
@@ -260,7 +259,7 @@ class Diffusion(cdiff.Diffusion):
 
         f = open(file, "w")
         writer = csv.writer(f)
-        header = ["time", "MaxEdge"] + ["{:.0e}".format(1 / i) for i in quartiles]
+        header = ["time", "MaxEdge"] + [str(np.quad('1') / i) for i in quartiles]
         writer.writerow(header)
         for t in time:
             self.evolveToTime(t)
@@ -349,6 +348,8 @@ class Diffusion(cdiff.Diffusion):
         -----
         Looks like this is a bit slower than the evolveAndSaveQuartile method which
         stores writes to the file incrementally.
+
+        Also shouldn't be used b/c I don't think it will be compatible with np.quad.
         """
 
         save_array = np.zeros(shape=(len(time), len(quartiles) + 2))
@@ -402,15 +403,19 @@ class Diffusion(cdiff.Diffusion):
         print("Occupancy:", np.array(self.getOccupancy())[nonzeros])
         print("Prob: ", np.array(Ns) / self.getNParticles())
 
-    def theoreticalNthQuart(self, N):
+    @staticmethod
+    def theoreticalNthQuart(N, time):
         """
         Returns the predicted position of the 1/Nth quartile. Remember that the
         predicted position is twice the distance we're recording.
 
         Parameters
         ----------
-        N : float
+        N : float or np.quad
             1/Nth quartile to measure. Should be > 1
+
+        time : numpy array
+            Times to record the 1/Nth quartile for
 
         Returns
         -------
@@ -420,11 +425,33 @@ class Diffusion(cdiff.Diffusion):
         """
 
         theory = np.piecewise(
-            self.time,
-            [self.time < np.log(N), self.time >= np.log(N)],
-            [lambda x: x, lambda x: x * np.sqrt(1 - (1 - np.log(N) / x) ** 2)],
+            time,
+            [time < np.log(N).astype(np.float64), time >= np.log(N).astype(np.float64)],
+            [lambda x: x, lambda x: x * np.sqrt(1 - (1 - np.log(N).astype(np.float64) / x) ** 2)],
         )
         return theory
+
+    @staticmethod
+    def theoreticalNthQuartVar(N, time):
+        """
+        Returns the predicted position of the 1/Nth quartile variance over time. 
+
+        Parameters
+        ----------
+        N : float or np.quad
+            1/Nth quartile to measure. Should be > 1. 
+
+        times : numpy array
+            Times to record the 1/Nth quartile variance for.
+
+        Returns
+        -------
+        theory : numpy array
+            Theoretical 1/Nth quartile variance as a function of time
+        """
+
+        logN = np.log(N).astype(np.float64)
+        return (2 * logN) ** (2/3) * (time / logN - 1) ** (4/3) / (2 * time/logN - 1) 
 
     def theoreticalPb(self, vs):
         """
@@ -470,6 +497,36 @@ class Diffusion(cdiff.Diffusion):
 
 
 def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
+    """
+    Load a quad precision array from a file. 
+
+    Parameters
+    ---------
+    file : str
+        Path to file 
+
+    shape : tuple
+        Shape of the array to load
+
+    skiprows : int (0)
+        Number of rows to skip before reading the data
+
+    delimiter : str
+        Character to split the rows on
+
+    Returns
+    -------
+    arr : numpy array (dtype=np.quad)
+        Data as an array with quad precision
+
+    Note
+    ----
+    It doesn't look like this will throw an error if the shape is incorrect. 
+    Should probably just get rid of the shape parameter overall and append 
+    to the empty numpy array. Did this to avoid np.quad errors but it's 
+    going to core dump either way. 
+    """
+
     arr = np.empty(shape, dtype=np.quad)
     with open(file, "r") as f:
         if skiprows > 0:
@@ -481,4 +538,7 @@ def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
             for col, elem in enumerate(line):
                 elem = np.quad(elem)
                 arr[row, col] = elem
+    if (row != shape[0]-1) and (col != shape[1]-1):
+        raise ValueError("Data is not the same size as the shape")
+    
     return arr

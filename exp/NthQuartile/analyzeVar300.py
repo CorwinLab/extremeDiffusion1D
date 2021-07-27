@@ -32,7 +32,7 @@ if (not os.path.isfile("/home/jhass2/Data/1.0/1Large/mean.txt")) or True:
         else:
             running_sum_squared += (2 * data) ** 2
         count += 1
-
+        print(f)
     mean = running_sum / count
     var = running_sum_squared / count - mean ** 2
 

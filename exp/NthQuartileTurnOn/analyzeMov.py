@@ -8,16 +8,17 @@ import glob
 import sys
 sys.path.append("../../src")
 sys.path.append("../../cDiffusion")
-from pydiffusion import loadArrayQuad
+from pydiffusion import loadArrayQuad, Diffusion
 import os
+from scipy.interpolate import interp1d
 
-file_dir = "/home/jhass2/Data/1.0/TracyWidomN8000/"
+file_dir = "/home/jhass2/Data/1.0/QuartileLarge/"
 
-files = glob.glob(file_dir + "T*.txt")
+files = glob.glob(file_dir + "Q*.txt")
 print('Number of files found:', len(files))
 with open(files[0]) as g:
-    vs = g.readline().split(",")[1:]
-    vs = [float(i) for i in vs]
+    Ns = g.readline().split(",")[2:]
+    Ns = [np.quad(N) for N in Ns]
 
 data = np.loadtxt(files[0], delimiter=",", skiprows=1)
 shape = data.shape
@@ -38,8 +39,7 @@ if not os.path.isfile(file_dir + 'mean.txt') or run_again:
             continue
 
         time = data[:, 0]
-        data = data[:, 1:]
-        data = np.log(data)
+        data = 2 * data[:, 2:]
 
         if squared_sum is None:
             squared_sum = data ** 2
@@ -69,39 +69,52 @@ else:
     time = data[:, 0]
     time = time.astype(np.float64)
 
-save_folder = 'figuresN8000'
+exps = []
+for N in Ns:
+    N = str(N)
+    exp = int(N.split("e")[-1])
+    exps.append(round(exp, -1))
 
-for i in range(len(vs)):
-    v = (vs[i])
-    v_var = var[:, i]
-    I = 1 - np.sqrt(1 - v ** 2)
-    sigma = (2 * I ** 2 / (1 - I)) ** (1 / 3)
-    theory = (time ** (2/3)) * sigma**2
-    fig, ax = plt.subplots()
-    ax.set_xlabel("Time")
-    ax.set_ylabel("Var(ln(Pb(vt, t))")
-    ax.plot(time, v_var, label="Data", c='r')
-    ax.plot(time, theory, label=r"$ t^{2/3} * \sigma^{2}$", c='k')
-    ax.set_title(f"v={v} & {len(files)} Systems")
-    ax.set_xscale("log")
-    ax.set_yscale("log")
+lin_fits = []
+for col, N in enumerate(Ns): 
+    logN = np.log(N).astype(np.float64)
+    t = time / logN
+    v = var[:, col] / (logN ** (2/3))
+    lin_fits.append(interp1d(t, v))
+
+
+sample_times = np.linspace(1, max(t), 1000)
+for i, t in enumerate(sample_times): 
+    logN = np.log(Ns).astype(np.float64)
+    ts = t * logN
+    theoretical = Diffusion.theoreticalNthQuartVar(Ns, ts)
+    theoreticalv = theoretical / logN**(2/3)
+    vals = [fit(t) for fit in lin_fits]
+    fig, ax = plt.subplots(figsize=(8,8))
+    ax.set_title(f't={t}')
+    ax.scatter(exps, vals)
+    ax.set_xlabel('Exponent')
+    ax.set_ylabel('Variance / Log(N)')
+    ax.hlines(theoreticalv, min(exps), max(exps), label='Theory')
     ax.legend()
-    fig.savefig(f"./{save_folder}/Variance{v}.png", bbox_inches='tight')
+    fig.savefig(f'./mov/Frame{i}.png', bbox_inches='tight', dpi=150)
+    plt.close(fig)
+    print(i / len(sample_times))
+
+'''
+for row in range(len(var)): 
+    t = time[row]
+    v = var[row, :]
+    theoretical = Diffusion.theoreticalNthQuartVar(Ns, t)
+    
+    yscale = 1 / (np.log(Ns).astype(np.float64) ** (2/3))
+    fig, ax = plt.subplots()
+    ax.scatter(exps, v * yscale)
+    ax.hlines(theoretical * yscale, min(exps), max(exps))
+    ax.set_xlabel('Exponent')
+    ax.set_ylabel('Variance')
+    fig.savefig(f'./mov/Frame{row}.png')
     plt.close(fig)
 
-for i in range(len(vs)):
-    v = vs[i]
-    I = 1 - np.sqrt(1 - v ** 2)
-    sigma = (2 * I ** 2 / (1 - I)) ** (1 / 3)
-    theory = -I * time + time ** (1 / 3) * sigma * -1.77
-    fig, ax = plt.subplots()
-    ax.set_xlabel("Time")
-    ax.set_ylabel("|ln(Pb(vt, t))|")
-    ax.plot(time, abs(mean[:, i]), label="Data", c='r')
-    ax.plot(time, abs(theory), label=r"$|-I * t + t^{1/3} * \sigma * -1.77|$", c='k')
-    ax.set_title(f"v={v} & {len(files)} Systems")
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.legend()
-    fig.savefig(f"./{save_folder}/Mean{v}.png", bbox_inches='tight')
-    plt.close(fig)
+
+'''
