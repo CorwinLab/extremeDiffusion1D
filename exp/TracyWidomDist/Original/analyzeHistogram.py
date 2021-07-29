@@ -2,16 +2,16 @@ import matplotlib
 
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
-plt.rcParams.update({'font.size': 16})
 import numpy as np
 import glob
 import sys
-sys.path.append("../../src")
-sys.path.append("../../cDiffusion")
+sys.path.append("../../../src")
+sys.path.append("../../../cDiffusion")
 from pydiffusion import loadArrayQuad
 import os
+from TracyWidom import TracyWidom
 
-file_dir = "/home/jhass2/Data/1.0/TracyWidomN8000/"
+file_dir = "/home/jhass2/Data/1.0/TracyWidomQuad2/"
 
 files = glob.glob(file_dir + "T*.txt")
 print('Number of files found:', len(files))
@@ -22,86 +22,74 @@ with open(files[0]) as g:
 data = np.loadtxt(files[0], delimiter=",", skiprows=1)
 shape = data.shape
 
+
 squared_sum = None
 reg_sum = None
 
 run_again = False
 
-if not os.path.isfile(file_dir + 'mean.txt') or run_again: 
+# rows are different systems and colums are different vs
+total_data = np.empty((len(files), shape[1] - 1))
+
+if run_again:
     count = 0
-    for f in files:
+    for row, f in enumerate(files):
         try:
-            data = loadArrayQuad(f, shape, skiprows=1, delimiter=",")
+            data = loadArrayQuad(f, (1, shape[1]), skiprows=int(shape[0]), delimiter=",")
         except Exception as e:
             print('File went wrong: ', f)
             print(e)
             continue
 
-        time = data[:, 0]
-        data = data[:, 1:]
-        data = np.log(data)
-
-        if squared_sum is None:
-            squared_sum = data ** 2
-        else:
-            squared_sum += data ** 2
-
-        if reg_sum is None:
-            reg_sum = data
-        else:
-            reg_sum += data
-
-        count += 1 
+        time = data[-1, 0].astype(np.float64)
+        data = data[-1, 1:]
+        data = np.log(data).astype(np.float64)
+        total_data[row] = data
         print(f)
 
-    mean = reg_sum / count 
-    var = squared_sum / count - mean ** 2
-    mean = mean.astype(np.float64)
-    var = var.astype(np.float64)
-    time = time.astype(np.float64)
-    np.savetxt(file_dir + "mean.txt", mean)
-    np.savetxt(file_dir + "var.txt", var)
+    np.savetxt(file_dir + 'FinalTime.txt', total_data)
 
-else: 
-    mean = np.loadtxt(file_dir + "mean.txt")
-    var = np.loadtxt(file_dir + "var.txt")
-    data = loadArrayQuad(files[0], shape, skiprows=1, delimiter=",")
-    time = data[:, 0]
-    time = time.astype(np.float64)
+else:
+    total_data = np.loadtxt(file_dir + 'FinalTime.txt')
+    data = loadArrayQuad(files[0], (1, shape[1]), skiprows=int(shape[0]), delimiter=",")
+    time = data[-1, 0].astype(np.float64)
 
-save_folder = 'figuresN8000'
-
-for i in range(len(vs)):
-    v = (vs[i])
-    v_var = var[:, i]
-    I = 1 - np.sqrt(1 - v ** 2)
-    sigma = (2 * I ** 2 / (1 - I)) ** (1 / 3)
-    theory = (time ** (2/3)) * sigma**2
-    fig, ax = plt.subplots()
-    ax.set_xlabel("Time")
-    ax.set_ylabel("Var(ln(Pb(vt, t))")
-    ax.plot(time, v_var, label="Data", c='r')
-    ax.plot(time, theory, label=r"$ t^{2/3} * \sigma^{2}$", c='k')
-    ax.set_title(f"v={v} & {len(files)} Systems")
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.legend()
-    fig.savefig(f"./{save_folder}/Variance{v}.png", bbox_inches='tight')
-    plt.close(fig)
-
+print('At t: ', time)
+tw = TracyWidom(beta=2)
 for i in range(len(vs)):
     v = vs[i]
-    I = 1 - np.sqrt(1 - v ** 2)
-    sigma = (2 * I ** 2 / (1 - I)) ** (1 / 3)
-    theory = -I * time + time ** (1 / 3) * sigma * -1.77
+    data = total_data[:, i]
+    data = data[~np.isinf(data)]
+    data = data[~np.isnan(data)]
     fig, ax = plt.subplots()
-    ax.set_xlabel("Time")
-    ax.set_ylabel("|ln(Pb(vt, t))|")
-    ax.plot(time, abs(mean[:, i]), label="Data", c='r')
-    ax.plot(time, abs(theory), label=r"$|-I * t + t^{1/3} * \sigma * -1.77|$", c='k')
-    ax.set_title(f"v={v} & {len(files)} Systems")
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.legend()
-    fig.savefig(f"./{save_folder}/Mean{v}.png", bbox_inches='tight')
+    I = 1 - np.sqrt(1 - v**2)
+    sigma = ((2 * I**2) / (1-I)) ** (1/3)
+    scale = time ** (1/3) * sigma
+    offset = I * time
+    ax.set_xlabel("(ln(Pb(vt, t)) + I(v)t) / t^(1/3) * sigma")
+    ax.set_ylabel("Probability Density")
+    ax.set_title(f"v={v}")
+    ax.hist((data + offset)/scale, density=True, bins=100)
+    x = np.linspace(-5, 5, 100)
+    pdf = tw.pdf(x)
+    ax.plot(x, pdf, label='Theory')
+    ax.set_yscale('log')
+    fig.savefig(f"./histograms/hist{v}.png", bbox_inches='tight')
     plt.close(fig)
+
+vs = np.array(vs)
+lnPb = np.mean(total_data, axis=0)
+I = 1 - np.sqrt(1-vs**2) 
+sigma = ((2*I**2) / (1-I))**(1/3)
+scale = time ** (1/3) * sigma
+offset = I * time
+fig, ax = plt.subplots()
+ax.set_xlabel("v")
+ax.set_ylabel("(ln(Pb(vt, t) + I(v)t) / t^(1/3) * sigma")
+ax.set_xscale("log")
+ax.set_yscale("log")
+data = (lnPb + offset) / scale
+ax.scatter(vs, abs(data))
+ax.hlines(1.77, min(vs), max(vs))
+fig.savefig("./histograms/means.png", bbox_inches="tight")
+
