@@ -403,107 +403,136 @@ class Diffusion(cdiff.Diffusion):
         print("Occupancy:", np.array(self.getOccupancy())[nonzeros])
         print("Prob: ", np.array(Ns) / self.getNParticles())
 
-    @staticmethod
-    def theoreticalNthQuart(N, time):
-        """
-        Returns the predicted position of the 1/Nth quartile. Remember that the
-        predicted position is twice the distance we're recording.
 
-        Parameters
-        ----------
-        N : float or np.quad
-            1/Nth quartile to measure. Should be > 1
+def theoreticalNthQuart(N, time):
+    """
+    Returns the predicted position of the 1/Nth quartile. Remember that the
+    predicted position is twice the distance we're recording.
 
-        time : numpy array
-            Times to record the 1/Nth quartile for
+    Parameters
+    ----------
+    N : float or np.quad
+        1/Nth quartile to measure. Should be > 1
 
-        Returns
-        -------
-        theory : numpy array
-            Theoretical 1/Nth quartile as a function of time predicted by the
-            BC model for diffusion.
-        """
+    time : numpy array
+        Times to record the 1/Nth quartile for
 
-        theory = np.piecewise(
-            time,
-            [time < np.log(N).astype(np.float64), time >= np.log(N).astype(np.float64)],
-            [lambda x: x, lambda x: x * np.sqrt(1 - (1 - np.log(N).astype(np.float64) / x) ** 2)],
-        )
-        return theory
+    Returns
+    -------
+    theory : numpy array
+        Theoretical 1/Nth quartile as a function of time predicted by the
+        BC model for diffusion.
+    """
 
-    @staticmethod
-    def theoreticalNthQuartVar(N, time):
-        """
-        Returns the predicted position of the 1/Nth quartile variance over time. 
+    logN = np.log(N).astype(np.float64)
+    theory = np.piecewise(
+        time,
+        [time < logN, time >= logN],
+        [lambda x: x, lambda x: x * np.sqrt(1 - (1 - logN / x) ** 2)],
+    )
+    return theory
 
-        Parameters
-        ----------
-        N : float or np.quad
-            1/Nth quartile to measure. Should be > 1. 
+def theoreticalNthQuartVar(N, time):
+    """
+    Returns the predicted position of the 1/Nth quartile variance over time.
 
-        times : numpy array
-            Times to record the 1/Nth quartile variance for.
+    Parameters
+    ----------
+    N : float or np.quad
+        1/Nth quartile to measure. Should be > 1.
 
-        Returns
-        -------
-        theory : numpy array
-            Theoretical 1/Nth quartile variance as a function of time
-        """
+    times : numpy array
+        Times to record the 1/Nth quartile variance for.
 
-        logN = np.log(N).astype(np.float64)
-        return (2 * logN) ** (2/3) * (time / logN - 1) ** (4/3) / (2 * time/logN - 1) 
+    Returns
+    -------
+    theory : numpy array
+        Theoretical 1/Nth quartile variance as a function of time
+    """
 
-    def theoreticalPb(self, vs):
-        """
-        Get the theoretically predicted ln(Pb(vt, t)) (probability greater than
-        index vt at current time)
+    logN = np.log(N).astype(np.float64)
+    return (2 * logN) ** (2/3) * (time / logN - 1) ** (4/3) / (2 * time/logN - 1)
 
-        Parameters
-        ----------
-        v : numpy array
-            List of velocities
+def theoreticalPbatT(vs, t):
+    """
+    Get the theoretically predicted ln(Pb(vt, t)) (probability greater than
+    index vt at current time)
 
-        Returns
-        -------
-        lnPbs : numpy array
-            Natural log of probabilities greater than vt
-        """
-        t = self.getTime()
-        M = -1.77  # Mean of TW distribution for beta=1, I think
-        I = 1 - np.sqrt(1 - vs ** 2)
-        sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
-        return -I * t + t ** (1 / 3) * sigma * M
+    Parameters
+    ----------
+    t : int or float
+        Time to calculate ln(Pb(vt, t)) at
 
-    def theoreticalPbCurve(self, v):
-        """
-        For a specified v get the probability of being greater than vt over time.
-        Otherwise known as ln(Pb(vt, t))
+    v : numpy array
+        List of velocities
 
-        Parameters
-        ----------
-        v : float
-            Velocity to get probability of. Must satisfy 0 < v < 1.
+    Returns
+    -------
+    lnPbs : numpy array
+        Natural log of probabilities greater than vt
+    """
+    M = -1.77  # Mean of TW distribution for beta=2
+    I = 1 - np.sqrt(1 - vs ** 2)
+    sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
+    return -I * t + t ** (1 / 3) * sigma * M
 
-        Returns
-        -------
-        numpy array
-            Logged probability of being greater than vt or ln(Pb(vt, t)).
-        """
+def theoreticalPbMean(v, t):
+    """
+    For a specified v get the probability of being greater than vt over time.
+    Otherwise known as ln(Pb(vt, t))
 
-        M = -1.77
-        I = 1 - np.sqrt(1 - v ** 2)
-        sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
-        return -I * self.time + self.time ** (1 / 3) * sigma * M
+    Parameters
+    ----------
+    t : numpy float
+        Times to calculate ln(Pb(vt, t)) for
 
+    v : float
+        Velocity to get probability of. Must satisfy 0 < v < 1.
+
+    Returns
+    -------
+    numpy array
+        Logged probability of being greater than vt or ln(Pb(vt, t)).
+    """
+
+    M = -1.77
+    I = 1 - np.sqrt(1 - v ** 2)
+    sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
+    return -I * t + t ** (1 / 3) * sigma * M
+
+def theoreticalPbVar(v, t):
+    """
+    For a specified v get the variance of the probability of being greater than
+    vt over time. Otherwise known as Var(ln(Pb(vt, t)))
+
+    Parameters
+    ----------
+    t : numpy float
+        Times to calculate ln(Pb(vt, t)) for
+
+    v : float
+        Velocity to get probability of. Must satisfy 0 < v < 1.
+
+    Returns
+    -------
+    numpy array
+        Variance of logged probability of being greater than vt or Var(ln(Pb(vt, t))).
+    """
+
+    V = 0.813
+    I = 1 - np.sqrt(1 - v ** 2)
+    sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
+    theory = (time ** (2/3)) * sigma**2 * V
+    return theory
 
 def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
     """
-    Load a quad precision array from a file. 
+    Load a quad precision array from a file.
 
     Parameters
     ---------
     file : str
-        Path to file 
+        Path to file
 
     shape : tuple
         Shape of the array to load
@@ -521,10 +550,10 @@ def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
 
     Note
     ----
-    It doesn't look like this will throw an error if the shape is incorrect. 
-    Should probably just get rid of the shape parameter overall and append 
-    to the empty numpy array. Did this to avoid np.quad errors but it's 
-    going to core dump either way. 
+    It doesn't look like this will throw an error if the shape is incorrect.
+    Should probably just get rid of the shape parameter overall and append
+    to the empty numpy array. Did this to avoid np.quad errors but it's
+    going to core dump either way.
     """
 
     arr = np.empty(shape, dtype=np.quad)
@@ -540,5 +569,5 @@ def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
                 arr[row, col] = elem
     if (row != shape[0]-1) and (col != shape[1]-1):
         raise ValueError("Data is not the same size as the shape")
-    
+
     return arr
