@@ -1,5 +1,5 @@
-// This is just a possible template for the recurance Relation object but I think
-// that it might be overkill at this point
+// This is just a possible template for the recurance Relation object but I
+// think that it might be overkill at this point
 #include <assert.h>
 #include <boost/math/distributions.hpp>
 #include <boost/multiprecision/float128.hpp>
@@ -19,7 +19,7 @@ typedef boost::multiprecision::float128 RealType;
 
 class Recurrance {
 private:
-  std::vector<std::vector<RealType> > zB;
+  std::vector<std::vector<RealType>> zB;
   unsigned long int tMax;
   double beta;
 
@@ -36,13 +36,12 @@ private:
   double generateBeta();
 
 public:
-  Recurrance(const double _beta,
-            const unsigned long int _tMax);
+  Recurrance(const double _beta, const unsigned long int _tMax);
   ~Recurrance(){};
 
   double getBeta() { return beta; };
 
-  std::vector<std::vector<RealType> > getzB() { return zB; };
+  std::vector<std::vector<RealType>> getzB() { return zB; };
 
   void setBetaSeed(const unsigned int seed) { gen.seed(seed); };
 
@@ -52,7 +51,6 @@ public:
   void makeRec();
 
   std::vector<unsigned long int> findQuintile(RealType N);
-
 };
 
 #endif /* RECURRANCE_HPP_ */

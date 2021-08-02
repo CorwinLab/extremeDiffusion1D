@@ -7,8 +7,8 @@
 #include <cmath>
 #include <limits>
 
-#include "recurrance.hpp"
 #include "pybind11_numpy_scalar.h"
+#include "recurrance.hpp"
 
 namespace py = pybind11;
 
@@ -41,16 +41,11 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 } // namespace detail
 } // namespace pybind11
 
-
-Recurrance::Recurrance(const double _beta,
-                      const unsigned long int _tMax)
+Recurrance::Recurrance(const double _beta, const unsigned long int _tMax)
 {
   beta = _beta;
   tMax = _tMax;
   zB.resize(tMax);
-  // std::vector<std::vector<RealType> > zb(tMax); // Number of columns set to tmax
-  // zB = zb;
-
 
   if (_beta != 0) {
     boost::random::beta_distribution<>::param_type params(_beta, _beta);
@@ -81,20 +76,23 @@ double Recurrance::generateBeta()
   }
 }
 
-void Recurrance::makeRec(){
-  for (unsigned long int n = 0; n < tMax; n++){
+void Recurrance::makeRec()
+{
+  for (unsigned long int n = 0; n < tMax; n++) {
     zB.at(n) = std::vector<RealType>(tMax); // Number of rows set to tmax
-    for (unsigned long int t = n; t < tMax; t++){
-      double doublebias = generateBeta(); // Some random beta distributed variable
+    for (unsigned long int t = n; t < tMax; t++) {
+      double doublebias =
+          generateBeta(); // Some random beta distributed variable
       RealType bias = RealType(doublebias);
-      if (n == t){
+      if (n == t) {
         zB.at(n).at(t) = 1;
       }
-      else if (n==0){
-        zB.at(n).at(t) = zB.at(n).at(t-1) * bias;
+      else if (n == 0) {
+        zB.at(n).at(t) = zB.at(n).at(t - 1) * bias;
       }
-      else{
-        zB.at(n).at(t) = zB.at(n).at(t-1) * bias + zB.at(n-1).at(t-1) * (1-bias);
+      else {
+        zB.at(n).at(t) =
+            zB.at(n).at(t - 1) * bias + zB.at(n - 1).at(t - 1) * (1 - bias);
       }
     }
   }
@@ -103,9 +101,9 @@ void Recurrance::makeRec(){
 std::vector<unsigned long int> Recurrance::findQuintile(RealType N)
 {
   std::vector<unsigned long int> quintile(tMax);
-  for (unsigned long int t = 0; t < tMax; t++){
-    for (unsigned long int n = 0; n < tMax; n++){
-      if (zB[n][t] > 1. / N){
+  for (unsigned long int t = 0; t < tMax; t++) {
+    for (unsigned long int n = 0; n < tMax; n++) {
+      if (zB[n][t] > 1. / N) {
         quintile[t] = t - 2 * n + 2;
         break;
       }
@@ -118,12 +116,13 @@ PYBIND11_MODULE(recurrance, m)
 {
   m.doc() = "Diffusion recurrance relation";
   py::class_<Recurrance>(m, "Recurrance")
-    .def(py::init<const double, const unsigned long int>(),
-         py::arg("beta"), py::arg("tMax"))
-    .def("getBeta", &Recurrance::getBeta)
-    .def("getzB", &Recurrance::getzB)
-    .def("setBetaSeed", &Recurrance::setBetaSeed, py::arg("seed"))
-    .def("gettMax", &Recurrance::gettMax)
-    .def("makeRec", &Recurrance::makeRec)
-    .def("findQuintile", &Recurrance::findQuintile);
+      .def(py::init<const double, const unsigned long int>(),
+           py::arg("beta"),
+           py::arg("tMax"))
+      .def("getBeta", &Recurrance::getBeta)
+      .def("getzB", &Recurrance::getzB)
+      .def("setBetaSeed", &Recurrance::setBetaSeed, py::arg("seed"))
+      .def("gettMax", &Recurrance::gettMax)
+      .def("makeRec", &Recurrance::makeRec)
+      .def("findQuintile", &Recurrance::findQuintile);
 }

@@ -259,7 +259,7 @@ class Diffusion(cdiff.Diffusion):
 
         f = open(file, "w")
         writer = csv.writer(f)
-        header = ["time", "MaxEdge"] + [str(np.quad('1') / i) for i in quartiles]
+        header = ["time", "MaxEdge"] + [str(np.quad("1") / i) for i in quartiles]
         writer.writerow(header)
         for t in time:
             self.evolveToTime(t)
@@ -432,6 +432,7 @@ def theoreticalNthQuart(N, time):
     )
     return theory
 
+
 def theoreticalNthQuartVar(N, time):
     """
     Returns the predicted position of the 1/Nth quartile variance over time.
@@ -451,7 +452,8 @@ def theoreticalNthQuartVar(N, time):
     """
 
     logN = np.log(N).astype(np.float64)
-    return (2 * logN) ** (2/3) * (time / logN - 1) ** (4/3) / (2 * time/logN - 1)
+    return (2 * logN) ** (2 / 3) * (time / logN - 1) ** (4 / 3) / (2 * time / logN - 1)
+
 
 def theoreticalPbatT(vs, t):
     """
@@ -475,6 +477,7 @@ def theoreticalPbatT(vs, t):
     I = 1 - np.sqrt(1 - vs ** 2)
     sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
     return -I * t + t ** (1 / 3) * sigma * M
+
 
 def theoreticalPbMean(v, t):
     """
@@ -500,6 +503,7 @@ def theoreticalPbMean(v, t):
     sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
     return -I * t + t ** (1 / 3) * sigma * M
 
+
 def theoreticalPbVar(v, t):
     """
     For a specified v get the variance of the probability of being greater than
@@ -522,8 +526,9 @@ def theoreticalPbVar(v, t):
     V = 0.813
     I = 1 - np.sqrt(1 - v ** 2)
     sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
-    theory = (time ** (2/3)) * sigma**2 * V
+    theory = (time ** (2 / 3)) * sigma ** 2 * V
     return theory
+
 
 def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
     """
@@ -567,7 +572,7 @@ def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
             for col, elem in enumerate(line):
                 elem = np.quad(elem)
                 arr[row, col] = elem
-    if (row != shape[0]-1) and (col != shape[1]-1):
+    if (row != shape[0] - 1) and (col != shape[1] - 1):
         raise ValueError("Data is not the same size as the shape")
 
     return arr
