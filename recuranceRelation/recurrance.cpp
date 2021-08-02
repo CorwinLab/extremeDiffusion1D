@@ -6,8 +6,8 @@
 #include <boost/multiprecision/float128.hpp>
 #include <cmath>
 #include <limits>
-#include <iostream>
 
+#include "recurrance.hpp"
 #include "pybind11_numpy_scalar.h"
 
 namespace py = pybind11;
@@ -41,13 +41,52 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 } // namespace detail
 } // namespace pybind11
 
-std::vector<std::vector<RealType> > makeRec(unsigned long int tmax){
-  std::vector<std::vector<RealType> > zB(tmax); // Number of columns set to tmax
-  for (unsigned long int n = 0; n < zB.size(); n++){
-    zB.at(n) = std::vector<RealType>(tmax); // Number of rows set to tmax
-    for (unsigned long int t = n; t < tmax; t++){
-      double bias = 0.5; // Some random beta distributed variable
-      std::cout << "At: (" << n << "," << t << ")" << std::endl;
+
+Recurrance::Recurrance(const double _beta,
+                      const unsigned long int _tMax)
+{
+  beta = _beta;
+  tMax = _tMax;
+  zB.resize(tMax);
+  // std::vector<std::vector<RealType> > zb(tMax); // Number of columns set to tmax
+  // zB = zb;
+
+
+  if (_beta != 0) {
+    boost::random::beta_distribution<>::param_type params(_beta, _beta);
+    betaParams = params;
+  }
+
+  std::uniform_real_distribution<>::param_type unifParams(0.0, 1.0);
+  dis.param(unifParams);
+  gen.seed(rd());
+}
+
+double Recurrance::generateBeta()
+{
+  // If beta = 0 return either 0 or 1
+  if (beta == 0.0) {
+    return round(dis(gen));
+  }
+  // If beta = 1 use random uniform distribution
+  else if (beta == 1.0) {
+    return dis(gen);
+  }
+  // If beta = inf return 0.5
+  else if (isinf(beta)) {
+    return 0.5;
+  }
+  else {
+    return beta_dist(gen, betaParams);
+  }
+}
+
+void Recurrance::makeRec(){
+  for (unsigned long int n = 0; n < tMax; n++){
+    zB.at(n) = std::vector<RealType>(tMax); // Number of rows set to tmax
+    for (unsigned long int t = n; t < tMax; t++){
+      double doublebias = generateBeta(); // Some random beta distributed variable
+      RealType bias = RealType(doublebias);
       if (n == t){
         zB.at(n).at(t) = 1;
       }
@@ -59,18 +98,15 @@ std::vector<std::vector<RealType> > makeRec(unsigned long int tmax){
       }
     }
   }
-  return zB;
 }
 
-std::vector<unsigned long int> findQuintile(
-  std::vector<std::vector<RealType> >zB, RealType N)
+std::vector<unsigned long int> Recurrance::findQuintile(RealType N)
 {
-  unsigned long int tMax = zB.size();
   std::vector<unsigned long int> quintile(tMax);
   for (unsigned long int t = 0; t < tMax; t++){
-    for (unsigned long int n = 0; n < tMax; t++){
+    for (unsigned long int n = 0; n < tMax; n++){
       if (zB[n][t] > 1. / N){
-        quintile[t] = t - 2 * (n) + 2;
+        quintile[t] = t - 2 * n + 2;
         break;
       }
     }
@@ -81,7 +117,13 @@ std::vector<unsigned long int> findQuintile(
 PYBIND11_MODULE(recurrance, m)
 {
   m.doc() = "Diffusion recurrance relation";
-  m.def("makeRec", &makeRec, py::arg("time"));
-  m.def("findQuintile", &findQuintile, py::arg("zB"), py::arg("N"));
-
+  py::class_<Recurrance>(m, "Recurrance")
+    .def(py::init<const double, const unsigned long int>(),
+         py::arg("beta"), py::arg("tMax"))
+    .def("getBeta", &Recurrance::getBeta)
+    .def("getzB", &Recurrance::getzB)
+    .def("setBetaSeed", &Recurrance::setBetaSeed, py::arg("seed"))
+    .def("gettMax", &Recurrance::gettMax)
+    .def("makeRec", &Recurrance::makeRec)
+    .def("findQuintile", &Recurrance::findQuintile);
 }
