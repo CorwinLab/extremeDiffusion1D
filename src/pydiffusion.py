@@ -147,6 +147,53 @@ class Diffusion(cdiff.Diffusion):
 
         return super().NthquartileSingleSided(NQuart)
 
+    def multipleNthquartiles(self, NQuarts):
+        """
+        Get the rightmost Nth quartile of the occupancy for multiple Ns. Will
+        be faster than writing a for loop over the NthquartileSingleSided for
+        most cases (large nParticles and small Nth quartiles).
+
+        Parameters
+        ----------
+        NQuarts : list
+            Nth quartiles to find. Must satisfy 0 < NQuarts < nParticles.
+
+        Returns
+        -------
+        numpy array
+            Distance from the center fo the Nth quartile position.
+
+        Note
+        ----
+        Expects the incoming NQuarts array to be in ascending order. The algorithm
+        will sort the NQuarts in ascending order and then return the Nquarts in
+        ascending order.
+
+        Looks like this is much faster than using list comprehension with
+        NthquartileSingleSided.
+
+        Examples
+        --------
+        >>> import time
+        >>> NthQuarts = np.linspace(5, 10000, 50)
+        >>> NthQuarts = [1/i for i in NthQuarts]
+        >>> NthQuarts.sort()
+        >>> d = Diffusion(1000000, 1, 10000)
+        >>> d.evolveToTime(10000)
+        >>> start = time.time()
+        >>> q = [d.NthquartileSingleSided(i) for i in NthQuarts]
+        >>> py = time.time() - start
+        >>> start = time.time()
+        >>> qs = d.multipleNthquartiles(NthQuarts)
+        >>> c = time.time() - start
+        >>> assert np.all(q == qs)
+        >>> print("Python Speed:", py)
+        >>> print("C Speed:", c)
+        >>> print("Ratio:", py / c )
+        """
+
+        return super().multipleNthquartiles(NQuarts)
+
     def pGreaterThanX(self, idx):
         """
         Get the probability of a particle being greater than index x.
@@ -263,9 +310,11 @@ class Diffusion(cdiff.Diffusion):
         writer.writerow(header)
         for t in time:
             self.evolveToTime(t)
-            NthQuartile = [
-                self.NthquartileSingleSided(self.getNParticles() * q) for q in quartiles
-            ]
+
+            quartiles = np.array(quartiles)
+            quartiles.sort()
+            NthQuartile = self.multipleNthquartiles(quartiles)
+
             maxEdge = self.getEdges()[1][t]
             row = [self.getTime(), maxEdge] + NthQuartile
             writer.writerow(row)
@@ -355,9 +404,11 @@ class Diffusion(cdiff.Diffusion):
         save_array = np.zeros(shape=(len(time), len(quartiles) + 2))
         for row_num, t in enumerate(time):
             self.evolveToTime(t)
-            NthQuartile = [
-                self.NthquartileSingleSided(self.getNParticles() * q) for q in quartiles
-            ]
+
+            quartiles = np.array(quartiles)
+            quartiles.sort()
+            NthQuartile = self.multipleNthquartiles(self.getNParticles() * quartiles)
+
             maxEdge = self.getEdges()[1][t]
             row = [self.getTime(), maxEdge] + NthQuartile
             save_array[row_num, :] = row

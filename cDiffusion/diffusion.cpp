@@ -8,6 +8,7 @@
 #include <boost/multiprecision/float128.hpp>
 #include <cmath>
 #include <limits>
+#include <algorithm>
 
 #include "pybind11_numpy_scalar.h"
 
@@ -179,6 +180,32 @@ double Diffusion::NthquartileSingleSided(const RealType NQuart)
   return dist;
 }
 
+std::vector<double> Diffusion::multipleNthquartiles(std::vector<RealType> NQuarts)
+{
+
+  // Need Quartiles in descending order for algorithm to work correctly
+  std::sort(NQuarts.begin(), NQuarts.end());
+
+  std::vector<double> dists(NQuarts.size());
+
+  unsigned long int maxIdx = edges.second[time];
+  double centerIdx = time * 0.5;
+  double dist = maxIdx - centerIdx;
+  RealType sum = occupancy.at(maxIdx);
+
+  unsigned long int pos = 0;
+  while (pos < NQuarts.size()){
+    while (sum < NQuarts[pos]){
+      maxIdx -= 1;
+      dist -= 1;
+      sum += occupancy.at(maxIdx);
+    }
+    dists[pos] = dist;
+    pos += 1;
+  }
+  return dists;
+}
+
 RealType Diffusion::pGreaterThanX(const unsigned long int idx)
 {
   RealType Nabove = 0.0;
@@ -252,7 +279,8 @@ PYBIND11_MODULE(diffusion, m)
       .def("getEdges", &Diffusion::getEdges)
       .def("getTime", &Diffusion::getTime)
       .def("iterateTimestep", &Diffusion::iterateTimestep)
-      .def("NthquartileSingleSided", &Diffusion::NthquartileSingleSided)
+      .def("NthquartileSingleSided", &Diffusion::NthquartileSingleSided, py::arg("N"))
+      .def("multipleNthquartiles", &Diffusion::multipleNthquartiles, py::arg("Ns"))
       .def("pGreaterThanX", &Diffusion::pGreaterThanX, py::arg("idx"))
       .def("calcVsAndPb", &Diffusion::calcVsAndPb, py::arg("num"))
       .def("VsAndPb", &Diffusion::VsAndPb, py::arg("v"));

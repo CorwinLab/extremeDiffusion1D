@@ -75,6 +75,7 @@ public:
   void iterateTimestep();
 
   double NthquartileSingleSided(const RealType NQuart);
+  std::vector<double> multipleNthquartiles(std::vector<RealType> NQuarts);
 
   RealType pGreaterThanX(const unsigned long int idx);
 
@@ -82,6 +83,7 @@ public:
   calcVsAndPb(const unsigned long int num);
 
   std::pair<std::vector<double>, std::vector<RealType>> VsAndPb(const double v);
+
 };
 
 #endif /* DIFFUSION_HPP_ */
