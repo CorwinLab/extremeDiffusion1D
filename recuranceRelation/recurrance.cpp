@@ -6,6 +6,7 @@
 #include <boost/multiprecision/float128.hpp>
 #include <cmath>
 #include <limits>
+#include <algorithm>
 
 #include "pybind11_numpy_scalar.h"
 #include "recurrance.hpp"
@@ -112,6 +113,44 @@ std::vector<unsigned long int> Recurrance::findQuintile(RealType N)
   return quintile;
 }
 
+std::vector<std::vector<unsigned long int> > Recurrance::findQuintiles(
+  std::vector<RealType> Ns)
+{
+  // Sort incoming Ns b/c we need them to be in decreasing order for algorithm
+  // to work
+  std::sort(Ns.begin(), Ns.end(), std::greater<RealType>());
+
+  // Initialize to have same number of vectors as in Ns
+  std::vector<std::vector<unsigned long int> > quintiles(Ns.size());
+
+  // Initialize all vectors to have size tMax
+  for (unsigned long int col = 0; col < Ns.size(); col++){
+    quintiles[col] = std::vector<unsigned long int>(tMax);
+  }
+  for (unsigned long int t=0; t < tMax; t++){
+    unsigned int pos = 0;
+    for (unsigned long int n = 0; n < tMax; n++){
+      // Could have multiple Ns with the same quintiles so need to loop through
+      // each one
+      while (zB[n][t] > 1. / Ns[pos]){
+        quintiles[pos][t] = t - 2 * n + 2;
+        pos += 1;
+
+        // Break while loop if past last position
+        if (pos == Ns.size()){
+          break;
+        }
+      }
+
+      // Also need to break for loop if in last position b/c we are done searching
+      if (pos == Ns.size()){
+        break;
+      }
+    }
+  }
+  return quintiles;
+}
+
 PYBIND11_MODULE(recurrance, m)
 {
   m.doc() = "Diffusion recurrance relation";
@@ -124,5 +163,6 @@ PYBIND11_MODULE(recurrance, m)
       .def("setBetaSeed", &Recurrance::setBetaSeed, py::arg("seed"))
       .def("gettMax", &Recurrance::gettMax)
       .def("makeRec", &Recurrance::makeRec)
-      .def("findQuintile", &Recurrance::findQuintile);
+      .def("findQuintile", &Recurrance::findQuintile, py::arg("N"))
+      .def("findQuintiles", &Recurrance::findQuintiles, py::arg("Ns"));
 }

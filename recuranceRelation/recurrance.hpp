@@ -51,6 +51,8 @@ public:
   void makeRec();
 
   std::vector<unsigned long int> findQuintile(RealType N);
+
+  std::vector<std::vector<unsigned long int> > findQuintiles(std::vector<RealType>);
 };
 
 #endif /* RECURRANCE_HPP_ */

@@ -88,11 +88,15 @@ class Recurrsion(rec.Recurrance):
         qs : numpy array
             Quantiles position over time. Columns are the different quintiles and
             rows are different times.
+
+        Examples
+        --------
+        >>> quintiles = [5, 10, 100]
+        >>> rec = Recurrsion(np.inf, 1000)
+        >>> rec.makeRec()
+        >>> qc = rec.findQuintiles(quintiles)
+        >>> print(qc)
         """
 
-        qs = np.empty((self.tMax, len(Ns)))
-
-        for col, N in enumerate(Ns):
-            qs[:, col] = self.findQuintile(N)
-
-        return qs
+        # Need to do a bit of np magic to get it back into the proper form
+        return np.fliplr(np.array(super().findQuintiles(Ns)).T)
