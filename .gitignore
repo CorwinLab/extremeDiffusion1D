@@ -3,8 +3,27 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Folders
+cDiffusion/.vs/
+cDiffusion/.vs/cDiffusion/v16/Browse.VC.db
+N50/
+times/
+
+#Files
+test_one_liner.cpp
+
+# Data
+*.txt
+*.png
+
+# Keep example files
+!/examples/*
+
 # C extensions
 *.out
+*.so
+*.gch
+*.output
 
 # Distribution / packaging
 .Python
@@ -130,51 +149,3 @@ dmypy.json
 
 # Editor files
 *~
-
-# Folders
-cDiffusion/.vs/
-cDiffusion/.vs/cDiffusion/v16/Browse.VC.db
-N50/
-times/
-
-#Files
-test_one_liner.cpp
-
-# Data
-*.txt
-*.png
-
-#C++
-
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
