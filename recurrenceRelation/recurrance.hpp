@@ -22,6 +22,7 @@ private:
   std::vector<RealType> zB;
   unsigned long int t;
   double beta;
+  unsigned long int tMax;
 
   // It would be nice if this could be a generic distribution as:
   // boost::random::distribution bias
@@ -36,12 +37,14 @@ private:
   double generateBeta();
 
 public:
-  Recurrance(const double _beta);
+  Recurrance(const double _beta, const unsigned long int _tMax);
   ~Recurrance(){};
 
   double getBeta() { return beta; };
 
   std::vector<RealType> getzB() { return zB; };
+
+  unsigned long int gettMax() { return tMax; };
 
   void setBetaSeed(const unsigned int seed) { gen.seed(seed); };
 

@@ -43,11 +43,13 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 } // namespace pybind11
 
 
-Recurrance::Recurrance(const double _beta)
+Recurrance::Recurrance(const double _beta, const unsigned long int _tMax)
 {
   beta = _beta;
   t = 0;
-  zB.push_back(1.0); // Initialize so that zB(n=0, t=0) = 1
+  tMax = _tMax;
+  zB.resize(tMax+1); // Initialize so that zB(n=0, t=0) = 1
+  zB[0] = 1.0;
 
   if (_beta != 0) {
     boost::random::beta_distribution<>::param_type params(_beta, _beta);
@@ -80,12 +82,12 @@ double Recurrance::generateBeta()
 
 void Recurrance::iterateTimeStep()
 {
-  std::vector<RealType> zB_next(zB.size() + 1); // Initialize next zb(n, t+1) to size zb(n, t-1) + 1
-  for (unsigned long int n = 0; n < zB_next.size(); n++){
+  std::vector<RealType> zB_next(tMax+1); // Initialize next zb(n, t+1) to size zb(n, t-1) + 1
+  for (unsigned long int n = 0; n <= t+1; n++){
     if (n == 0){
       zB_next[n] = 1.0; // Need zB(n=0, t) = 0
     }
-    else if (n == zB_next.size() - 1){
+    else if (n == t){
       double double_beta = generateBeta();
       RealType beta = RealType(double_beta);
       zB_next[n] = beta * zB[n-1];
@@ -146,9 +148,10 @@ PYBIND11_MODULE(recurrance, m)
 {
   m.doc() = "Diffusion recurrance relation";
   py::class_<Recurrance>(m, "Recurrance")
-      .def(py::init<const double>(), py::arg("beta"))
+      .def(py::init<const double, const unsigned long int>(), py::arg("beta"), py::arg("tMax"))
       .def("getBeta", &Recurrance::getBeta)
       .def("getzB", &Recurrance::getzB)
+      .def("gettMax", &Recurrance::gettMax)
       .def("setBetaSeed", &Recurrance::setBetaSeed, py::arg("seed"))
       .def("getTime", &Recurrance::getTime)
       .def("iterateTimeStep", &Recurrance::iterateTimeStep)
