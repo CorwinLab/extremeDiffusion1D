@@ -9,7 +9,7 @@ def makeRec(tMax):
     zB = np.zeros((tMax,tMax))
     for n in range(tMax):
         for t in range(n,tMax):
-            bias = np.random.rand()
+            bias = 0.5
             if n == t:
                 zB[n,t] = 1
             elif n == 0:
@@ -48,4 +48,6 @@ def findQuintile(zB,N):
     quintile = np.zeros(tMax)
     for t in range(tMax):
         quintile[t] = t - 2*np.where(zB[:,t] > (1/N))[0][0] + 2
+        n = np.where(zB[:, t] > (1/N))[0][0]
+        print("n=", n, " t=", t)
     return quintile

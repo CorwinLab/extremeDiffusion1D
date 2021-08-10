@@ -42,11 +42,12 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 } // namespace detail
 } // namespace pybind11
 
-Recurrance::Recurrance(const double _beta, const unsigned long int _tMax)
+
+Recurrance::Recurrance(const double _beta)
 {
   beta = _beta;
-  tMax = _tMax;
-  zB.resize(tMax);
+  t = 0;
+  zB.push_back(1.0); // Initialize so that zB(n=0, t=0) = 1
 
   if (_beta != 0) {
     boost::random::beta_distribution<>::param_type params(_beta, _beta);
@@ -77,43 +78,42 @@ double Recurrance::generateBeta()
   }
 }
 
-void Recurrance::makeRec()
+void Recurrance::iterateTimeStep()
 {
-  for (unsigned long int n = 0; n < tMax; n++) {
-    zB.at(n) = std::vector<RealType>(tMax); // Number of rows set to tmax
-    for (unsigned long int t = n; t < tMax; t++) {
-      double doublebias =
-          generateBeta(); // Some random beta distributed variable
-      RealType bias = RealType(doublebias);
-      if (n == t) {
-        zB.at(n).at(t) = 1;
-      }
-      else if (n == 0) {
-        zB.at(n).at(t) = zB.at(n).at(t - 1) * bias;
-      }
-      else {
-        zB.at(n).at(t) =
-            zB.at(n).at(t - 1) * bias + zB.at(n - 1).at(t - 1) * (1 - bias);
-      }
+  std::vector<RealType> zB_next(zB.size() + 1); // Initialize next zb(n, t+1) to size zb(n, t-1) + 1
+  for (unsigned long int n = 0; n < zB_next.size(); n++){
+    if (n == 0){
+      zB_next[n] = 1.0; // Need zB(n=0, t) = 0
+    }
+    else if (n == zB_next.size() - 1){
+      double double_beta = generateBeta();
+      RealType beta = RealType(double_beta);
+      zB_next[n] = beta * zB[n-1];
+    }
+    else{
+      double double_beta = generateBeta();
+      RealType beta = RealType(double_beta);
+      zB_next[n] = beta * zB[n-1] + (1.0 - beta) * zB[n];
     }
   }
+  zB = zB_next;
+  t += 1;
 }
 
-std::vector<unsigned long int> Recurrance::findQuintile(RealType N)
+unsigned long int Recurrance::findQuintile(RealType N)
 {
-  std::vector<unsigned long int> quintile(tMax);
-  for (unsigned long int t = 0; t < tMax; t++) {
-    for (unsigned long int n = 0; n < tMax; n++) {
-      if (zB[n][t] > 1. / N) {
-        quintile[t] = t - 2 * n + 2;
-        break;
-      }
+  unsigned long int quintile;
+  for (unsigned long int n = (zB.size()-1); n >= 0; n--){
+    if (zB[n] > 1.0 / N){
+      n = (zB.size()-1) - n;
+      quintile = t - 2 * n + 2;
+      break;
     }
   }
   return quintile;
 }
 
-std::vector<std::vector<unsigned long int> > Recurrance::findQuintiles(
+std::vector<unsigned long int> Recurrance::findQuintiles(
   std::vector<RealType> Ns)
 {
   // Sort incoming Ns b/c we need them to be in decreasing order for algorithm
@@ -121,31 +121,22 @@ std::vector<std::vector<unsigned long int> > Recurrance::findQuintiles(
   std::sort(Ns.begin(), Ns.end(), std::greater<RealType>());
 
   // Initialize to have same number of vectors as in Ns
-  std::vector<std::vector<unsigned long int> > quintiles(Ns.size());
+  std::vector<unsigned long int> quintiles(Ns.size());
+  unsigned long int Npos = 0;
+  for (unsigned long int n = (zB.size()-1); n >= 0; n--){
+    while(zB[n] > 1.0 / Ns[Npos]){
+      unsigned long int nval = (zB.size()-1) - n;
+      quintiles[Npos] = t - 2 * nval + 2;
+      Npos += 1;
 
-  // Initialize all vectors to have size tMax
-  for (unsigned long int col = 0; col < Ns.size(); col++){
-    quintiles[col] = std::vector<unsigned long int>(tMax);
-  }
-  for (unsigned long int t=0; t < tMax; t++){
-    unsigned int pos = 0;
-    for (unsigned long int n = 0; n < tMax; n++){
-      // Could have multiple Ns with the same quintiles so need to loop through
-      // each one
-      while (zB[n][t] > 1. / Ns[pos]){
-        quintiles[pos][t] = t - 2 * n + 2;
-        pos += 1;
-
-        // Break while loop if past last position
-        if (pos == Ns.size()){
-          break;
-        }
-      }
-
-      // Also need to break for loop if in last position b/c we are done searching
-      if (pos == Ns.size()){
+      //Break while loop if past last position
+      if (Npos == Ns.size()){
         break;
       }
+    }
+    // Also need to break for loop if in last position b/c we are done searching
+    if (Npos == Ns.size()){
+      break;
     }
   }
   return quintiles;
@@ -155,14 +146,12 @@ PYBIND11_MODULE(recurrance, m)
 {
   m.doc() = "Diffusion recurrance relation";
   py::class_<Recurrance>(m, "Recurrance")
-      .def(py::init<const double, const unsigned long int>(),
-           py::arg("beta"),
-           py::arg("tMax"))
+      .def(py::init<const double>(), py::arg("beta"))
       .def("getBeta", &Recurrance::getBeta)
       .def("getzB", &Recurrance::getzB)
       .def("setBetaSeed", &Recurrance::setBetaSeed, py::arg("seed"))
-      .def("gettMax", &Recurrance::gettMax)
-      .def("makeRec", &Recurrance::makeRec)
+      .def("getTime", &Recurrance::getTime)
+      .def("iterateTimeStep", &Recurrance::iterateTimeStep)
       .def("findQuintile", &Recurrance::findQuintile, py::arg("N"))
       .def("findQuintiles", &Recurrance::findQuintiles, py::arg("Ns"));
 }

@@ -19,8 +19,6 @@ d = diff.Diffusion(
     N,
     beta=beta,
     occupancySize=num_of_timesteps,
-    smallCutoff=0,
-    largeCutoff=0,
     probDistFlag=False,
 )
 

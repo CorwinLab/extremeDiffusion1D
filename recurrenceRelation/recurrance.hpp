@@ -19,8 +19,8 @@ typedef boost::multiprecision::float128 RealType;
 
 class Recurrance {
 private:
-  std::vector<std::vector<RealType>> zB;
-  unsigned long int tMax;
+  std::vector<RealType> zB;
+  unsigned long int t;
   double beta;
 
   // It would be nice if this could be a generic distribution as:
@@ -36,23 +36,23 @@ private:
   double generateBeta();
 
 public:
-  Recurrance(const double _beta, const unsigned long int _tMax);
+  Recurrance(const double _beta);
   ~Recurrance(){};
 
   double getBeta() { return beta; };
 
-  std::vector<std::vector<RealType>> getzB() { return zB; };
+  std::vector<RealType> getzB() { return zB; };
 
   void setBetaSeed(const unsigned int seed) { gen.seed(seed); };
 
-  unsigned long int gettMax() { return tMax; };
+  unsigned long int getTime() { return t; };
 
   // Functions that do things
-  void makeRec();
+  void iterateTimeStep();
 
-  std::vector<unsigned long int> findQuintile(RealType N);
+  unsigned long int findQuintile(RealType N);
 
-  std::vector<std::vector<unsigned long int> > findQuintiles(std::vector<RealType>);
+  std::vector<unsigned long int> findQuintiles(std::vector<RealType> Ns);
 };
 
 #endif /* RECURRANCE_HPP_ */
