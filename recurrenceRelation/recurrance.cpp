@@ -87,7 +87,7 @@ void Recurrance::iterateTimeStep()
     if (n == 0){
       zB_next[n] = 1.0; // Need zB(n=0, t) = 0
     }
-    else if (n == t){
+    else if (n == t+1){
       double double_beta = generateBeta();
       RealType beta = RealType(double_beta);
       zB_next[n] = beta * zB[n-1];
@@ -95,6 +95,8 @@ void Recurrance::iterateTimeStep()
     else{
       double double_beta = generateBeta();
       RealType beta = RealType(double_beta);
+      // std::cout << "n=" << n << ", t=" << t+1 << std::endl;
+      // std::cout << "zB(n-1, t-1)=" << zB[n-1] << ", zB(n, t-1)=" <<  zB[n] << "\n" << std::endl;
       zB_next[n] = beta * zB[n-1] + (1.0 - beta) * zB[n];
     }
   }
@@ -105,9 +107,9 @@ void Recurrance::iterateTimeStep()
 unsigned long int Recurrance::findQuintile(RealType N)
 {
   unsigned long int quintile;
-  for (unsigned long int n = (zB.size()-1); n >= 0; n--){
+  for (unsigned long int n = t; n >= 0; n--){
     if (zB[n] > 1.0 / N){
-      n = (zB.size()-1) - n;
+      n = t - n;
       quintile = t - 2 * n + 2;
       break;
     }
@@ -125,9 +127,9 @@ std::vector<unsigned long int> Recurrance::findQuintiles(
   // Initialize to have same number of vectors as in Ns
   std::vector<unsigned long int> quintiles(Ns.size());
   unsigned long int Npos = 0;
-  for (unsigned long int n = (zB.size()-1); n >= 0; n--){
+  for (unsigned long int n = t; n >= 0; n--){
     while(zB[n] > 1.0 / Ns[Npos]){
-      unsigned long int nval = (zB.size()-1) - n;
+      unsigned long int nval = t - n;
       quintiles[Npos] = t - 2 * nval + 2;
       Npos += 1;
 

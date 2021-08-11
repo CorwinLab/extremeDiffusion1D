@@ -1,3 +1,6 @@
+import sys
+sys.path.append("../recurrenceRelation/")
+
 import recurrance
 import numpy as np
 import npquad
@@ -51,7 +54,7 @@ class Recurrance(recurrance.Recurrance):
         ValueError
             If trying to evolve the system to a time greater than the allocated
             time. This would normally Core Dump since trying to allocate memory
-            outside array. 
+            outside array.
         """
 
         if self.time >= self.tMax:
@@ -166,3 +169,9 @@ class Recurrance(recurrance.Recurrance):
             row = [self.time] + list(NthQuintiles)
             writer.writerow(row)
         f.close()
+
+if __name__ == '__main__':
+    rec = Recurrance(beta=np.inf, tMax=5)
+    for _ in range(5):
+        rec.iterateTimeStep()
+        print(rec.zB)
