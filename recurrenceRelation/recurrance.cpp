@@ -95,8 +95,6 @@ void Recurrance::iterateTimeStep()
     else{
       double double_beta = generateBeta();
       RealType beta = RealType(double_beta);
-      // std::cout << "n=" << n << ", t=" << t+1 << std::endl;
-      // std::cout << "zB(n-1, t-1)=" << zB[n-1] << ", zB(n, t-1)=" <<  zB[n] << "\n" << std::endl;
       zB_next[n] = beta * zB[n-1] + (1.0 - beta) * zB[n];
     }
   }

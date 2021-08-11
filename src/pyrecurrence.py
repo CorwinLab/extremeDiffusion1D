@@ -1,10 +1,12 @@
 import sys
+
 sys.path.append("../recurrenceRelation/")
 
 import recurrance
 import numpy as np
 import npquad
 import csv
+
 
 class Recurrance(recurrance.Recurrance):
     """
@@ -162,16 +164,10 @@ class Recurrance(recurrance.Recurrance):
             self.evolveToTime(t)
 
             quartiles = list(np.array(quartiles))
-            quartiles.sort() # Need to get the quartiles in descending order
+            quartiles.sort()  # Need to get the quartiles in descending order
             quartiles.reverse()
             NthQuintiles = self.findQuintiles(quartiles)
 
             row = [self.time] + list(NthQuintiles)
             writer.writerow(row)
         f.close()
-
-if __name__ == '__main__':
-    rec = Recurrance(beta=np.inf, tMax=5)
-    for _ in range(5):
-        rec.iterateTimeStep()
-        print(rec.zB)
