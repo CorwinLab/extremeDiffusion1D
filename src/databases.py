@@ -134,7 +134,7 @@ class QuartileDatabase(Database):
         """
 
         with open(self.files[0]) as f:
-            Ns = g.readline().split(",")[2:]
+            Ns = f.readline().split(",")[2:]
             Ns = [np.quad(N) for N in Ns]
 
         return Ns

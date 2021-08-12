@@ -34,6 +34,10 @@ functions are written in C++ and then ported to Python using [PyBind11](https://
   It has been difficult to create tests as the biases are drawn randomly for each
   experiment.
 
+* recurranceRelation
+
+  Contains C++ implementation of Ivan's recurrence relation ported into python with PyBind11.
+
 
 # Installation and Setup
 There are only two steps needed to setup the library and start running simulations
