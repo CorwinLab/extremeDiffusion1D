@@ -306,13 +306,15 @@ class Diffusion(cdiff.Diffusion):
 
         f = open(file, "w")
         writer = csv.writer(f)
+
+        quartiles = np.array(quartiles)
+        quartiles.sort()
         header = ["time", "MaxEdge"] + [str(np.quad("1") / i) for i in quartiles]
         writer.writerow(header)
+
         for t in time:
             self.evolveToTime(t)
 
-            quartiles = np.array(quartiles)
-            quartiles.sort()
             NthQuartile = self.multipleNthquartiles(quartiles)
 
             maxEdge = self.getEdges()[1][t]

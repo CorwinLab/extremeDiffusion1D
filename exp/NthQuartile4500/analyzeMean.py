@@ -1,7 +1,8 @@
-import glob 
+import glob
 import numpy as np
 import npquad
 import sys
+
 sys.path.append("../../src")
 sys.path.append("../../cDiffusion")
 from databases import QuartileDatabase
@@ -16,11 +17,11 @@ for f in files:
     max_time = data[-1, 0]
     if max_time > time:
         full_files = [f]
-        time = max_time 
-    elif max_time == time: 
+        time = max_time
+    elif max_time == time:
         full_files.append(f)
     else:
-        continue 
+        continue
 
 db = QuartileDatabase(full_files)
 db.calculateMeanVar()

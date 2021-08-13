@@ -1,6 +1,7 @@
 import numpy as np
 import npquad
 
+
 def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
     """
     Load a quad precision array from a file.

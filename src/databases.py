@@ -5,6 +5,7 @@ from fileIO import loadArrayQuad
 import theory as th
 import os
 import matplotlib
+
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 
@@ -80,9 +81,9 @@ class Database:
             File path to the variance to load
         """
         if quad:
-            self.mean = loadArrayQuad(file)
+            self.var = loadArrayQuad(file)
         else:
-            self.mean = np.loadtxt(file)
+            self.var = np.loadtxt(file)
 
 
 class QuartileDatabase(Database):
@@ -112,7 +113,8 @@ class QuartileDatabase(Database):
         for f in self.files:
             data = loadArrayQuad(f, self.shape, delimiter=",", skiprows=1)
             time = data[:, 0]
-            data = 2 * data[:, 1:]
+            maxEdge = 2 * data[:, 1]
+            data = 2 * data[:, 2:]
 
             if squared_sum is None:
                 squared_sum = data ** 2
@@ -162,8 +164,12 @@ class QuartileDatabase(Database):
             ax.set_xlabel("Time")
             ax.set_ylabel("Mean Nth Quartile")
             ax.set_title(f"N={N}")
-            ax.plot(self.time, self.mean[:, i], label="Mean")
-            ax.plot(self.time, theory, label="Theory")
+            ax.plot(
+                self.time / np.log(N).astype(np.float64),
+                self.mean[:, i + 1],
+                label="Mean",
+            )
+            ax.plot(self.time / np.log(N).astype(np.float64), theory, label="Theory")
             ax.set_xscale("log")
             ax.set_yscale("log")
             ax.legend()
@@ -188,9 +194,13 @@ class QuartileDatabase(Database):
             fig, ax = plt.subplots()
             ax.set_xlabel("Time")
             ax.set_ylabel("Variance of Nth Quartile")
-            ax.set_title("N={N}")
-            ax.plot(self.time, self.var[:, i], label="Variance")
-            ax.plot(self.time, theory, label="Theory")
+            ax.set_title(f"N={N}")
+            ax.plot(
+                self.time / np.log(N).astype(np.float64),
+                self.var[:, i + 1],
+                label="Variance",
+            )
+            ax.plot(self.time / np.log(N).astype(np.float64), theory, label="Theory")
             ax.set_xscale("log")
             ax.set_yscale("log")
             ax.legend()

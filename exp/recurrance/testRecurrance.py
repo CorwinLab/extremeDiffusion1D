@@ -30,7 +30,7 @@ for col, q in enumerate(quartiles):
     time = qs[:, 0]
     ax.plot(time, data, label=f"N={q}")
 
-    # Okay what the fukc is going on - how do I calculate the theoretical value? 
+    # Okay what the fukc is going on - how do I calculate the theoretical value?
     theory_data = data[np.where(data <= time)]
     theory_time = time[np.where(data <= time)]
 

@@ -1,6 +1,7 @@
 import numpy as np
 import npquad
 
+
 def theoreticalNthQuart(N, time):
     """
     Returns the predicted position of the 1/Nth quartile. Remember that the

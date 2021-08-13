@@ -1,0 +1,105 @@
+import sys
+import os
+
+sys.path.append(os.path.abspath("../../src"))
+sys.path.append(os.path.abspath("../../cDiffusion"))
+from pydiffusion import Diffusion
+import quadMath
+import numpy as np
+import npquad
+from datetime import date
+from experimentUtils import saveVars
+
+
+def runExperiment(
+    beta,
+    N_exp,
+    num_of_steps,
+    save_file,
+    num_of_save_times=5000,
+    q_start=50,
+    q_stop=4500,
+    q_step=50,
+):
+    """
+    Run one Diffusion experiment for values of N & beta and then store the edges
+    in filename.
+
+    Parameters
+    ----------
+    beta : float
+        Value of beta for beta distribution
+
+    N_exp : int
+        Exponent of the number of particles to simulate. Number of particles will
+        be 10 ** N_exp
+
+    num_of_steps : int
+        Number of times to evolve the system or maximum time.
+
+    save_file : str
+        What file to save the qu
+        artiles to.
+
+    num_of_save_times : int, optional (5000)
+        Number of times to save the quartiles.
+
+    q_start : int, optional (3)
+        Exponent of first quartile to measure. Quartile will be 10 ** q_start
+
+    q_stop : int, optional (4500)
+        Exponent of last quartile to measure. Quartile will be 10 ** q_stop
+
+    q_step : int, optional (50)
+        Exponent step size between quartiles.
+    """
+
+    N = np.quad(f"1e{N_exp}")
+    d = Diffusion(N, beta=beta, occupancySize=num_of_steps, probDistFlag=True)
+
+    save_times = np.geomspace(1, num_of_steps, num_of_save_times, dtype=np.int64)
+    save_times = np.unique(save_times)
+
+    quartiles = quadMath.logarange(q_start, q_stop, q_step, endpoint=True)
+
+    quartiles = [np.quad("1") / i for i in quartiles]
+    d.evolveAndSaveQuartile(save_times, quartiles, save_file)
+
+
+if __name__ == "__main__":
+    (
+        topDir,
+        sysID,
+        beta,
+        N_exp,
+        num_of_steps,
+        num_of_save_times,
+        quartile_start,
+        quartile_stop,
+        q_step,
+    ) = sys.argv[1:]
+
+    save_dir = f"{topDir}/1.0/QuartileTotal/"
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    save_file = save_dir + f"Quartiles{sysID}.txt"
+    save_file = os.path.abspath(save_file)
+
+    vars = {
+        "beta": beta,
+        "N_exp": N_exp,
+        "num_of_steps": num_of_steps,
+        "save_file": save_file,
+        "num_of_save_times": num_of_save_times,
+        "q_start": quartile_start,
+        "q_stop": quartile_stop,
+        "q_step": q_step,
+    }
+
+    vars_file = os.path.join(save_dir, "variables.json")
+    today = date.today()
+    text_date = today.strftime("%b-%d-%Y")
+
+    runExperiment(**vars)
+    vars.update({"Date": text_date})
+    saveVars(vars, vars_file)
