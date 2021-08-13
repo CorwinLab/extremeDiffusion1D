@@ -1,10 +1,10 @@
 import sys
 
 sys.path.append("../src")
-sys.path.append("../recurrenceRelationEric")
+sys.path.append("../recurrenceRelation")
 
 from pyrecurrence import Recurrance
-from recurrenceRelation import makeRec, findQuintile
+from nativePyRecurrenceRelation import makeRec, findQuintile
 import numpy as np
 import npquad
 import pytest
