@@ -10,34 +10,33 @@ functions are written in C++ and then ported to Python using [PyBind11](https://
 
 * examples
 
-  A couple example simulations showing off the library.
+  A couple example simulations using the cDiffusion module.
 
-* exp
+* analysis
 
-  Driver files to run experiments, collect data, analyze data etc. Most of the
-  files here will be pretty experimental. I tried to structure each folder to have
-  different experiments (datasets) run and analyzed.
-
-* performance
-
-  Not well maintained but an attempt at using gprof to check bottlenecks in the code.
+  Analysis for all the experiments that have been run. Each folder is generally
+  a different experiment.
 
 * src
 
-  Wrapper class for the C++/PyBind11 class defined in cDiffusion/diffusion.cpp.
-  Contains a lot of helper functions for easier analysis. This is generally what
-  should be imported into Python versus the base C++/PyBind11 class.
+  Wrapper classes for the C++/PyBind11 class defined in cDiffusion/diffusion.cpp
+  and recurrenceRelation/recurrance.cpp. Also contains a lot of helper functions
+  for easier analysis. This is generally what should be imported into Python
+  versus the base C++/PyBind11 class.
 
 * test
 
-  Doesn't currently contain any tests since the code has been changing so quickly.
-  It has been difficult to create tests as the biases are drawn randomly for each
-  experiment.
+  Contains some tests to make sure the recurranceRelation module matches what the
+  native python version that Eric wrote.
 
 * recurranceRelation
 
-  Contains C++ implementation of Ivan's recurrence relation ported into python with PyBind11.
+  Contains C++ implementation of Ivan's recurrence relation ported into python
+  with PyBind11.
 
+* runFiles
+
+  Files to run experiments on Locust using SLURM.
 
 # Installation and Setup
 There are only two steps needed to setup the library and start running simulations

@@ -1,7 +1,7 @@
-#from numba import jit
+# from numba import jit
 import numpy as np
 
-#@jit(nopython=True)
+# @jit(nopython=True)
 def makeRec(tMax):
     # Place a one on every diagonal entry
     # zB[n,t]
@@ -42,7 +42,7 @@ def makeRec(tMax):
 #     return zB
 
 
-#@jit(nopython=True)
+# @jit(nopython=True)
 def findQuintile(zB, N):
     tMax = zB.shape[0]
     quintile = np.zeros(tMax)
