@@ -33,7 +33,6 @@ def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
     """
 
     arr = np.empty(shape, dtype=np.quad)
-    print(arr.shape)
     with open(file, "r") as f:
         if skiprows > 0:
             for _ in range(skiprows):
@@ -43,20 +42,9 @@ def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
             line = line.strip().split(delimiter)
             for col, elem in enumerate(line):
                 elem = np.quad(elem)
-                print(row, col, elem, arr.shape)
                 arr[row, col] = elem
+
     if (row != shape[0] - 1) and (col != shape[1] - 1):
         raise ValueError("Data is not the same size as the shape")
 
     return arr
-
-if __name__ == '__main__':
-    import time
-    import glob
-    import npquad
-    files = glob.glob("/home/jacob/Desktop/locustMount/Data/1.0/TracyWidomQuad/T*.txt")
-    f = files[0]
-    start = time.time()
-    data2 = np.empty((2796, 51), dtype=np.quad)
-    data2 = loadArrayQuad(f, (2796, 51), skiprows=1, delimiter=",")
-    print('Time:', time.time() - start)

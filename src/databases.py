@@ -1,8 +1,12 @@
 import numpy as np
 import npquad
 import glob
-import pydiffusion as diff
+from fileIO import loadArrayQuad
+import theory as th
 import os
+import matplotlib
+matplotlib.use("Agg")
+from matplotlib import pyplot as plt
 
 
 class Database:
@@ -23,7 +27,7 @@ class Database:
 
         # Load the first array so we can get simple stuff like len of the files
         # and max/min times
-        self._example_file = diff.loadArrayQuad(
+        self._example_file = loadArrayQuad(
             files[0], self.shape, delimiter=",", skiprows=1
         )
 
@@ -35,7 +39,7 @@ class Database:
 
     @property
     def time(self):
-        return self._example_file[:, 0]
+        return self._example_file[:, 0].astype(np.float64)
 
     @classmethod
     def fromDir(cls, directory):
@@ -62,7 +66,7 @@ class Database:
             File path of the mean to load
         """
         if quad:
-            self.mean = diff.loadArrayQuad(file)
+            self.mean = loadArrayQuad(file)
         else:
             self.mean = np.loadtxt(file)
 
@@ -76,7 +80,7 @@ class Database:
             File path to the variance to load
         """
         if quad:
-            self.mean = diff.loadArrayQuad(file)
+            self.mean = loadArrayQuad(file)
         else:
             self.mean = np.loadtxt(file)
 
@@ -96,7 +100,7 @@ class QuartileDatabase(Database):
         # Set some easy properties
         self.Ns = self.getNs()
 
-    def calculateMeanVar(self):
+    def calculateMeanVar(self, verbose=False):
         """
         Calculate the mean of the selected data along the columns or rows.
         Assumes that the first column is the time.
@@ -106,7 +110,7 @@ class QuartileDatabase(Database):
         mean_sum = None
 
         for f in self.files:
-            data = diff.loadArrayQuad(f, self.shape, delimiter=",", skiprows=1)
+            data = loadArrayQuad(f, self.shape, delimiter=",", skiprows=1)
             time = data[:, 0]
             data = 2 * data[:, 1:]
 
@@ -119,6 +123,9 @@ class QuartileDatabase(Database):
                 mean_sum = data
             else:
                 mean_sum += data
+
+            if verbose:
+                print(f)
 
         self.mean = mean_sum.astype(np.float64) / len(self)
         self.var = squared_sum.astype(np.float64) / len(self) - self.mean ** 2
@@ -150,12 +157,12 @@ class QuartileDatabase(Database):
         """
 
         for i, N in enumerate(self.Ns):
-            theory = diff.theoreticalNthQuart(N, self.time)
+            theory = th.theoreticalNthQuart(N, self.time)
             fig, ax = plt.subplots()
             ax.set_xlabel("Time")
             ax.set_ylabel("Mean Nth Quartile")
-            ax.set_title("N={N}")
-            ax.plot(self.time, self.mean, label="Mean")
+            ax.set_title(f"N={N}")
+            ax.plot(self.time, self.mean[:, i], label="Mean")
             ax.plot(self.time, theory, label="Theory")
             ax.set_xscale("log")
             ax.set_yscale("log")
@@ -177,11 +184,11 @@ class QuartileDatabase(Database):
         """
 
         for i, N in enumerate(self.Ns):
-            theory = diff.theoreticalNthQuartVar(N, self.time)
+            theory = th.theoreticalNthQuartVar(N, self.time)
             fig, ax = plt.subplots()
             ax.set_xlabel("Time")
             ax.set_ylabel("Variance of Nth Quartile")
-            self.title("N={N}")
+            ax.set_title("N={N}")
             ax.plot(self.time, self.var[:, i], label="Variance")
             ax.plot(self.time, theory, label="Theory")
             ax.set_xscale("log")
@@ -209,7 +216,7 @@ class VelocityDatabase(Database):
 
         self.vs = self.getVs()
 
-    def calculateMeanVar(self):
+    def calculateMeanVar(self, verbose=False):
         """
         Calculate the mean and variance of the dataset.
         """
@@ -218,7 +225,7 @@ class VelocityDatabase(Database):
         mean_sum = None
 
         for f in self.files:
-            data = diff.loadArrayQuad(f, self.shape, delimiter=",", skiprows=1)
+            data = loadArrayQuad(f, self.shape, delimiter=",", skiprows=1)
             time = data[:, 0]
             data = data[:, 1:]
             data = np.log(data)
@@ -232,6 +239,9 @@ class VelocityDatabase(Database):
                 mean_sum = data
             else:
                 mean_sum += data
+
+            if verbose:
+                print(f)
 
         self.mean = mean_sum.astype(np.float64) / len(self)
         self.var = squared_sum.astype(np.float64) / len(self) - self.mean ** 2
@@ -258,7 +268,7 @@ class VelocityDatabase(Database):
         """
 
         for i, v in enumerate(self.vs):
-            theory = diff.theoreticalPbMean(v, self.time)
+            theory = th.theoreticalPbMean(v, self.time)
             fig, ax = plt.subplots()
             ax.set_xlabel("Time")
             ax.set_ylabel("ln(Pb(vt, t))")
@@ -281,7 +291,7 @@ class VelocityDatabase(Database):
         """
 
         for i, v in enumerate(self.vs):
-            theory = diff.theoreticalPbVar(v, self.time)
+            theory = th.theoreticalPbVar(v, self.time)
             fig, ax = plt.subplots()
             ax.set_xlabel("Time")
             ax.set_ylabel("Var(ln(Pb(vt, t)))")
