@@ -1,8 +1,8 @@
 import sys
 import os
 
-sys.path.append(os.path.abspath("../../src"))
-sys.path.append(os.path.abspath("../../cDiffusion"))
+sys.path.append(os.path.abspath("../src"))
+sys.path.append(os.path.abspath("../cDiffusion"))
 from pydiffusion import Diffusion
 import quadMath
 import numpy as np
@@ -55,6 +55,13 @@ def runExperiment(
     """
 
     N = np.quad(f"1e{N_exp}")
+    beta = float(beta)
+    num_of_steps = int(num_of_steps)
+    num_of_save_times = int(num_of_save_times)
+    q_start = int(q_start)
+    q_stop = int(q_stop)
+    q_step = int(q_step)
+
     d = Diffusion(N, beta=beta, occupancySize=num_of_steps, probDistFlag=True)
 
     save_times = np.geomspace(1, num_of_steps, num_of_save_times, dtype=np.int64)
@@ -79,7 +86,7 @@ if __name__ == "__main__":
         q_step,
     ) = sys.argv[1:]
 
-    save_dir = f"{topDir}/1.0/QuartileTotal/"
+    save_dir = f"{topDir}"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     save_file = save_dir + f"Quartiles{sysID}.txt"
