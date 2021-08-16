@@ -8,7 +8,7 @@ import npquad
 import csv
 
 
-class Recurrance(recurrance.Recurrance):
+class Recurrence(recurrance.Recurrance):
     """
     Create a class that models the recurrance relation outlined in the BC
     model paper.

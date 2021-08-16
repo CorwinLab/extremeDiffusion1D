@@ -105,6 +105,12 @@ class QuartileDatabase(Database):
         """
         Calculate the mean of the selected data along the columns or rows.
         Assumes that the first column is the time.
+
+        Parameters
+        ----------
+        verbose : bool
+            Whether to print the file names out when each is finished or not.
+            Really only used if you want to see progress over time.
         """
 
         squared_sum = None
@@ -113,7 +119,7 @@ class QuartileDatabase(Database):
         for f in self.files:
             data = loadArrayQuad(f, self.shape, delimiter=",", skiprows=1)
             time = data[:, 0]
-            maxEdge = 2 * data[:, 1]
+            maxEdge = 2 * data[:, 1] # second column is maximum edge which we don't really care about for probDist=True
             data = 2 * data[:, 2:]
 
             if squared_sum is None:
@@ -166,7 +172,7 @@ class QuartileDatabase(Database):
             ax.set_title(f"N={N}")
             ax.plot(
                 self.time / np.log(N).astype(np.float64),
-                self.mean[:, i + 1],
+                self.mean[:, i],
                 label="Mean",
             )
             ax.plot(self.time / np.log(N).astype(np.float64), theory, label="Theory")
@@ -197,7 +203,7 @@ class QuartileDatabase(Database):
             ax.set_title(f"N={N}")
             ax.plot(
                 self.time / np.log(N).astype(np.float64),
-                self.var[:, i + 1],
+                self.var[:, i],
                 label="Variance",
             )
             ax.plot(self.time / np.log(N).astype(np.float64), theory, label="Theory")
