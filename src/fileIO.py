@@ -1,6 +1,6 @@
 import numpy as np
 import npquad
-
+import csv
 
 def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
     """
@@ -43,9 +43,34 @@ def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
             line = line.strip().split(delimiter)
             for col, elem in enumerate(line):
                 elem = np.quad(elem)
-                arr[row, col] = elem
+                if arr.ndim == 1:
+                    arr[col] = elem
+                else:
+                    arr[row, col] = elem
 
-    if (row != shape[0] - 1) and (col != shape[1] - 1):
-        raise ValueError("Data is not the same size as the shape")
+    if arr.ndim != 1:
+        if (row != shape[0] - 1) and (col != shape[1] - 1):
+            raise ValueError("Data is not the same size as the shape")
 
     return arr
+
+def saveArrayQuad(save_file, arr):
+    """
+    Save a numpy array of quads to a file.
+
+    Parameters
+    ----------
+    save_file : str
+        File to save array to
+
+    arr : numpy array (dtype np.quad)
+        Array to save
+    """
+
+    with open(save_file, "w+") as f:
+        writer = csv.writer(f)
+        if arr.ndim == 1:
+            writer.writerow(arr)
+        else:
+            for row in range(arr.shape[0]):
+                writer.writerow(arr[row, :])

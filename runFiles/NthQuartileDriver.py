@@ -5,6 +5,7 @@ sys.path.append(os.path.abspath("../src"))
 sys.path.append(os.path.abspath("../cDiffusion"))
 from pydiffusion import Diffusion
 import quadMath
+import fileIO
 import numpy as np
 import npquad
 from datetime import date
@@ -16,6 +17,7 @@ def runExperiment(
     N_exp,
     num_of_steps,
     save_file,
+    save_occ,
     num_of_save_times=5000,
     q_start=50,
     q_stop=4500,
@@ -38,8 +40,10 @@ def runExperiment(
         Number of times to evolve the system or maximum time.
 
     save_file : str
-        What file to save the qu
-        artiles to.
+        What file to save the quartiles to.
+
+    save_occ : str
+        What file to save the occupancy to.
 
     num_of_save_times : int, optional (5000)
         Number of times to save the quartiles.
@@ -72,6 +76,7 @@ def runExperiment(
     quartiles = [np.quad("1") / i for i in quartiles]
     d.evolveAndSaveQuartile(save_times, quartiles, save_file)
 
+    fileIO.saveArrayQuad(save_occ, d.occupancy)
 
 if __name__ == "__main__":
     (
@@ -92,17 +97,21 @@ if __name__ == "__main__":
     save_file = save_dir + f"Quartiles{sysID}.txt"
     save_file = os.path.abspath(save_file)
 
+    save_occ = save_dir + f"Occupancy{sysID}.txt"
+    save_occ = os.path.abspath(save_occ)
+
     vars = {
         "beta": beta,
         "N_exp": N_exp,
         "num_of_steps": num_of_steps,
         "save_file": save_file,
+        "save_occ": save_occ,
         "num_of_save_times": num_of_save_times,
         "q_start": quartile_start,
         "q_stop": quartile_stop,
         "q_step": q_step,
     }
-
+    print(save_occ)
     vars_file = os.path.join(save_dir, "variables.json")
     today = date.today()
     text_date = today.strftime("%b-%d-%Y")

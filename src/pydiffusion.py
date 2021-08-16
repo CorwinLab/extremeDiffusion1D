@@ -88,7 +88,7 @@ class Diffusion(cdiff.Diffusion):
 
     @property
     def occupancy(self):
-        return np.array(self.getOccupancy())
+        return np.array(self.getOccupancy(), dtype=np.quad)
 
     @occupancy.setter
     def occupancy(self, occupancy):
