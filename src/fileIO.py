@@ -2,6 +2,7 @@ import numpy as np
 import npquad
 import csv
 
+
 def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
     """
     Load a quad precision array from a file.
@@ -53,6 +54,7 @@ def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
             raise ValueError("Data is not the same size as the shape")
 
     return arr
+
 
 def saveArrayQuad(save_file, arr):
     """

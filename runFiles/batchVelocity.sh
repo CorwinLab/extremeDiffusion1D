@@ -16,4 +16,4 @@ V_START=0.1
 V_STOP=0.9
 V_STEP=0.1
 
-python3 /home/jhass2/Code/extremeDiffusion1D/runFiles/NthQuartileDriver.py $TOPDIR $SLURM_ARRAY_TASK_ID $BETA $N_EXP $NUM_OF_STEPS $NUM_OF_SAVE_TIMES $V_START $V_STOP $V_STEP
+python3 /home/jhass2/Code/extremeDiffusion1D/runFiles/VelocityDriver.py $TOPDIR $SLURM_ARRAY_TASK_ID $BETA $N_EXP $NUM_OF_STEPS $NUM_OF_SAVE_TIMES $V_START $V_STOP $V_STEP

@@ -67,7 +67,7 @@ def runExperiment(
     save_times = np.geomspace(1, num_of_steps, num_of_save_times, dtype=np.int64)
     save_times = np.unique(save_times)
 
-    velocities = np.arange(v_start, v_stop+v_step, v_step)
+    velocities = np.arange(v_start, v_stop + v_step, v_step)
 
     d.evolveAndSaveV(save_times, velocities, save_file)
 
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     save_dir = f"{topDir}"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    save_file = save_dir + f"Quartiles{sysID}.txt"
+    save_file = save_dir + f"Probabilities{sysID}.txt"
     save_file = os.path.abspath(save_file)
 
     vars = {

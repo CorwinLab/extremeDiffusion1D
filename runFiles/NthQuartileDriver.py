@@ -78,6 +78,7 @@ def runExperiment(
 
     fileIO.saveArrayQuad(save_occ, d.occupancy)
 
+
 if __name__ == "__main__":
     (
         topDir,

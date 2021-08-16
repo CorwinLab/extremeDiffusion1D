@@ -8,6 +8,7 @@ from nativePyRecurrenceRelation import makeRec, findQuintile
 import numpy as np
 import npquad
 import matplotlib
+
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 import time
@@ -41,10 +42,10 @@ for n in numbers_to_test:
 fig, ax = plt.subplots()
 ax.set_xlabel("Maximum Simulation Time")
 ax.set_ylabel("Runtime (s)")
-ax.scatter(numbers_to_test, py_means, label='Python')
-ax.scatter(numbers_to_test, c_means, label='C++')
+ax.scatter(numbers_to_test, py_means, label="Python")
+ax.scatter(numbers_to_test, c_means, label="C++")
 ax.legend()
 ax.grid(True)
 ax.set_xscale("log")
 ax.set_yscale("log")
-fig.savefig('SpeedTest.png')
+fig.savefig("SpeedTest.png")

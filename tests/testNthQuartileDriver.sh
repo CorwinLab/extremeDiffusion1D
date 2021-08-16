@@ -16,5 +16,5 @@ SLURM_ARRAY_TASK_ID=1 # This is usually made in SLURM but we'll do it here
 
 python3 ../runFiles/NthQuartileDriver.py $TOPDIR $SLURM_ARRAY_TASK_ID $BETA $N_EXP $NUM_OF_STEPS $NUM_OF_SAVE_TIMES $QUARTILE_START $QUARTILE_STOP $Q_STEP
 
-# Finally make sure the files were created and then remove them 
-pytest testDriverCleanUp.py
+# Finally make sure the files were created and then remove them
+pytest testNthQuartileDriverCleanUp.py
