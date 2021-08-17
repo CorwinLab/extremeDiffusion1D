@@ -270,14 +270,16 @@ PYBIND11_MODULE(diffusion, m)
 
       .def("getOccupancy", &Diffusion::getOccupancy)
       .def("setOccupancy", &Diffusion::setOccupancy, py::arg("occupancy"))
+      .def("resizeOccupancy", &Diffusion::resizeOccupancy, py::arg("size"))
       .def("getNParticles", &Diffusion::getNParticles)
       .def("getBeta", &Diffusion::getBeta)
       .def("setProbDistFlag",
            &Diffusion::setProbDistFlag,
            py::arg("ProbDistFlag"))
-      .def("getProbDistFlat", &Diffusion::getProbDistFlag)
+      .def("getProbDistFlag", &Diffusion::getProbDistFlag)
       .def("getEdges", &Diffusion::getEdges)
       .def("getTime", &Diffusion::getTime)
+      .def("setTime", &Diffusion::setTime)
       .def("iterateTimestep", &Diffusion::iterateTimestep)
       .def("NthquartileSingleSided", &Diffusion::NthquartileSingleSided, py::arg("N"))
       .def("multipleNthquartiles", &Diffusion::multipleNthquartiles, py::arg("Ns"))

@@ -36,6 +36,9 @@ class Diffusion(cdiff.Diffusion):
     time : numpy array
         Time of the system
 
+    currentTime : int
+        Current time of the system - this is just max(time)
+
     center : numpy array
         Center of the occupancy over time.
 
@@ -68,9 +71,47 @@ class Diffusion(cdiff.Diffusion):
     def __repr__(self):
         return self.__str__()
 
+    def __eq__(self, other):
+        """
+        Doesn't check if edges are the same b/c we don't really care/use those
+        a whole lot anyways.
+        """
+
+        if not isinstance(other, Diffusion):
+            raise TypeError(
+                f"Comparison must be between same object types, but other of type {type(other)}"
+            )
+
+        occ_same = np.all(self.occupancy == other.occupancy)
+        time_same = self.currentTime == other.currentTime
+        nParticles_same = self.nParticles == other.nParticles
+        beta_same = self.beta == other.beta
+        probDistFlag_same = self.probDistFlag == other.probDistFlag
+        edges_same_length = len(self.getEdges()[0]) == len(other.getEdges()[0])
+
+        if (
+            occ_same
+            and time_same
+            and nParticles_same
+            and beta_same
+            and probDistFlag_same
+            and edges_same_length
+        ):
+            return True
+
+        return False
+
     @property
     def time(self):
         return np.arange(0, self.getTime() + 1)
+
+    @property
+    def currentTime(self):
+        return self.getTime()
+
+    @currentTime.setter
+    def currentTime(self, time):
+        self.setTime(time)
 
     @property
     def center(self):
@@ -109,6 +150,62 @@ class Diffusion(cdiff.Diffusion):
     @probDistFlag.setter
     def probDistFlag(self, flag):
         self.setProbDistFlag(flag)
+
+    def resizeOccupancy(self, size):
+        """
+        Change the size of the occupancy to the provide size. Should probably
+        only resize to sizes greater than current occupancy size.
+
+        Parameters
+        ----------
+        size : int
+            Size to change the occupancy to.
+        """
+
+        super().resizeOccupancy(size)
+
+    @classmethod
+    def fromOccupancyTime(
+        cls, beta, nParticles, resize, time, occupancy, probDistFlag=True
+    ):
+        """
+        Create a Diffusion class with a specific time and occupancy. Used to
+        resume experiments after saving the occupancy.
+
+        Parameters
+        ----------
+        beta : float
+            Value of beta for the beta distribution to draw from.
+
+        nParticles : float or np.quad
+            Number of partilces in the occupancy.
+
+        resize : int
+            Number of elements to add to occupancy.
+
+        time : int
+            Current time of the system to initialize.
+
+        occupancy : numpy array (dtype np.quad)
+            Current occupancy of the system to initialize.
+
+        probDistFlat : bool (True)
+            Whether or not to include fractional particles or not. If True doesn't
+            round the particles shifting and if False then rounds the particles so
+            there is always a whole number of particles.
+
+        Returns
+        -------
+        diff : Diffusion
+            Diffusion object initialized with provided parameters
+        """
+
+        diff = Diffusion(nParticles, beta, len(occupancy) - 1)
+        diff.occupancy = occupancy
+        diff.currentTime = time
+        diff.resizeOccupancy(resize + len(diff.occupancy))
+
+        return diff
 
     def setBetaSeed(self, seed):
         """

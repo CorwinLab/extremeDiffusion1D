@@ -60,9 +60,13 @@ public:
   };
   std::vector<RealType> getOccupancy() { return occupancy; };
 
+  void resizeOccupancy(unsigned long int size) { occupancy.resize(size); };
+
   void setBetaSeed(const unsigned int seed) { gen.seed(seed); };
 
-  double getTime() { return time; };
+  unsigned long int getTime() { return time; };
+
+  void setTime(const unsigned long int _time) { time = _time; };
 
   std::pair<std::vector<unsigned long int>, std::vector<unsigned long int>>
   getEdges()
