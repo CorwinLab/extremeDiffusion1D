@@ -2,6 +2,8 @@ import numpy as np
 import npquad
 
 
+NthQuartStr = r"$t\sqrt{1 - (1 - \frac{ln(N)}{t})^{2}}$"
+
 def theoreticalNthQuart(N, time):
     """
     Returns the predicted position of the 1/Nth quartile. Remember that the
@@ -30,6 +32,7 @@ def theoreticalNthQuart(N, time):
     )
     return theory
 
+NthQuartVarStr = r"$(2 ln(N))^{\frac{2}{3}} \frac{(t/ln(N) - 1)^\frac{4}{3}}{2t/ln(N) - 1}$"
 
 def theoreticalNthQuartVar(N, time):
     """

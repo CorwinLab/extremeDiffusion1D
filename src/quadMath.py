@@ -68,3 +68,25 @@ def logarange(start, stop, step_size=1, endpoint=False):
 
     samples = [np.quad(f"1e{i}") for i in np.arange(start, stop, step_size)]
     return np.array(samples, dtype=np.quad)
+
+def prettifyQuad(val):
+    """
+    Get a cleaner representation of a quad number. This for sure won't preserve
+    all your quad numbers. Assumes that all the numbers have no extra digits.
+
+    Returns
+    -------
+    str
+        Prettified version of npquad
+
+    Example
+    -------
+    >>> x = np.quad("1e4500")
+    >>> print(x)
+    9.99999999999999999999999999999999992e+4499
+    >>> print(prettifyQuad(x))
+    1e4500
+    """
+
+    exp = (np.log(val) / np.log(np.quad("10"))).astype(int)
+    return f"1e{exp}"

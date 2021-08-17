@@ -5,13 +5,14 @@ from fileIO import loadArrayQuad
 import theory as th
 import os
 import matplotlib
+from quadMath import prettifyQuad
 
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 
 
 class Database:
-    def __init__(self, files):
+    def __init__(self, files, delimiter=",", skiprows=1):
         """
         Create a Database with the selected files.
 
@@ -23,17 +24,18 @@ class Database:
         self.files = files
 
         # Need to first parse the shape of the arrays we'll be loading
-        temp = np.loadtxt(files[0], delimiter=",", skiprows=1)
+        temp = np.loadtxt(files[0], delimiter=delimiter, skiprows=skiprows)
         self.shape = temp.shape
 
         # Load the first array so we can get simple stuff like len of the files
         # and max/min times
         self._example_file = loadArrayQuad(
-            files[0], self.shape, delimiter=",", skiprows=1
+            files[0], self.shape, delimiter=delimiter, skiprows=skiprows
         )
 
         # Set some easy properties
-        self.Ns = self.getNs()
+        self.delimiter = delimiter
+        self.skiprows = skiprows
 
     def __len__(self):
         return len(self.files)
@@ -87,7 +89,7 @@ class Database:
 
 
 class QuartileDatabase(Database):
-    def __init__(self, files):
+    def __init__(self, files, readNs=True, delimiter=",", skiprows=1):
         """
         Create a Database with the selected files.
 
@@ -96,10 +98,11 @@ class QuartileDatabase(Database):
         files : list
             list of files to create database from
         """
-        super().__init__(files)
+        super().__init__(files, delimiter, skiprows)
 
         # Set some easy properties
-        self.Ns = self.getNs()
+        if readNs:
+            self.Ns = self.getNs()
 
     def calculateMeanVar(self, verbose=False):
         """
@@ -117,7 +120,7 @@ class QuartileDatabase(Database):
         mean_sum = None
 
         for f in self.files:
-            data = loadArrayQuad(f, self.shape, delimiter=",", skiprows=1)
+            data = loadArrayQuad(f, self.shape, delimiter=self.delimiter, skiprows=self.skiprows)
             time = data[:, 0]
             maxEdge = 2 * data[:, 1] # second column is maximum edge which we don't really care about for probDist=True
             data = 2 * data[:, 2:]
@@ -154,7 +157,19 @@ class QuartileDatabase(Database):
 
         return Ns
 
-    def plotMeans(self, save_dir="."):
+    def setNs(self, Ns):
+        """
+        Set the measured N quartile values.
+
+        Parameters
+        ----------
+        Ns : list (of quads)
+            The 1/Nth quartiles in the database
+        """
+
+        self.Ns = Ns
+
+    def plotMeans(self, save_dir=".", xscale=True):
         """
         Plot the mean 1/Nth quantiles for all N's in the database.
 
@@ -162,25 +177,37 @@ class QuartileDatabase(Database):
         ----------
         save_dir : str
             Directory to save plots to.
+
+        xscale : str
+            Whether or not to scale the x-axis by logN or not.
         """
 
         for i, N in enumerate(self.Ns):
+            Nstr = prettifyQuad(N)
+
             theory = th.theoreticalNthQuart(N, self.time)
             fig, ax = plt.subplots()
-            ax.set_xlabel("Time")
             ax.set_ylabel("Mean Nth Quartile")
-            ax.set_title(f"N={N}")
+            ax.set_title(f"N={Nstr}")
+
+            if xscale:
+                time = self.time / np.log(N).astype(np.float64)
+                ax.set_xlabel("Time / ln(N)")
+            else:
+                time = self.time
+                ax.set_xlabel("Time")
+
             ax.plot(
                 self.time / np.log(N).astype(np.float64),
                 self.mean[:, i],
                 label="Mean",
             )
-            ax.plot(self.time / np.log(N).astype(np.float64), theory, label="Theory")
+            ax.plot(self.time / np.log(N).astype(np.float64), theory, label=th.NthQuartStr)
             ax.set_xscale("log")
             ax.set_yscale("log")
             ax.legend()
             fig.savefig(
-                os.path.join(os.path.abspath(save_dir), f"Mean{N}.png"),
+                os.path.join(os.path.abspath(save_dir), f"Mean{Nstr}.png"),
                 bbox_inches="tight",
             )
             plt.close(fig)
@@ -196,26 +223,53 @@ class QuartileDatabase(Database):
         """
 
         for i, N in enumerate(self.Ns):
+            Nstr = prettifyQuad(N)
+
             theory = th.theoreticalNthQuartVar(N, self.time)
             fig, ax = plt.subplots()
             ax.set_xlabel("Time")
             ax.set_ylabel("Variance of Nth Quartile")
-            ax.set_title(f"N={N}")
+            ax.set_title(f"N={Nstr}")
             ax.plot(
                 self.time / np.log(N).astype(np.float64),
                 self.var[:, i],
                 label="Variance",
             )
-            ax.plot(self.time / np.log(N).astype(np.float64), theory, label="Theory")
+            ax.plot(self.time / np.log(N).astype(np.float64), theory, label=th.NthQuartVarStr)
             ax.set_xscale("log")
             ax.set_yscale("log")
-            ax.legend()
+            ax.legend(fontsize=12)
             fig.savefig(
-                os.path.join(os.path.abspath(save_dir), f"Var{N}.png"),
+                os.path.join(os.path.abspath(save_dir), f"Var{Nstr}.png"),
                 bbox_inches="tight",
             )
             plt.close(fig)
 
+    def plotMeansEvolve(self, save_dir = ".", legend=True):
+        """
+        Plot all the means together on the same plot.
+        """
+
+        fig, ax = plt.subplots()
+        ax.set_xlabel("Time / lnN")
+        ax.set_ylabel("Mean Nth Quartile")
+
+        cm = plt.get_cmap("gist_heat")
+        colors = [cm(1.0 * i / len(self.Ns) / 1.5) for i in range(len(self.Ns))]
+
+        for i, N in enumerate(self.Ns):
+            Nstr = prettifyQuad(N)
+            ax.plot(self.time / np.log(N).astype(np.float64), self.mean[:, i], c=colors[i], label=f"N={Nstr}")
+
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        if legend:
+            ax.legend()
+        fig.savefig(
+            os.path.join(os.path.abspath(save_dir), f"Means.png"),
+            bbox_inches="tight",
+        )
+        plt.close(fig)
 
 class VelocityDatabase(Database):
     def __init__(self, files):
