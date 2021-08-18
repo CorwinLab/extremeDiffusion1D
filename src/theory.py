@@ -4,6 +4,7 @@ import npquad
 
 NthQuartStr = r"$t\sqrt{1 - (1 - \frac{ln(N)}{t})^{2}}$"
 
+
 def theoreticalNthQuart(N, time):
     """
     Returns the predicted position of the 1/Nth quartile. Remember that the
@@ -32,7 +33,11 @@ def theoreticalNthQuart(N, time):
     )
     return theory
 
-NthQuartVarStr = r"$(2 ln(N))^{\frac{2}{3}} \frac{(t/ln(N) - 1)^\frac{4}{3}}{2t/ln(N) - 1}$"
+
+NthQuartVarStr = (
+    r"$(2 ln(N))^{\frac{2}{3}} \frac{(t/ln(N) - 1)^\frac{4}{3}}{2t/ln(N) - 1}$"
+)
+
 
 def theoreticalNthQuartVar(N, time):
     """
@@ -54,6 +59,30 @@ def theoreticalNthQuartVar(N, time):
 
     logN = np.log(N).astype(np.float64)
     return (2 * logN) ** (2 / 3) * (time / logN - 1) ** (4 / 3) / (2 * time / logN - 1)
+
+
+NthQuartVarStrLargeTimes = r"$t^{1/2} * \pi^{1/2}/2$"
+
+
+def theoreticalNthQuartVarLargeTimes(N, time):
+    """
+    Returns the predicted position of the 1/Nth quartile variance over time for
+    t ~ Log(N)^2.
+    Parameters
+    ----------
+    N : float or np.quad
+        1/Nth quartile to measure. Should be > 1.
+
+    times : numpy array
+        Times to record the 1/Nth quartile variance for.
+
+    Returns
+    -------
+    theory : numpy array
+        Theoretical 1/Nth quartile variance as a function of time
+    """
+
+    return time ** (1 / 2) * np.pi ** (1 / 2) / 2
 
 
 def theoreticalPbatT(vs, t):

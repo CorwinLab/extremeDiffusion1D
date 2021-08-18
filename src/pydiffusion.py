@@ -406,6 +406,7 @@ class Diffusion(cdiff.Diffusion):
 
         quartiles = np.array(quartiles)
         quartiles.sort()
+
         header = ["time", "MaxEdge"] + [str(np.quad("1") / i) for i in quartiles]
         writer.writerow(header)
 

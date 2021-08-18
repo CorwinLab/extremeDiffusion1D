@@ -120,9 +120,13 @@ class QuartileDatabase(Database):
         mean_sum = None
 
         for f in self.files:
-            data = loadArrayQuad(f, self.shape, delimiter=self.delimiter, skiprows=self.skiprows)
+            data = loadArrayQuad(
+                f, self.shape, delimiter=self.delimiter, skiprows=self.skiprows
+            )
             time = data[:, 0]
-            maxEdge = 2 * data[:, 1] # second column is maximum edge which we don't really care about for probDist=True
+            maxEdge = (
+                2 * data[:, 1]
+            )  # second column is maximum edge which we don't really care about for probDist=True
             data = 2 * data[:, 2:]
 
             if squared_sum is None:
@@ -169,7 +173,7 @@ class QuartileDatabase(Database):
 
         self.Ns = Ns
 
-    def plotMeans(self, save_dir=".", xscale=True):
+    def plotMeans(self, save_dir=".", xscale=True, verbose=False):
         """
         Plot the mean 1/Nth quantiles for all N's in the database.
 
@@ -184,6 +188,10 @@ class QuartileDatabase(Database):
 
         for i, N in enumerate(self.Ns):
             Nstr = prettifyQuad(N)
+            if np.isinf(N):
+                continue
+            if verbose:
+                print(Nstr)
 
             theory = th.theoreticalNthQuart(N, self.time)
             fig, ax = plt.subplots()
@@ -202,7 +210,9 @@ class QuartileDatabase(Database):
                 self.mean[:, i],
                 label="Mean",
             )
-            ax.plot(self.time / np.log(N).astype(np.float64), theory, label=th.NthQuartStr)
+            ax.plot(
+                self.time / np.log(N).astype(np.float64), theory, label=th.NthQuartStr
+            )
             ax.set_xscale("log")
             ax.set_yscale("log")
             ax.legend()
@@ -212,7 +222,7 @@ class QuartileDatabase(Database):
             )
             plt.close(fig)
 
-    def plotVars(self, save_dir="."):
+    def plotVars(self, save_dir=".", verbose=False):
         """
         Plot the variance of the 1/Nth quartiles for all N's in the database.
 
@@ -225,7 +235,14 @@ class QuartileDatabase(Database):
         for i, N in enumerate(self.Ns):
             Nstr = prettifyQuad(N)
 
+            if np.isinf(N):
+                continue
+            if verbose:
+                print(Nstr)
+
             theory = th.theoreticalNthQuartVar(N, self.time)
+            logTheory = th.theoreticalNthQuartVarLargeTimes(N, self.time)
+
             fig, ax = plt.subplots()
             ax.set_xlabel("Time")
             ax.set_ylabel("Variance of Nth Quartile")
@@ -235,7 +252,16 @@ class QuartileDatabase(Database):
                 self.var[:, i],
                 label="Variance",
             )
-            ax.plot(self.time / np.log(N).astype(np.float64), theory, label=th.NthQuartVarStr)
+            ax.plot(
+                self.time / np.log(N).astype(np.float64),
+                theory,
+                label=th.NthQuartVarStr,
+            )
+            ax.plot(
+                self.time / np.log(N).astype(np.float64),
+                logTheory,
+                label=th.NthQuartVarStrLargeTimes,
+            )
             ax.set_xscale("log")
             ax.set_yscale("log")
             ax.legend(fontsize=12)
@@ -245,7 +271,7 @@ class QuartileDatabase(Database):
             )
             plt.close(fig)
 
-    def plotMeansEvolve(self, save_dir = ".", legend=True):
+    def plotMeansEvolve(self, save_dir=".", legend=True):
         """
         Plot all the means together on the same plot.
         """
@@ -259,7 +285,14 @@ class QuartileDatabase(Database):
 
         for i, N in enumerate(self.Ns):
             Nstr = prettifyQuad(N)
-            ax.plot(self.time / np.log(N).astype(np.float64), self.mean[:, i], c=colors[i], label=f"N={Nstr}")
+            if np.isinf(N):
+                continue
+            ax.plot(
+                self.time / np.log(N).astype(np.float64),
+                self.mean[:, i],
+                c=colors[i],
+                label=f"N={Nstr}",
+            )
 
         ax.set_xscale("log")
         ax.set_yscale("log")
@@ -270,6 +303,53 @@ class QuartileDatabase(Database):
             bbox_inches="tight",
         )
         plt.close(fig)
+
+    def plotVarsEvolve(self, save_dir=".", legend=True, yscale=True, theory=True):
+        """
+        Plot all the variances together on the same plot.
+        """
+
+        fig, ax = plt.subplots()
+        ax.set_xlabel("Time / lnN")
+        ax.set_ylabel("Variance of Nth Quartile / lnN^(2/3)")
+
+        cm = plt.get_cmap("gist_heat")
+        colors = [cm(1.0 * i / len(self.Ns) / 1.5) for i in range(len(self.Ns))]
+
+        for i, N in enumerate(self.Ns):
+            if np.isinf(N):
+                continue
+            Nstr = prettifyQuad(N)
+            ax.plot(
+                self.time / np.log(N).astype(np.float64),
+                self.var[:, i] / np.log(N).astype(float) ** (2 / 3),
+                c=colors[i],
+                label=None,
+            )
+
+        theory = th.theoreticalNthQuartVar(N, self.time)
+        theory_Large = th.theoreticalNthQuartVarLargeTimes(N, self.time)
+        ax.plot(
+            self.time / np.log(N).astype(np.float64),
+            theory / np.log(N).astype(float) ** (2 / 3),
+            c="b",
+            label=th.NthQuartVarStr,
+        )
+        ax.plot(
+            self.time / np.log(N).astype(np.float64),
+            theory_Large / np.log(N).astype(float) ** (2 / 3),
+            c="g",
+            label=th.NthQuartVarStrLargeTimes,
+        )
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        if legend:
+            ax.legend()
+        fig.savefig(
+            os.path.join(os.path.abspath(save_dir), f"Vars.png"), bbox_inches="tight"
+        )
+        plt.close(fig)
+
 
 class VelocityDatabase(Database):
     def __init__(self, files):

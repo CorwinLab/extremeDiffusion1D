@@ -1,8 +1,10 @@
 import sys
+
 sys.path.append("../../src")
 import numpy as np
 import npquad
 import matplotlib
+
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 from databases import QuartileDatabase
@@ -27,5 +29,5 @@ else:
 
 print("Maximum time: ", max(db.time))
 
-db.plotMeans(save_dir='./figures/')
-db.plotVars(save_dir='./figures/')
+db.plotMeans(save_dir="./figures/")
+db.plotVars(save_dir="./figures/")

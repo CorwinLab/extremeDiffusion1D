@@ -1,6 +1,7 @@
 import os
 import pytest
 
+
 def test_createdProbs_andVars():
     """
     Going to test if we saved the quartiles, occupancy and variables. The

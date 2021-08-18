@@ -10,9 +10,24 @@ from matplotlib import pyplot as plt
 from databases import QuartileDatabase
 import glob
 import os
-from quadMath import prettifyQuad
+from quadMath import prettifyQuad, logarange
+import theory as th
 
-files = glob.glob("/home/jacob/Desktop/corwinLabMount/Data/1.0/1Large/Q*.txt")
+files = glob.glob(
+    "/home/jacob/Desktop/corwinLabMount/CleanData/QuartilesMillion/Q*.txt"
+)
+files = files[:300]
+
+"""
+for f in files:
+    data = np.loadtxt(f, delimiter=",", skiprows=1, usecols=0)
+    tmax = data[-1]
+    print(f)
+    print(tmax)
+    if int(tmax) == 1000000:
+        clean_files.append(f)
+"""
+
 print("Number of files: ", len(files))
 
 db = QuartileDatabase(files)
@@ -26,20 +41,23 @@ else:
     db.loadMean("Mean.txt")
     db.loadVar("Var.txt")
 
-print("Maximum time: ", max(db.time))
+print("Maximum Time:", max(db.time))
+quarts = np.flip(list(logarange(10, 4500, 10, endpoint=True))) * np.quad("1e4500")
+db.setNs(quarts)
 
+"""
+db.plotMeans(save_dir='./figures/Means/', verbose=True)
+db.plotVars(save_dir='./figures/Vars/', verbose=True)
+"""
 
-db.plotMeans(save_dir="./figures/Means/")
-db.plotVars(save_dir="./figures/Vars/")
-db.plotMeansEvolve(save_dir="./figures/Means/")
-db.plotVarsEvolve(save_dir="./figures/Vars/", legend=True)
-
-
-for i, N in enumerate(db.getNs()):
+for i, N in enumerate(db.Ns):
+    if np.isinf(N):
+        continue
     var = db.var[:, i]
     Nstr = prettifyQuad(N)
+    print(Nstr)
     lnN = np.log(N).astype(float)
-    thresh = 0.4
+    thresh = 1e-3
 
     fig, ax = plt.subplots()
     ax.set_yscale("log")
@@ -48,14 +66,17 @@ for i, N in enumerate(db.getNs()):
     ax.set_ylabel("Variance")
 
     t0 = min(np.where(var > thresh)[0])
-    t0 = 600
+    t0 = 1598
+
     num_points = -1
-    plot_time = (db.time - t0)[:num_points]
+    plot_time = (db.time - lnN)[:num_points]
     plot_var = var[:num_points]
+    theory = th.theoreticalNthQuartVar(N, db.time[:num_points])
 
     ax.plot(plot_time / lnN, plot_var, label=f"t0={t0}, lnN={int(lnN)}")
     ax.plot(plot_time / lnN, plot_time ** (2 / 3), label="t^(2/3)")
     ax.plot(plot_time / lnN, plot_time, label="t")
+    ax.plot(plot_time / lnN, theory, label="Theoretical Curve")
     ax.set_title(f"N={Nstr}")
     ax.legend()
     ax.grid(True)

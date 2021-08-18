@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("../src/")
 sys.path.append("../recurrenceRelation")
 import numpy as np
@@ -10,6 +11,7 @@ from experimentUtils import saveVars
 from pyrecurrence import Recurrence
 from datetime import date
 
+
 def runExperiment(
     beta,
     tMax,
@@ -18,7 +20,7 @@ def runExperiment(
     num_of_save_times=5000,
     q_start=50,
     q_stop=4500,
-    q_step=50
+    q_step=50,
 ):
     """
     Run a simulation of the recurrsion relation from Ivan's model.
@@ -67,6 +69,7 @@ def runExperiment(
     rec.evolveAndSaveQuartile(save_times, quartiles, save_file)
 
     fileIO.saveArrayQuad(save_zB, rec.zB)
+
 
 if __name__ == "__main__":
     (

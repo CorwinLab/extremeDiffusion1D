@@ -69,6 +69,7 @@ def logarange(start, stop, step_size=1, endpoint=False):
     samples = [np.quad(f"1e{i}") for i in np.arange(start, stop, step_size)]
     return np.array(samples, dtype=np.quad)
 
+
 def prettifyQuad(val):
     """
     Get a cleaner representation of a quad number. This for sure won't preserve
