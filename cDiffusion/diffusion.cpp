@@ -165,14 +165,14 @@ void Diffusion::iterateTimestep()
   time += 1;
 }
 
-double Diffusion::NthquartileSingleSided(const RealType NQuart)
+double Diffusion::findQuartile(const RealType quartile)
 {
   unsigned long int maxIdx = edges.second[time];
   double centerIdx = time * 0.5;
 
   double dist = maxIdx - centerIdx;
   RealType sum = occupancy.at(maxIdx);
-  while (sum < NQuart) {
+  while (sum < quartile) {
     maxIdx -= 1;
     dist -= 1;
     sum += occupancy.at(maxIdx);
@@ -180,28 +180,28 @@ double Diffusion::NthquartileSingleSided(const RealType NQuart)
   return dist;
 }
 
-std::vector<double> Diffusion::multipleNthquartiles(std::vector<RealType> NQuarts)
+std::vector<double> Diffusion::findQuartiles(std::vector<RealType> quartiles)
 {
 
   // Need Quartiles in descending order for algorithm to work correctly
-  std::sort(NQuarts.begin(), NQuarts.end());
+  std::sort(quartiles.begin(), quartiles.end());
 
-  std::vector<double> dists(NQuarts.size());
+  std::vector<double> dists(quartiles.size());
 
   unsigned long int maxIdx = edges.second[time];
   double centerIdx = time * 0.5;
   double dist = maxIdx - centerIdx;
   RealType sum = occupancy.at(maxIdx);
 
-  unsigned long int pos = 0;
-  while (pos < NQuarts.size()){
-    while (sum < NQuarts[pos]){
+  unsigned long int quartile_idx = 0;
+  while (pos < quartiles.size()){
+    while (sum < quartiles[quartile_idx]){
       maxIdx -= 1;
       dist -= 1;
       sum += occupancy.at(maxIdx);
     }
-    dists[pos] = dist;
-    pos += 1;
+    dists[quartile_idx] = dist;
+    quartiles_idx += 1;
   }
   return dists;
 }
@@ -281,8 +281,8 @@ PYBIND11_MODULE(diffusion, m)
       .def("getTime", &Diffusion::getTime)
       .def("setTime", &Diffusion::setTime)
       .def("iterateTimestep", &Diffusion::iterateTimestep)
-      .def("NthquartileSingleSided", &Diffusion::NthquartileSingleSided, py::arg("N"))
-      .def("multipleNthquartiles", &Diffusion::multipleNthquartiles, py::arg("Ns"))
+      .def("findQuartile", &Diffusion::findQuartile, py::arg("quartile"))
+      .def("findQuartiles", &Diffusion::findQuartiles, py::arg("quartiles"))
       .def("pGreaterThanX", &Diffusion::pGreaterThanX, py::arg("idx"))
       .def("calcVsAndPb", &Diffusion::calcVsAndPb, py::arg("num"))
       .def("VsAndPb", &Diffusion::VsAndPb, py::arg("v"));

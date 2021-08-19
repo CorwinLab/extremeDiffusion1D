@@ -85,63 +85,59 @@ void Recurrance::iterateTimeStep()
   std::vector<RealType> zB_next(tMax+1); // Initialize next zb(n, t+1) to size zb(n, t-1) + 1
   for (unsigned long int n = 0; n <= t+1; n++){
     if (n == 0){
-      zB_next[n] = 1.0; // Need zB(n=0, t) = 0
+      zB_next[n] = 1; // Need zB(n=0, t) = 1
     }
     else if (n == t+1){
-      double double_beta = generateBeta();
-      RealType beta = RealType(double_beta);
+      RealType double_beta = RealType(generateBeta());
       zB_next[n] = beta * zB[n-1];
     }
     else{
-      double double_beta = generateBeta();
-      RealType beta = RealType(double_beta);
-      zB_next[n] = beta * zB[n-1] + (1.0 - beta) * zB[n];
+      RealType double_beta = RealType(generateBeta());
+      zB_next[n] = beta * zB[n-1] + (1 - beta) * zB[n];
     }
   }
   zB = zB_next;
   t += 1;
 }
 
-unsigned long int Recurrance::findQuintile(RealType N)
+unsigned long int Recurrance::findQuartile(RealType quantile)
 {
-  unsigned long int quintile;
+  unsigned long int quantilePosition;
   for (unsigned long int n = t; n >= 0; n--){
-    if (zB[n] > 1.0 / N){
-      n = t - n;
-      quintile = t - 2 * n + 2;
+    if (zB[n] > 1.0 / quantile){
+      quantilePosition = 2* n + 2 - t;
       break;
     }
   }
-  return quintile;
+  return quantile;
 }
 
-std::vector<unsigned long int> Recurrance::findQuintiles(
-  std::vector<RealType> Ns)
+std::vector<unsigned long int> Recurrance::findQuartiles(
+  std::vector<RealType> quantiles)
 {
   // Sort incoming Ns b/c we need them to be in decreasing order for algorithm
   // to work
-  std::sort(Ns.begin(), Ns.end(), std::greater<RealType>());
+  std::sort(quantiles.begin(), quantiles.end(), std::greater<RealType>());
 
   // Initialize to have same number of vectors as in Ns
-  std::vector<unsigned long int> quintiles(Ns.size());
-  unsigned long int Npos = 0;
+  std::vector<unsigned long int> quantilePositions(quantiles.size());
+  unsigned long int quantile_idx = 0;
   for (unsigned long int n = t; n >= 0; n--){
-    while(zB[n] > 1.0 / Ns[Npos]){
-      unsigned long int nval = t - n;
-      quintiles[Npos] = t - 2 * nval + 2;
-      Npos += 1;
+    while(zB[n] > 1.0 / quantiles[quantile_idx]){
+      quantilePositions[quantile_idx] = 2 * n + 2 - t;
+      quantile_idx += 1;
 
       //Break while loop if past last position
-      if (Npos == Ns.size()){
+      if (quantile_idx == quantiles.size()){
         break;
       }
     }
     // Also need to break for loop if in last position b/c we are done searching
-    if (Npos == Ns.size()){
+    if (quantile_idx == quantiles.size()){
       break;
     }
   }
-  return quintiles;
+  return quantilePositions;
 }
 
 PYBIND11_MODULE(recurrance, m)
@@ -155,6 +151,6 @@ PYBIND11_MODULE(recurrance, m)
       .def("setBetaSeed", &Recurrance::setBetaSeed, py::arg("seed"))
       .def("getTime", &Recurrance::getTime)
       .def("iterateTimeStep", &Recurrance::iterateTimeStep)
-      .def("findQuintile", &Recurrance::findQuintile, py::arg("N"))
-      .def("findQuintiles", &Recurrance::findQuintiles, py::arg("Ns"));
+      .def("findQuartile", &Recurrance::findQuartile, py::arg("N"))
+      .def("findQuartiles", &Recurrance::findQuartiles, py::arg("Ns"));
 }

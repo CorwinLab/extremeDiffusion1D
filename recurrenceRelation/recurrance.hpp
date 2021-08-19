@@ -53,9 +53,9 @@ public:
   // Functions that do things
   void iterateTimeStep();
 
-  unsigned long int findQuintile(RealType N);
+  unsigned long int findQuartile(RealType quartile);
 
-  std::vector<unsigned long int> findQuintiles(std::vector<RealType> Ns);
+  std::vector<unsigned long int> findQuartiles(std::vector<RealType> quartiles);
 };
 
 #endif /* RECURRANCE_HPP_ */

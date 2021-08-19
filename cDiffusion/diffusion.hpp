@@ -78,8 +78,8 @@ public:
 
   void iterateTimestep();
 
-  double NthquartileSingleSided(const RealType NQuart);
-  std::vector<double> multipleNthquartiles(std::vector<RealType> NQuarts);
+  double findQuartile(const RealType quartile);
+  std::vector<double> findQuartiles(std::vector<RealType> quartiles);
 
   RealType pGreaterThanX(const unsigned long int idx);
 

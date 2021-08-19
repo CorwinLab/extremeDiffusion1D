@@ -89,7 +89,7 @@ class Database:
 
 
 class QuartileDatabase(Database):
-    def __init__(self, files, readNs=True, delimiter=",", skiprows=1):
+    def __init__(self, files, readQuantiles=True, delimiter=",", skiprows=1):
         """
         Create a Database with the selected files.
 
@@ -101,8 +101,8 @@ class QuartileDatabase(Database):
         super().__init__(files, delimiter, skiprows)
 
         # Set some easy properties
-        if readNs:
-            self.Ns = self.getNs()
+        if readQuantiles:
+            self.quantiles = self.getQuantiles()
 
     def calculateMeanVar(self, verbose=False):
         """
@@ -124,9 +124,11 @@ class QuartileDatabase(Database):
                 f, self.shape, delimiter=self.delimiter, skiprows=self.skiprows
             )
             time = data[:, 0]
+            # second column is maximum edge which we don't really care about
+            # for probDist=True
             maxEdge = (
                 2 * data[:, 1]
-            )  # second column is maximum edge which we don't really care about for probDist=True
+            )
             data = 2 * data[:, 2:]
 
             if squared_sum is None:
@@ -145,33 +147,33 @@ class QuartileDatabase(Database):
         self.mean = mean_sum.astype(np.float64) / len(self)
         self.var = squared_sum.astype(np.float64) / len(self) - self.mean ** 2
 
-    def getNs(self):
+    def getQuantiles(self):
         """
         Returns the measured N quartile values from the file.
 
         Returns
         -------
-        Ns : list
-            The 1/Nth quartiles recorded as quads
+        quantiles : list
+            The 1/Nth quantiles recorded as quads
         """
 
         with open(self.files[0]) as f:
-            Ns = f.readline().split(",")[2:]
-            Ns = [np.quad(N) for N in Ns]
+            quantiles = f.readline().split(",")[2:]
+            quantiles = [np.quad(N) for N in quantiles]
 
-        return Ns
+        return quantiles
 
-    def setNs(self, Ns):
+    def setNs(self, quantiles):
         """
         Set the measured N quartile values.
 
         Parameters
         ----------
         Ns : list (of quads)
-            The 1/Nth quartiles in the database
+            The 1/Nth quantiles in the database
         """
 
-        self.Ns = Ns
+        self.quantiles = quantiles
 
     def plotMeans(self, save_dir=".", xscale=True, verbose=False):
         """
@@ -186,32 +188,32 @@ class QuartileDatabase(Database):
             Whether or not to scale the x-axis by logN or not.
         """
 
-        for i, N in enumerate(self.Ns):
-            Nstr = prettifyQuad(N)
-            if np.isinf(N):
+        for i, quant in enumerate(self.quantiles):
+            Nstr = prettifyQuad(quant)
+            if np.isinf(quant):
                 continue
             if verbose:
                 print(Nstr)
 
-            theory = th.theoreticalNthQuart(N, self.time)
+            theory = th.theoreticalNthQuart(quant, self.time)
             fig, ax = plt.subplots()
             ax.set_ylabel("Mean Nth Quartile")
             ax.set_title(f"N={Nstr}")
 
             if xscale:
-                time = self.time / np.log(N).astype(np.float64)
+                time = self.time / np.log(quant).astype(np.float64)
                 ax.set_xlabel("Time / ln(N)")
             else:
                 time = self.time
                 ax.set_xlabel("Time")
 
             ax.plot(
-                self.time / np.log(N).astype(np.float64),
+                self.time / np.log(quant).astype(np.float64),
                 self.mean[:, i],
                 label="Mean",
             )
             ax.plot(
-                self.time / np.log(N).astype(np.float64), theory, label=th.NthQuartStr
+                self.time / np.log(quant).astype(np.float64), theory, label=th.NthQuartStr
             )
             ax.set_xscale("log")
             ax.set_yscale("log")
@@ -224,7 +226,7 @@ class QuartileDatabase(Database):
 
     def plotVars(self, save_dir=".", verbose=False):
         """
-        Plot the variance of the 1/Nth quartiles for all N's in the database.
+        Plot the variance of the 1/Nth quantiles for all N's in the database.
 
         Parameters
         ----------
@@ -232,33 +234,33 @@ class QuartileDatabase(Database):
             Directory to save plots to.
         """
 
-        for i, N in enumerate(self.Ns):
-            Nstr = prettifyQuad(N)
+        for i, quant in enumerate(self.quantiles):
+            Nstr = prettifyQuad(quant)
 
-            if np.isinf(N):
+            if np.isinf(quant):
                 continue
             if verbose:
                 print(Nstr)
 
-            theory = th.theoreticalNthQuartVar(N, self.time)
-            logTheory = th.theoreticalNthQuartVarLargeTimes(N, self.time)
+            theory = th.theoreticalNthQuartVar(quant, self.time)
+            logTheory = th.theoreticalNthQuartVarLargeTimes(quant, self.time)
 
             fig, ax = plt.subplots()
             ax.set_xlabel("Time")
             ax.set_ylabel("Variance of Nth Quartile")
             ax.set_title(f"N={Nstr}")
             ax.plot(
-                self.time / np.log(N).astype(np.float64),
+                self.time / np.log(quant).astype(np.float64),
                 self.var[:, i],
                 label="Variance",
             )
             ax.plot(
-                self.time / np.log(N).astype(np.float64),
+                self.time / np.log(quant).astype(np.float64),
                 theory,
                 label=th.NthQuartVarStr,
             )
             ax.plot(
-                self.time / np.log(N).astype(np.float64),
+                self.time / np.log(quant).astype(np.float64),
                 logTheory,
                 label=th.NthQuartVarStrLargeTimes,
             )
@@ -283,12 +285,12 @@ class QuartileDatabase(Database):
         cm = plt.get_cmap("gist_heat")
         colors = [cm(1.0 * i / len(self.Ns) / 1.5) for i in range(len(self.Ns))]
 
-        for i, N in enumerate(self.Ns):
-            Nstr = prettifyQuad(N)
-            if np.isinf(N):
+        for i, quant in enumerate(self.quantiles):
+            Nstr = prettifyQuad(quant)
+            if np.isinf(quant):
                 continue
             ax.plot(
-                self.time / np.log(N).astype(np.float64),
+                self.time / np.log(quant).astype(np.float64),
                 self.mean[:, i],
                 c=colors[i],
                 label=f"N={Nstr}",
@@ -316,28 +318,28 @@ class QuartileDatabase(Database):
         cm = plt.get_cmap("gist_heat")
         colors = [cm(1.0 * i / len(self.Ns) / 1.5) for i in range(len(self.Ns))]
 
-        for i, N in enumerate(self.Ns):
-            if np.isinf(N):
+        for i, quant in enumerate(self.quantiles):
+            if np.isinf(quant):
                 continue
-            Nstr = prettifyQuad(N)
+            Nstr = prettifyQuad(quant)
             ax.plot(
-                self.time / np.log(N).astype(np.float64),
-                self.var[:, i] / np.log(N).astype(float) ** (2 / 3),
+                self.time / np.log(quant).astype(np.float64),
+                self.var[:, i] / np.log(quant).astype(float) ** (2 / 3),
                 c=colors[i],
                 label=None,
             )
 
-        theory = th.theoreticalNthQuartVar(N, self.time)
-        theory_Large = th.theoreticalNthQuartVarLargeTimes(N, self.time)
+        theory = th.theoreticalNthQuartVar(quant, self.time)
+        theory_Large = th.theoreticalNthQuartVarLargeTimes(quant, self.time)
         ax.plot(
-            self.time / np.log(N).astype(np.float64),
-            theory / np.log(N).astype(float) ** (2 / 3),
+            self.time / np.log(quant).astype(np.float64),
+            theory / np.log(quant).astype(float) ** (2 / 3),
             c="b",
             label=th.NthQuartVarStr,
         )
         ax.plot(
-            self.time / np.log(N).astype(np.float64),
-            theory_Large / np.log(N).astype(float) ** (2 / 3),
+            self.time / np.log(quant).astype(np.float64),
+            theory_Large / np.log(quant).astype(float) ** (2 / 3),
             c="g",
             label=th.NthQuartVarStrLargeTimes,
         )

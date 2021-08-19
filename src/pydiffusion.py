@@ -181,7 +181,8 @@ class Diffusion(cdiff.Diffusion):
             Number of partilces in the occupancy.
 
         resize : int
-            Number of elements to add to occupancy.
+            Number of elements to add to occupancy. This is equivalent to maximum
+            time to go out to.
 
         time : int
             Current time of the system to initialize.
@@ -227,13 +228,13 @@ class Diffusion(cdiff.Diffusion):
 
         super().iterateTimestep()
 
-    def NthquartileSingleSided(self, NQuart):
+    def NthquartileSingleSided(self, quartile):
         """
         Get the rightmost Nth quartile of the occupancy.
 
         Parameters
         ----------
-        NQuart : float
+        quartile : float
             Nth quartile to find. Must satisfy 0 < NQuart < nParticles.
 
         Returns
@@ -242,17 +243,17 @@ class Diffusion(cdiff.Diffusion):
             Distance from the center of the Nth quartile position.
         """
 
-        return super().NthquartileSingleSided(NQuart)
+        return super().NthquartileSingleSided(quartile)
 
-    def multipleNthquartiles(self, NQuarts):
+    def multipleNthquartiles(self, quartiles):
         """
-        Get the rightmost Nth quartile of the occupancy for multiple Ns. Will
-        be faster than writing a for loop over the NthquartileSingleSided for
-        most cases (large nParticles and small Nth quartiles).
+        Get the rightmost Nth quartile of the occupancy for multiple quartiles.
+        Will be faster than writing a for loop over the NthquartileSingleSided
+        for most cases (large nParticles and small Nth quartiles).
 
         Parameters
         ----------
-        NQuarts : list
+        quartiles : list
             Nth quartiles to find. Must satisfy 0 < NQuarts < nParticles.
 
         Returns
@@ -289,7 +290,7 @@ class Diffusion(cdiff.Diffusion):
         >>> print("Ratio:", py / c )
         """
 
-        return super().multipleNthquartiles(NQuarts)
+        return super().multipleNthquartiles(quartiles)
 
     def pGreaterThanX(self, idx):
         """
