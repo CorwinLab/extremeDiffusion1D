@@ -12,10 +12,10 @@
 
 typedef boost::multiprecision::float128 RealType;
 
-#ifndef DIFFUSION_HPP_
-#define DIFFUSION_HPP_
+#ifndef DIFFUSIONPDF_HPP_
+#define DIFFUSIONPDF_HPP_
 
-class Diffusion {
+class DiffusionPDF {
 private:
   std::vector<RealType> occupancy;
   RealType nParticles;
@@ -41,11 +41,11 @@ private:
   double generateBeta();
 
 public:
-  Diffusion(const RealType _nParticles,
+  DiffusionPDF(const RealType _nParticles,
             const double _beta,
             const unsigned long int occupancySize,
             const bool _probDistFlag = true);
-  ~Diffusion(){};
+  ~DiffusionPDF(){};
 
   RealType getNParticles() { return nParticles; };
 
@@ -90,4 +90,4 @@ public:
 
 };
 
-#endif /* DIFFUSION_HPP_ */
+#endif /* DIFFUSIONPDF_HPP_ */

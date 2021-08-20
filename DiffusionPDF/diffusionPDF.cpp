@@ -1,4 +1,4 @@
-#include "diffusion.hpp"
+#include "diffusionPDF.hpp"
 
 #include <math.h>
 #include <pybind11/numpy.h>
@@ -44,7 +44,7 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 } // namespace pybind11
 
 // Constuctor
-Diffusion::Diffusion(const RealType _nParticles,
+DiffusionPDF::DiffusionPDF(const RealType _nParticles,
                      const double _beta,
                      const unsigned long int occupancySize,
                      const bool _probDistFlag)
@@ -72,12 +72,12 @@ Diffusion::Diffusion(const RealType _nParticles,
   time = 0;
 }
 
-RealType Diffusion::toNextSite(RealType currentSite, RealType bias)
+RealType DiffusionPDF::toNextSite(RealType currentSite, RealType bias)
 {
   return (currentSite * bias);
 }
 
-double Diffusion::generateBeta()
+double DiffusionPDF::generateBeta()
 {
   // If beta = 0 return either 0 or 1
   if (beta == 0.0) {
@@ -96,7 +96,7 @@ double Diffusion::generateBeta()
   }
 }
 
-void Diffusion::iterateTimestep()
+void DiffusionPDF::iterateTimestep()
 {
   unsigned long int prevMinIndex = edges.first[time];
   unsigned long int prevMaxIndex = edges.second[time];
@@ -127,9 +127,9 @@ void Diffusion::iterateTimestep()
     double bias;
     RealType floatbias;
     if (*occ != 0) {
-      bias = Diffusion::generateBeta();
+      bias = DiffusionPDF::generateBeta();
       floatbias = RealType(bias);
-      toNextSite = Diffusion::toNextSite(*occ, floatbias);
+      toNextSite = DiffusionPDF::toNextSite(*occ, floatbias);
       if (!ProbDistFlag) {
         toNextSite = round(toNextSite);
       }
@@ -170,7 +170,7 @@ The algorithm just looks at the sum of the occupancy up to some position maxIdx.
 The position of the Nth quartile then happens when the condition
 sum > nParticles / quantile.
 */
-double Diffusion::findQuantile(const RealType quantile)
+double DiffusionPDF::findQuantile(const RealType quantile)
 {
   unsigned long int maxIdx = edges.second[time];
   double centerIdx = time * 0.5;
@@ -190,7 +190,7 @@ The algorithm just looks at the sum of the occupancy up to some position maxIdx.
 The position of the Nth quartile then happens when the condition
 sum > nParticles / quantile.
 */
-std::vector<double> Diffusion::findQuantiles(std::vector<RealType> quantiles)
+std::vector<double> DiffusionPDF::findQuantiles(std::vector<RealType> quantiles)
 {
 
   // Need Quantiles in descending order for algorithm to work correctly
@@ -216,7 +216,7 @@ std::vector<double> Diffusion::findQuantiles(std::vector<RealType> quantiles)
   return dists;
 }
 
-RealType Diffusion::pGreaterThanX(const unsigned long int idx)
+RealType DiffusionPDF::pGreaterThanX(const unsigned long int idx)
 {
   RealType Nabove = 0.0;
   for (unsigned long int j = idx; j <= time; j++) {
@@ -226,7 +226,7 @@ RealType Diffusion::pGreaterThanX(const unsigned long int idx)
 }
 
 std::pair<std::vector<double>, std::vector<RealType>>
-Diffusion::calcVsAndPb(const unsigned long int num)
+DiffusionPDF::calcVsAndPb(const unsigned long int num)
 {
   std::vector<double> vs;
   std::vector<RealType> Pbs;
@@ -244,7 +244,7 @@ Diffusion::calcVsAndPb(const unsigned long int num)
 }
 
 std::pair<std::vector<double>, std::vector<RealType>>
-Diffusion::VsAndPb(const double v)
+DiffusionPDF::VsAndPb(const double v)
 {
   std::vector<double> vs;
   std::vector<RealType> Pbs;
@@ -264,11 +264,11 @@ Diffusion::VsAndPb(const double v)
   return returnTuple;
 }
 
-PYBIND11_MODULE(diffusion, m)
+PYBIND11_MODULE(diffusionPDF, m)
 {
-  m.doc() = "C++ diffusion";
+  m.doc() = "C++ diffusionPDF";
 
-  py::class_<Diffusion>(m, "Diffusion")
+  py::class_<DiffusionPDF>(m, "DiffusionPDF")
       .def(py::init<const RealType,
                     const double,
                     const unsigned long int,
@@ -278,22 +278,22 @@ PYBIND11_MODULE(diffusion, m)
            py::arg("occupancySize"),
            py::arg("probDistFlag") = true)
 
-      .def("getOccupancy", &Diffusion::getOccupancy)
-      .def("setOccupancy", &Diffusion::setOccupancy, py::arg("occupancy"))
-      .def("resizeOccupancy", &Diffusion::resizeOccupancy, py::arg("size"))
-      .def("getNParticles", &Diffusion::getNParticles)
-      .def("getBeta", &Diffusion::getBeta)
+      .def("getOccupancy", &DiffusionPDF::getOccupancy)
+      .def("setOccupancy", &DiffusionPDF::setOccupancy, py::arg("occupancy"))
+      .def("resizeOccupancy", &DiffusionPDF::resizeOccupancy, py::arg("size"))
+      .def("getNParticles", &DiffusionPDF::getNParticles)
+      .def("getBeta", &DiffusionPDF::getBeta)
       .def("setProbDistFlag",
-           &Diffusion::setProbDistFlag,
+           &DiffusionPDF::setProbDistFlag,
            py::arg("ProbDistFlag"))
-      .def("getProbDistFlag", &Diffusion::getProbDistFlag)
-      .def("getEdges", &Diffusion::getEdges)
-      .def("getTime", &Diffusion::getTime)
-      .def("setTime", &Diffusion::setTime)
-      .def("iterateTimestep", &Diffusion::iterateTimestep)
-      .def("findQuantile", &Diffusion::findQuantile, py::arg("quantile"))
-      .def("findQuantiles", &Diffusion::findQuantiles, py::arg("quantiles"))
-      .def("pGreaterThanX", &Diffusion::pGreaterThanX, py::arg("idx"))
-      .def("calcVsAndPb", &Diffusion::calcVsAndPb, py::arg("num"))
-      .def("VsAndPb", &Diffusion::VsAndPb, py::arg("v"));
+      .def("getProbDistFlag", &DiffusionPDF::getProbDistFlag)
+      .def("getEdges", &DiffusionPDF::getEdges)
+      .def("getTime", &DiffusionPDF::getTime)
+      .def("setTime", &DiffusionPDF::setTime)
+      .def("iterateTimestep", &DiffusionPDF::iterateTimestep)
+      .def("findQuantile", &DiffusionPDF::findQuantile, py::arg("quantile"))
+      .def("findQuantiles", &DiffusionPDF::findQuantiles, py::arg("quantiles"))
+      .def("pGreaterThanX", &DiffusionPDF::pGreaterThanX, py::arg("idx"))
+      .def("calcVsAndPb", &DiffusionPDF::calcVsAndPb, py::arg("num"))
+      .def("VsAndPb", &DiffusionPDF::VsAndPb, py::arg("v"));
 }

@@ -4,7 +4,7 @@ import pytest
 import sys
 
 sys.path.append("../src")
-from pydiffusion import Diffusion
+from pydiffusionPDF import DiffusionPDF
 
 
 def test_equals():
@@ -12,7 +12,7 @@ def test_equals():
     Test the Diffusion equals works correctly.
     """
 
-    d = Diffusion(np.quad("1e4500"), beta=1, occupancySize=100)
+    d = DiffusionPDF(np.quad("1e4500"), beta=1, occupancySize=100)
     d.evolveToTime(100)
     assert d == d
 
@@ -26,10 +26,10 @@ def test_pyDiffusion_fromOccupancyTime():
     beta = 1
     time_steps = 1000
     probDistFlag = True
-    d = Diffusion(N, beta, time_steps, probDistFlag)
+    d = DiffusionPDF(N, beta, time_steps, probDistFlag)
     d.evolveToTime(time_steps)
 
-    d2 = Diffusion.fromOccupancyTime(
+    d2 = DiffusionPDF.fromOccupancyTime(
         beta,
         N,
         resize=0,
@@ -49,10 +49,10 @@ def test_pyDiffusion_fromOccupancyTime_resize():
     beta = 1
     time_steps = 1000
     probDistFlag = True
-    d = Diffusion(N, beta, time_steps, probDistFlag)
+    d = DiffusionPDF(N, beta, time_steps, probDistFlag)
     d.evolveToTime(time_steps)
 
-    d2 = Diffusion.fromOccupancyTime(
+    d2 = DiffusionPDF.fromOccupancyTime(
         beta,
         N,
         resize=1000,
@@ -75,13 +75,14 @@ def test_pyDiffusion_findQuantiles():
     [0.03125 0.15625 0.3125 0.3125 0.15625 0.03125]
     """
 
-    diff = Diffusion(1, beta=np.inf, occupancySize=5)
+    diff = DiffusionPDF(1, beta=np.inf, occupancySize=5)
     diff.evolveToTime(5)
     assert diff.findQuantile(10) == 1.5
     assert diff.findQuantile(100) == 2.5
     qs = diff.findQuantiles([100, 10])
     qs.reverse()
     assert qs == [1.5, 2.5]
+
 
 def test_pyDiffusion_findQuantiles_multiplePartilces():
     """
@@ -91,7 +92,7 @@ def test_pyDiffusion_findQuantiles_multiplePartilces():
     [0.3125 1.5625 3.125 3.125 1.5625 0.3125]
     """
 
-    diff = Diffusion(10, beta=np.inf, occupancySize=5)
+    diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
     diff.evolveToTime(5)
 
     assert diff.findQuantile(10) == 1.5
@@ -99,15 +100,29 @@ def test_pyDiffusion_findQuantiles_multiplePartilces():
     qs = diff.findQuantiles([100, 10])
     assert qs == [2.5, 1.5]
 
+
 def test_pyDiffusion_findQuantiles_ascendingOrder():
     """
     Check that findQuantiles works if the quantiles are not in ascending order.
     We may want to actually throw an error if they aren't in ascending order or
-    check if it's in ascending order and then return the correct quantiles. 
+    check if it's in ascending order and then return the correct quantiles.
     """
 
-    diff = Diffusion(10, beta=np.inf, occupancySize=5)
+    diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
     diff.evolveToTime(5)
 
     assert diff.findQuantiles([10, 100]) == [2.5, 1.5]
     assert diff.findQuantiles([100, 10]) == [2.5, 1.5]
+
+def test_pyDiffusion_evolveAndSaveQuantiles():
+    """
+    Check that the evolveAndSaveQuantiles function works the same as finding
+    quantiles.
+    """
+
+    diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
+    diff.evolveAndSaveQuantiles(time=[1, 2, 3, 4, 5], quantiles=[100, 10], file="Data.txt")
+    data = np.loadtxt("Data.txt", delimiter=",", skiprows=1)
+    print(data)
+
+    assert False

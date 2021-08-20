@@ -1,14 +1,14 @@
 import sys
 
-sys.path.append("../recurrenceRelation/")
+sys.path.append("../DiffusionCDF/")
 
-import recurrance
+import diffusionCDF
 import numpy as np
 import npquad
 import csv
 
 
-class Recurrence(recurrance.Recurrance):
+class DiffusionCDF(diffusionCDF.DiffusionCDF):
     """
     Create a class that models the recurrance relation outlined in the BC
     model paper.
@@ -26,7 +26,7 @@ class Recurrence(recurrance.Recurrance):
     """
 
     def __str__(self):
-        return f"Recurrance(beta={self.beta}, time={self.time})"
+        return f"DiffusionCDF(beta={self.beta}, time={self.time})"
 
     def __repr__(self):
         return self.__str__()
@@ -37,7 +37,7 @@ class Recurrence(recurrance.Recurrance):
 
     @property
     def zB(self):
-        return np.array(self.getzB(), dtype=np.quad)
+        return self.getzB()
 
     @property
     def time(self):
@@ -90,84 +90,84 @@ class Recurrence(recurrance.Recurrance):
         for _ in range(num):
             self.iterateTimeStep()
 
-    def findQuintile(self, N):
+    def findQuantile(self, N):
         """
-        Find the corresponding quintile.
+        Find the corresponding quantile.
 
         Parameters
         ----------
         N : np.quad
-            Nth quartile to measure
+            Nth quantile to measure
 
         Returns
         -------
         int
-            Position of Nth quartile
+            Position of Nth quantile
         """
 
-        return super().findQuintile(N)
+        return super().findQuantile(N)
 
-    def findQuintiles(self, Ns, descending=False):
+    def findQuantiles(self, Ns, descending=False):
         """
-        Find the corresponding quintiles. Should be faster than a list compression
+        Find the corresponding quantiles. Should be faster than a list compression
         over findQuntile b/c it does it in one loop.
 
         Parameters
         ----------
         Ns : numpy array (dtype np.quad)
-            Nth quartiles to measure
+            Nth quantiles to measure
 
         descending : bool
             Whether or not the incoming Ns are in descending or ascending order.
-            If they are not in descending order we flip the output quintiles.
+            If they are not in descending order we flip the output quantiles.
 
         Returns
         -------
         numpy array (dtype ints)
-            Position of Nth quartiles
+            Position of Nth quantiles
         """
 
         if descending:
-            return np.array(super().findQuintiles(Ns))
+            return np.array(super().findQuantiles(Ns))
         else:
-            returnVals = super().findQuintiles(Ns)
+            returnVals = super().findQuantiles(Ns)
             returnVals.reverse()
             return np.array(returnVals)
 
-    def evolveAndSaveQuartile(self, time, quartiles, file):
+    def evolveAndSaveQuantile(self, time, quantiles, file):
         """
-        Evolve the system to specific times and save the quartiles at those times
+        Evolve the system to specific times and save the quantiles at those times
         to a file.
 
         Parameters
         ----------
         time : numpy array or list
-            Times to evolve the system to and save quartiles at
+            Times to evolve the system to and save quantiles at
 
-        quartiles : numpy array (dtype np.quad)
-            Quartiles to save at each time
+        quantiles : numpy array (dtype np.quad)
+            Quantiles to save at each time
 
         file : str
-            File to save the quartiles to.
+            File to save the quantiles to.
 
         Examples
         --------
         >>> r = Recurrance(beta=np.inf)
-        >>> r.evolveAndSaveQuartile([1, 5, 50], [5, 10], 'Data.txt')
+        >>> r.evolveAndSaveQuantile([1, 5, 50], [5, 10], 'Data.txt')
         """
 
         f = open(file, "w")
         writer = csv.writer(f)
-        header = ["time"] + [str(q) for q in quartiles]
+        header = ["time"] + [str(q) for q in quantiles]
         writer.writerow(header)
         for t in time:
             self.evolveToTime(t)
 
-            quartiles = list(np.array(quartiles))
-            quartiles.sort()  # Need to get the quartiles in descending order
-            quartiles.reverse()
-            NthQuintiles = self.findQuintiles(quartiles)
+            quantiles = list(np.array(quantiles))
+            quantiles.sort()  # Need to get the quantiles in descending order
+            quantiles.reverse()
+            NthQuantiles = self.findQuantiles(quantiles)
 
-            row = [self.time] + list(NthQuintiles)
+            row = [self.time] + list(NthQuantiles)
             writer.writerow(row)
         f.close()

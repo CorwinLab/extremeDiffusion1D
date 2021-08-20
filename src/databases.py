@@ -126,9 +126,7 @@ class QuartileDatabase(Database):
             time = data[:, 0]
             # second column is maximum edge which we don't really care about
             # for probDist=True
-            maxEdge = (
-                2 * data[:, 1]
-            )
+            maxEdge = 2 * data[:, 1]
             data = 2 * data[:, 2:]
 
             if squared_sum is None:
@@ -213,7 +211,9 @@ class QuartileDatabase(Database):
                 label="Mean",
             )
             ax.plot(
-                self.time / np.log(quant).astype(np.float64), theory, label=th.NthQuartStr
+                self.time / np.log(quant).astype(np.float64),
+                theory,
+                label=th.NthQuartStr,
             )
             ax.set_xscale("log")
             ax.set_yscale("log")

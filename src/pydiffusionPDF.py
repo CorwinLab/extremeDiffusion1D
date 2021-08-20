@@ -2,13 +2,13 @@ import numpy as np
 import sys
 import os
 
-sys.path.append(os.path.abspath("../cDiffusion"))
-import diffusion as cdiff
+sys.path.append(os.path.abspath("../DiffusionPDF"))
+import diffusionPDF
 import csv
 import npquad
 
 
-class Diffusion(cdiff.Diffusion):
+class DiffusionPDF(diffusionPDF.DiffusionPDF):
     """
     Helper class for C++ Diffusion object. Allows simulating random walks with
     biases drawn from a beta distribution. Includes multiple helper functions to
@@ -66,7 +66,7 @@ class Diffusion(cdiff.Diffusion):
     """
 
     def __str__(self):
-        return f"Diffusion(N={self.getNParticles()}, beta={self.getBeta()}, size={len(self.getEdges()[0])}, time={self.getTime()})"
+        return f"DiffusionPDF(N={self.getNParticles()}, beta={self.getBeta()}, size={len(self.getEdges()[0])}, time={self.getTime()})"
 
     def __repr__(self):
         return self.__str__()
@@ -77,7 +77,7 @@ class Diffusion(cdiff.Diffusion):
         a whole lot anyways.
         """
 
-        if not isinstance(other, Diffusion):
+        if not isinstance(other, DiffusionPDF):
             raise TypeError(
                 f"Comparison must be between same object types, but other of type {type(other)}"
             )
@@ -169,7 +169,7 @@ class Diffusion(cdiff.Diffusion):
         cls, beta, nParticles, resize, time, occupancy, probDistFlag=True
     ):
         """
-        Create a Diffusion class with a specific time and occupancy. Used to
+        Create a DiffusionPDF class with a specific time and occupancy. Used to
         resume experiments after saving the occupancy.
 
         Parameters
@@ -201,7 +201,7 @@ class Diffusion(cdiff.Diffusion):
             Diffusion object initialized with provided parameters
         """
 
-        diff = Diffusion(nParticles, beta, len(occupancy) - 1)
+        diff = DiffusionPDF(nParticles, beta, len(occupancy) - 1)
         diff.occupancy = occupancy
         diff.currentTime = time
         diff.resizeOccupancy(resize + len(diff.occupancy))
@@ -370,7 +370,7 @@ class Diffusion(cdiff.Diffusion):
         while self.getTime() < time:
             self.iterateTimestep()
 
-    def evolveAndSaveQuantile(self, time, quantiles, file):
+    def evolveAndSaveQuantiles(self, time, quantiles, file):
         """
         Incrementally evolves the system forward to the specified times and saves
         the specified quantiles after each increment.
@@ -381,22 +381,14 @@ class Diffusion(cdiff.Diffusion):
             Times to evolve the system to and save the quantiles at
 
         quantiles : list or numpy array
-            Quantiles to save at each time. These should all be < 1.
+            Quantiles to save at each time. These should all be > 1.
 
         file : string
             Filename (or path) to save the time and quantiles
 
         Examples
         --------
-        >>> N = 1e300
-        >>> num_of_steps = round(3 * np.log(N) ** (5/2))
-        >>> d = Diffusion(N, beta=beta, occupancySize=num_of_steps, smallCutoff=0, largeCutoff=0, probDistFlag=True)
-        >>> save_times = np.geomspace(1, num_of_steps, 1000, dtype=np.int64)
-        >>> save_times = np.unique(save_times)
-        >>> quantiles = [10 ** i for i in range(20, 280, 20)]
-        >>> quantiles = [1/i for i in quantiles]
-        >>> save_file = 'Data.txt'
-        >>> d.evolveAndSaveQuantile(save_times, quantiles, save_file)
+
 
         Notes
         -----
@@ -407,19 +399,16 @@ class Diffusion(cdiff.Diffusion):
         f = open(file, "w")
         writer = csv.writer(f)
 
-        quantiles = np.array(quantiles)
-        quantiles.sort()
-
-        header = ["time", "MaxEdge"] + [str(np.quad("1") / i) for i in quantiles]
+        header = ["time", "MaxEdge"] + quantiles
         writer.writerow(header)
 
         for t in time:
             self.evolveToTime(t)
 
-            NthQuantile = self.multipleNthquantiles(quantiles)
+            NthQuantiles = self.findQuantiles(quantiles)
 
             maxEdge = self.getEdges()[1][t]
-            row = [self.getTime(), maxEdge] + NthQuantile
+            row = [self.getTime(), maxEdge] + NthQuantiles
             writer.writerow(row)
         f.close()
 
@@ -510,7 +499,7 @@ class Diffusion(cdiff.Diffusion):
 
             quantiles = np.array(quantiles)
             quantiles.sort()
-            NthQuantile = self.multipleNthquantiles(self.getNParticles() * quantiles)
+            NthQuantile = self.findQuantiles(self.getNParticles() * quantiles)
 
             maxEdge = self.getEdges()[1][t]
             row = [self.getTime(), maxEdge] + NthQuantile

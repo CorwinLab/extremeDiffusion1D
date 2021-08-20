@@ -14,10 +14,10 @@
 
 typedef boost::multiprecision::float128 RealType;
 
-#ifndef RECURRANCE_HPP_
-#define RECURRANCE_HPP_
+#ifndef DIFFUSIONCDF_HPP_
+#define DIFFUSIONCDF_HPP_
 
-class Recurrance {
+class DiffusionCDF {
 private:
   std::vector<RealType> zB;
   unsigned long int t;
@@ -37,8 +37,8 @@ private:
   double generateBeta();
 
 public:
-  Recurrance(const double _beta, const unsigned long int _tMax);
-  ~Recurrance(){};
+  DiffusionCDF(const double _beta, const unsigned long int _tMax);
+  ~DiffusionCDF(){};
 
   double getBeta() { return beta; };
 
@@ -53,9 +53,9 @@ public:
   // Functions that do things
   void iterateTimeStep();
 
-  unsigned long int findQuartile(RealType quartile);
+  unsigned long int findQuantile(RealType quantile);
 
-  std::vector<unsigned long int> findQuartiles(std::vector<RealType> quartiles);
+  std::vector<unsigned long int> findQuantiles(std::vector<RealType> quantiles);
 };
 
-#endif /* RECURRANCE_HPP_ */
+#endif /* DIFFUSIONCDF_HPP_ */

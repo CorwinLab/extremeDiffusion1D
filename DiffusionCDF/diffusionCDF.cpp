@@ -9,7 +9,7 @@
 #include <algorithm>
 
 #include "pybind11_numpy_scalar.h"
-#include "recurrance.hpp"
+#include "diffusionCDF.hpp"
 
 namespace py = pybind11;
 
@@ -43,13 +43,13 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 } // namespace pybind11
 
 
-Recurrance::Recurrance(const double _beta, const unsigned long int _tMax)
+DiffusionCDF::DiffusionCDF(const double _beta, const unsigned long int _tMax)
 {
   beta = _beta;
   t = 0;
   tMax = _tMax;
   zB.resize(tMax+1); // Initialize so that zB(n=0, t=0) = 1
-  zB[0] = 1.0;
+  zB[0] = 1;
 
   if (_beta != 0) {
     boost::random::beta_distribution<>::param_type params(_beta, _beta);
@@ -61,14 +61,14 @@ Recurrance::Recurrance(const double _beta, const unsigned long int _tMax)
   gen.seed(rd());
 }
 
-double Recurrance::generateBeta()
+double DiffusionCDF::generateBeta()
 {
   // If beta = 0 return either 0 or 1
   if (beta == 0.0) {
     return round(dis(gen));
   }
   // If beta = 1 use random uniform distribution
-  else if (beta == 1.0) {
+  else if (beta == 1) {
     return dis(gen);
   }
   // If beta = inf return 0.5
@@ -80,19 +80,19 @@ double Recurrance::generateBeta()
   }
 }
 
-void Recurrance::iterateTimeStep()
+void DiffusionCDF::iterateTimeStep()
 {
-  std::vector<RealType> zB_next(tMax+1); // Initialize next zb(n, t+1) to size zb(n, t-1) + 1
+  std::vector<RealType> zB_next(tMax+1);
   for (unsigned long int n = 0; n <= t+1; n++){
     if (n == 0){
       zB_next[n] = 1; // Need zB(n=0, t) = 1
     }
     else if (n == t+1){
-      RealType double_beta = RealType(generateBeta());
+      RealType beta = RealType(generateBeta());
       zB_next[n] = beta * zB[n-1];
     }
     else{
-      RealType double_beta = RealType(generateBeta());
+      RealType beta = RealType(generateBeta());
       zB_next[n] = beta * zB[n-1] + (1 - beta) * zB[n];
     }
   }
@@ -100,30 +100,30 @@ void Recurrance::iterateTimeStep()
   t += 1;
 }
 
-unsigned long int Recurrance::findQuartile(RealType quantile)
+unsigned long int DiffusionCDF::findQuantile(RealType quantile)
 {
   unsigned long int quantilePosition;
   for (unsigned long int n = t; n >= 0; n--){
-    if (zB[n] > 1.0 / quantile){
+    if (zB[n] > 1 / quantile){
       quantilePosition = 2* n + 2 - t;
       break;
     }
   }
-  return quantile;
+  return quantilePosition;
 }
 
-std::vector<unsigned long int> Recurrance::findQuartiles(
+std::vector<unsigned long int> DiffusionCDF::findQuantiles(
   std::vector<RealType> quantiles)
 {
-  // Sort incoming Ns b/c we need them to be in decreasing order for algorithm
-  // to work
+  // Sort incoming quantiles b/c we need them to be in descending order for
+  // algorithm to work
   std::sort(quantiles.begin(), quantiles.end(), std::greater<RealType>());
 
   // Initialize to have same number of vectors as in Ns
   std::vector<unsigned long int> quantilePositions(quantiles.size());
   unsigned long int quantile_idx = 0;
   for (unsigned long int n = t; n >= 0; n--){
-    while(zB[n] > 1.0 / quantiles[quantile_idx]){
+    while(zB[n] > 1 / quantiles[quantile_idx]){
       quantilePositions[quantile_idx] = 2 * n + 2 - t;
       quantile_idx += 1;
 
@@ -140,17 +140,17 @@ std::vector<unsigned long int> Recurrance::findQuartiles(
   return quantilePositions;
 }
 
-PYBIND11_MODULE(recurrance, m)
+PYBIND11_MODULE(diffusionCDF, m)
 {
   m.doc() = "Diffusion recurrance relation";
-  py::class_<Recurrance>(m, "Recurrance")
+  py::class_<DiffusionCDF>(m, "DiffusionCDF")
       .def(py::init<const double, const unsigned long int>(), py::arg("beta"), py::arg("tMax"))
-      .def("getBeta", &Recurrance::getBeta)
-      .def("getzB", &Recurrance::getzB)
-      .def("gettMax", &Recurrance::gettMax)
-      .def("setBetaSeed", &Recurrance::setBetaSeed, py::arg("seed"))
-      .def("getTime", &Recurrance::getTime)
-      .def("iterateTimeStep", &Recurrance::iterateTimeStep)
-      .def("findQuartile", &Recurrance::findQuartile, py::arg("N"))
-      .def("findQuartiles", &Recurrance::findQuartiles, py::arg("Ns"));
+      .def("getBeta", &DiffusionCDF::getBeta)
+      .def("getzB", &DiffusionCDF::getzB)
+      .def("gettMax", &DiffusionCDF::gettMax)
+      .def("setBetaSeed", &DiffusionCDF::setBetaSeed, py::arg("seed"))
+      .def("getTime", &DiffusionCDF::getTime)
+      .def("iterateTimeStep", &DiffusionCDF::iterateTimeStep)
+      .def("findQuantile", &DiffusionCDF::findQuantile, py::arg("quantile"))
+      .def("findQuantiles", &DiffusionCDF::findQuantiles, py::arg("quantiles"));
 }
