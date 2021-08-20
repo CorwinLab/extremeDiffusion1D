@@ -78,8 +78,8 @@ public:
 
   void iterateTimestep();
 
-  double findQuartile(const RealType quartile);
-  std::vector<double> findQuartiles(std::vector<RealType> quartiles);
+  double findQuantile(const RealType quantile);
+  std::vector<double> findQuantiles(std::vector<RealType> quantiles);
 
   RealType pGreaterThanX(const unsigned long int idx);
 

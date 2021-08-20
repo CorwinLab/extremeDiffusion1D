@@ -165,14 +165,19 @@ void Diffusion::iterateTimestep()
   time += 1;
 }
 
-double Diffusion::findQuartile(const RealType quartile)
+/*
+The algorithm just looks at the sum of the occupancy up to some position maxIdx.
+The position of the Nth quartile then happens when the condition
+sum > nParticles / quantile.
+*/
+double Diffusion::findQuantile(const RealType quantile)
 {
   unsigned long int maxIdx = edges.second[time];
   double centerIdx = time * 0.5;
 
   double dist = maxIdx - centerIdx;
   RealType sum = occupancy.at(maxIdx);
-  while (sum < quartile) {
+  while (sum < nParticles / quantile) {
     maxIdx -= 1;
     dist -= 1;
     sum += occupancy.at(maxIdx);
@@ -180,28 +185,33 @@ double Diffusion::findQuartile(const RealType quartile)
   return dist;
 }
 
-std::vector<double> Diffusion::findQuartiles(std::vector<RealType> quartiles)
+/*
+The algorithm just looks at the sum of the occupancy up to some position maxIdx.
+The position of the Nth quartile then happens when the condition
+sum > nParticles / quantile.
+*/
+std::vector<double> Diffusion::findQuantiles(std::vector<RealType> quantiles)
 {
 
-  // Need Quartiles in descending order for algorithm to work correctly
-  std::sort(quartiles.begin(), quartiles.end());
+  // Need Quantiles in descending order for algorithm to work correctly
+  std::sort(quantiles.begin(), quantiles.end(), std::greater<RealType>());
 
-  std::vector<double> dists(quartiles.size());
+  std::vector<double> dists(quantiles.size());
 
   unsigned long int maxIdx = edges.second[time];
   double centerIdx = time * 0.5;
   double dist = maxIdx - centerIdx;
   RealType sum = occupancy.at(maxIdx);
 
-  unsigned long int quartile_idx = 0;
-  while (pos < quartiles.size()){
-    while (sum < quartiles[quartile_idx]){
+  unsigned long int quantiles_idx = 0;
+  while (quantiles_idx < quantiles.size()){
+    while (sum < nParticles / quantiles[quantiles_idx]){
       maxIdx -= 1;
       dist -= 1;
       sum += occupancy.at(maxIdx);
     }
-    dists[quartile_idx] = dist;
-    quartiles_idx += 1;
+    dists[quantiles_idx] = dist;
+    quantiles_idx += 1;
   }
   return dists;
 }
@@ -281,8 +291,8 @@ PYBIND11_MODULE(diffusion, m)
       .def("getTime", &Diffusion::getTime)
       .def("setTime", &Diffusion::setTime)
       .def("iterateTimestep", &Diffusion::iterateTimestep)
-      .def("findQuartile", &Diffusion::findQuartile, py::arg("quartile"))
-      .def("findQuartiles", &Diffusion::findQuartiles, py::arg("quartiles"))
+      .def("findQuantile", &Diffusion::findQuantile, py::arg("quantile"))
+      .def("findQuantiles", &Diffusion::findQuantiles, py::arg("quantiles"))
       .def("pGreaterThanX", &Diffusion::pGreaterThanX, py::arg("idx"))
       .def("calcVsAndPb", &Diffusion::calcVsAndPb, py::arg("num"))
       .def("VsAndPb", &Diffusion::VsAndPb, py::arg("v"));

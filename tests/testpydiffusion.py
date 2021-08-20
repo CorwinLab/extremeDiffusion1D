@@ -67,9 +67,9 @@ def test_pyDiffusion_fromOccupancyTime_resize():
     ), "Occupany was not initialized correctly."
 
 
-def test_pyDiffusion_multipleQuartiles_Two():
+def test_pyDiffusion_findQuantiles():
     """
-    Check that that NthQuartileSingledSided and multipleNthQuartiles work the same.
+    Check that findQuantile and findQuantiles work the same.
     For beta=inf at t=5, the occupancy will always be:
 
     [0.03125 0.15625 0.3125 0.3125 0.15625 0.03125]
@@ -77,8 +77,37 @@ def test_pyDiffusion_multipleQuartiles_Two():
 
     diff = Diffusion(1, beta=np.inf, occupancySize=5)
     diff.evolveToTime(5)
-    assert diff.NthquartileSingleSided(1 / 10) == 1.5
-    assert diff.NthquartileSingleSided(1 / 100) == 2.5
-    qs = diff.multipleNthquartiles([1 / 10, 1 / 100])
+    assert diff.findQuantile(10) == 1.5
+    assert diff.findQuantile(100) == 2.5
+    qs = diff.findQuantiles([100, 10])
     qs.reverse()
     assert qs == [1.5, 2.5]
+
+def test_pyDiffusion_findQuantiles_multiplePartilces():
+    """
+    Check that findQuantile and findQuantiles work the same for nParticles > 1.
+    For beta=inf at t=5 the occupancy will always be:
+
+    [0.3125 1.5625 3.125 3.125 1.5625 0.3125]
+    """
+
+    diff = Diffusion(10, beta=np.inf, occupancySize=5)
+    diff.evolveToTime(5)
+
+    assert diff.findQuantile(10) == 1.5
+    assert diff.findQuantile(100) == 2.5
+    qs = diff.findQuantiles([100, 10])
+    assert qs == [2.5, 1.5]
+
+def test_pyDiffusion_findQuantiles_ascendingOrder():
+    """
+    Check that findQuantiles works if the quantiles are not in ascending order.
+    We may want to actually throw an error if they aren't in ascending order or
+    check if it's in ascending order and then return the correct quantiles. 
+    """
+
+    diff = Diffusion(10, beta=np.inf, occupancySize=5)
+    diff.evolveToTime(5)
+
+    assert diff.findQuantiles([10, 100]) == [2.5, 1.5]
+    assert diff.findQuantiles([100, 10]) == [2.5, 1.5]

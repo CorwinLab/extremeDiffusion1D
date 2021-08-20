@@ -12,7 +12,7 @@ class Diffusion(cdiff.Diffusion):
     """
     Helper class for C++ Diffusion object. Allows simulating random walks with
     biases drawn from a beta distribution. Includes multiple helper functions to
-    return important data such as maximum distance and quartiles.
+    return important data such as maximum distance and quantiles.
 
     Parameters
     ----------
@@ -228,69 +228,71 @@ class Diffusion(cdiff.Diffusion):
 
         super().iterateTimestep()
 
-    def NthquartileSingleSided(self, quartile):
+    def findQuantile(self, quantile):
         """
-        Get the rightmost Nth quartile of the occupancy.
+        Get the rightmost Nth quantile of the occupancy.
 
         Parameters
         ----------
-        quartile : float
-            Nth quartile to find. Must satisfy 0 < NQuart < nParticles.
+        quantile : float
+            Nth quantile to find. Must satisfy 1 < NQuart.
 
         Returns
         -------
         float
-            Distance from the center of the Nth quartile position.
+            Distance from the center of the Nth quantile position.
+
+        Examples
+        --------
+        >>> d = Diffusion(1, beta=np.inf, occupancySize=5)
+        >>> d.evolveToTime(5)
+        >>> print(d.occupancy)
+        [0.03125 0.15625 0.3125 0.3125 0.15625 0.03125]
+        >>> print(d.findQuantile(100))
         """
 
-        return super().NthquartileSingleSided(quartile)
+        assert quantile > 1, "Quantile must be > 1, but quantile: {quantile}"
 
-    def multipleNthquartiles(self, quartiles):
+        return super().findQuantile(quantile)
+
+    def findQuantiles(self, quantiles):
         """
-        Get the rightmost Nth quartile of the occupancy for multiple quartiles.
-        Will be faster than writing a for loop over the NthquartileSingleSided
-        for most cases (large nParticles and small Nth quartiles).
+        Get the rightmost Nth quantile of the occupancy for multiple quantiles.
+        Will be faster than writing a for loop over the findQuantile for most
+        cases (large nParticles and small Nth quantiles).
 
         Parameters
         ----------
-        quartiles : list
-            Nth quartiles to find. Must satisfy 0 < NQuarts < nParticles.
+        quantiles : list
+            Nth quantiles to find. Must satisfy quantiles > 1.
 
         Returns
         -------
         numpy array
-            Distance from the center fo the Nth quartile position.
+            Distance from the center of the Nth quantile position.
 
         Note
         ----
-        Expects the incoming NQuarts array to be in ascending order. The algorithm
-        will sort the NQuarts in ascending order and then return the Nquarts in
+        Expects the incoming quantiles array to be in ascending order. The algorithm
+        will sort the quantiles in ascending order and then return the Nquarts in
         ascending order.
 
         Looks like this is much faster than using list comprehension with
-        NthquartileSingleSided.
+        NthquantileSingleSided.
 
         Examples
         --------
-        >>> import time
-        >>> NthQuarts = np.linspace(5, 10000, 50)
-        >>> NthQuarts = [1/i for i in NthQuarts]
-        >>> NthQuarts.sort()
-        >>> d = Diffusion(1000000, 1, 10000)
-        >>> d.evolveToTime(10000)
-        >>> start = time.time()
-        >>> q = [d.NthquartileSingleSided(i) for i in NthQuarts]
-        >>> py = time.time() - start
-        >>> start = time.time()
-        >>> qs = d.multipleNthquartiles(NthQuarts)
-        >>> c = time.time() - start
-        >>> assert np.all(q == qs)
-        >>> print("Python Speed:", py)
-        >>> print("C Speed:", c)
-        >>> print("Ratio:", py / c )
+        >>> d = Diffusion(1, beta=np.inf, occupancySize=5)
+        >>> d.evolveToTime(5)
+        >>> print(d.occupancy)
+        [0.03125 0.15625 0.3125 0.3125 0.15625 0.03125]
+        >>> print(diff.findQuantiles([100, 10]) # Quantiles should be in ascending order!
+        [2.5, 1.5]
         """
 
-        return super().multipleNthquartiles(quartiles)
+        assert all(np.array(quantiles) > 1), "All quantiles must be > 1."
+
+        return super().findQuantiles(quantiles)
 
     def pGreaterThanX(self, idx):
         """
@@ -368,21 +370,21 @@ class Diffusion(cdiff.Diffusion):
         while self.getTime() < time:
             self.iterateTimestep()
 
-    def evolveAndSaveQuartile(self, time, quartiles, file):
+    def evolveAndSaveQuantile(self, time, quantiles, file):
         """
         Incrementally evolves the system forward to the specified times and saves
-        the specified quartiles after each increment.
+        the specified quantiles after each increment.
 
         Parameters
         ----------
         time : list or numpy array
-            Times to evolve the system to and save the quartiles at
+            Times to evolve the system to and save the quantiles at
 
-        quartiles : list or numpy array
-            Quartiles to save at each time. These should all be < 1.
+        quantiles : list or numpy array
+            Quantiles to save at each time. These should all be < 1.
 
         file : string
-            Filename (or path) to save the time and quartiles
+            Filename (or path) to save the time and quantiles
 
         Examples
         --------
@@ -391,10 +393,10 @@ class Diffusion(cdiff.Diffusion):
         >>> d = Diffusion(N, beta=beta, occupancySize=num_of_steps, smallCutoff=0, largeCutoff=0, probDistFlag=True)
         >>> save_times = np.geomspace(1, num_of_steps, 1000, dtype=np.int64)
         >>> save_times = np.unique(save_times)
-        >>> quartiles = [10 ** i for i in range(20, 280, 20)]
-        >>> quartiles = [1/i for i in quartiles]
+        >>> quantiles = [10 ** i for i in range(20, 280, 20)]
+        >>> quantiles = [1/i for i in quantiles]
         >>> save_file = 'Data.txt'
-        >>> d.evolveAndSaveQuartile(save_times, quartiles, save_file)
+        >>> d.evolveAndSaveQuantile(save_times, quantiles, save_file)
 
         Notes
         -----
@@ -405,19 +407,19 @@ class Diffusion(cdiff.Diffusion):
         f = open(file, "w")
         writer = csv.writer(f)
 
-        quartiles = np.array(quartiles)
-        quartiles.sort()
+        quantiles = np.array(quantiles)
+        quantiles.sort()
 
-        header = ["time", "MaxEdge"] + [str(np.quad("1") / i) for i in quartiles]
+        header = ["time", "MaxEdge"] + [str(np.quad("1") / i) for i in quantiles]
         writer.writerow(header)
 
         for t in time:
             self.evolveToTime(t)
 
-            NthQuartile = self.multipleNthquartiles(quartiles)
+            NthQuantile = self.multipleNthquantiles(quantiles)
 
             maxEdge = self.getEdges()[1][t]
-            row = [self.getTime(), maxEdge] + NthQuartile
+            row = [self.getTime(), maxEdge] + NthQuantile
             writer.writerow(row)
         f.close()
 
@@ -432,7 +434,7 @@ class Diffusion(cdiff.Diffusion):
         Parameters
         ----------
         time : list or numpy array
-            Times to evolve the system to and save the quartiles at
+            Times to evolve the system to and save the quantiles at
 
         vs : list or numpy array
             Velocities to save at each time. These should all satisfy 0 <= v <= 1.
@@ -477,41 +479,41 @@ class Diffusion(cdiff.Diffusion):
             writer.writerow(row)
         f.close()
 
-    def evolveAndSave(self, time, quartiles, file):
+    def evolveAndSave(self, time, quantiles, file):
         """
         Incrementally evolves the system forward to the specified times and saves
-        the specified quartiles after each increment. The data is stored as a
-        numpy array which may make it slower than the evolveAndSaveQuartile method.
+        the specified quantiles after each increment. The data is stored as a
+        numpy array which may make it slower than the evolveAndSaveQuantile method.
 
         Parameters
         ----------
         time : list or numpy array
-            Times to evolve the system to and save the quartiles at
+            Times to evolve the system to and save the quantiles at
 
-        quartiles : list or numpy array
-            Quartiles to save at each time. These should all be < 1.
+        quantiles : list or numpy array
+            Quantiles to save at each time. These should all be < 1.
 
         file : string
-            Filename (or path) to save the time and quartiles
+            Filename (or path) to save the time and quantiles
 
         Notes
         -----
-        Looks like this is a bit slower than the evolveAndSaveQuartile method which
+        Looks like this is a bit slower than the evolveAndSaveQuantile method which
         stores writes to the file incrementally.
 
         Also shouldn't be used b/c I don't think it will be compatible with np.quad.
         """
 
-        save_array = np.zeros(shape=(len(time), len(quartiles) + 2))
+        save_array = np.zeros(shape=(len(time), len(quantiles) + 2))
         for row_num, t in enumerate(time):
             self.evolveToTime(t)
 
-            quartiles = np.array(quartiles)
-            quartiles.sort()
-            NthQuartile = self.multipleNthquartiles(self.getNParticles() * quartiles)
+            quantiles = np.array(quantiles)
+            quantiles.sort()
+            NthQuantile = self.multipleNthquantiles(self.getNParticles() * quantiles)
 
             maxEdge = self.getEdges()[1][t]
-            row = [self.getTime(), maxEdge] + NthQuartile
+            row = [self.getTime(), maxEdge] + NthQuantile
             save_array[row_num, :] = row
         np.savetxt(file, save_array)
 
