@@ -2,8 +2,8 @@ import sys
 import os
 
 sys.path.append(os.path.abspath("../src"))
-sys.path.append(os.path.abspath("../cDiffusion"))
-from pydiffusion import Diffusion
+sys.path.append(os.path.abspath("../DiffusionPDF"))
+from pydiffusionPDF import DiffusionPDF
 import quadMath
 import fileIO
 import numpy as np
@@ -66,15 +66,15 @@ def runExperiment(
     q_stop = int(q_stop)
     q_step = int(q_step)
 
-    d = Diffusion(N, beta=beta, occupancySize=num_of_steps, probDistFlag=True)
+    d = DiffusionPDF(N, beta=beta, occupancySize=num_of_steps, probDistFlag=True)
 
     save_times = np.geomspace(1, num_of_steps, num_of_save_times, dtype=np.int64)
     save_times = np.unique(save_times)
 
+    # Note: the quartiles will be sorted in descending order in evolveAndSaveQuartiles
     quartiles = quadMath.logarange(q_start, q_stop, q_step, endpoint=True)
 
-    quartiles = [np.quad("1") / i for i in quartiles]
-    d.evolveAndSaveQuartile(save_times, quartiles, save_file)
+    d.evolveAndSaveQuartiles(save_times, quartiles, save_file)
 
     fileIO.saveArrayQuad(save_occ, d.occupancy)
 

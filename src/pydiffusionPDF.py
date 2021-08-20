@@ -290,7 +290,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         [2.5, 1.5]
         """
 
-        assert all(np.array(quantiles) > 1), "All quantiles must be > 1."
+        assert np.all(np.array(quantiles) > 1), "All quantiles must be > 1."
 
         return super().findQuantiles(quantiles)
 
@@ -388,7 +388,16 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
         Examples
         --------
-
+        >>> diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
+        >>> diff.evolveAndSaveQuantiles(time=[1, 2, 3, 4, 5], quantiles=[100, 10], file="Data.txt")
+        >>> with open("Data.txt", "r") as f:
+                print(f.read())
+        time,MaxEdge,100,10
+        1,1,0.5,0.5
+        2,2,1.0,1.0
+        3,3,1.5,1.5
+        4,4,2.0,1.0
+        5,5,2.5,1.5
 
         Notes
         -----
@@ -398,6 +407,9 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
         f = open(file, "w")
         writer = csv.writer(f)
+
+        # Sort quantiles in descending order
+        quantiles = np.sort(quantiles)[::-1]
 
         header = ["time", "MaxEdge"] + quantiles
         writer.writerow(header)
@@ -545,3 +557,9 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         print("Indices: ", idx)
         print("Occupancy:", np.array(self.getOccupancy())[nonzeros])
         print("Prob: ", np.array(Ns) / self.getNParticles())
+
+if __name__ == "__main__":
+    diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
+    diff.evolveAndSaveQuantiles(time=[1, 2, 3, 4, 5], quantiles=[100, 10], file="Data.txt")
+    with open("Data.txt", "r") as f:
+        print(f.read())

@@ -2,6 +2,7 @@ import numpy as np
 import npquad
 import pytest
 import sys
+import os
 
 sys.path.append("../src")
 from pydiffusionPDF import DiffusionPDF
@@ -123,6 +124,23 @@ def test_pyDiffusion_evolveAndSaveQuantiles():
     diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
     diff.evolveAndSaveQuantiles(time=[1, 2, 3, 4, 5], quantiles=[100, 10], file="Data.txt")
     data = np.loadtxt("Data.txt", delimiter=",", skiprows=1)
-    print(data)
+    evolved_quantiles = data[:, [2,3]] # Quartiles are the 2nd and 3rd columns
 
-    assert False
+    iterated_quantiles = []
+    diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
+    for _ in range(5):
+        diff.iterateTimestep()
+        iterated_quantiles.append(diff.findQuantiles([100, 10]))
+
+    iterated_quantiles = np.array(iterated_quantiles)
+
+    assert np.all(evolved_quantiles == iterated_quantiles)
+    assert np.all([1, 2, 3, 4, 5] == data[:, 0]) # times should be the same
+
+def test_cleanup():
+    """
+    Really just want to delete any files that are still remaining once all the
+    tests have been run.
+    """
+    if os.path.exists("Data.txt"):
+        os.remove("Data.txt")
