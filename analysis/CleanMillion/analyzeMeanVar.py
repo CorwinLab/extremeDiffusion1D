@@ -16,9 +16,8 @@ import theory as th
 files = glob.glob(
     "/home/jacob/Desktop/corwinLabMount/CleanData/QuartilesMillion/Q*.txt"
 )
-files = files[:300]
-
-"""
+'''
+clean_files = []
 for f in files:
     data = np.loadtxt(f, delimiter=",", skiprows=1, usecols=0)
     tmax = data[-1]
@@ -26,8 +25,7 @@ for f in files:
     print(tmax)
     if int(tmax) == 1000000:
         clean_files.append(f)
-"""
-
+'''
 print("Number of files: ", len(files))
 
 db = QuartileDatabase(files)
@@ -45,12 +43,10 @@ print("Maximum Time:", max(db.time))
 quarts = np.flip(list(logarange(10, 4500, 10, endpoint=True))) * np.quad("1e4500")
 db.setNs(quarts)
 
-"""
 db.plotMeans(save_dir='./figures/Means/', verbose=True)
 db.plotVars(save_dir='./figures/Vars/', verbose=True)
-"""
 
-for i, N in enumerate(db.Ns):
+for i, N in enumerate(db.quantiles):
     if np.isinf(N):
         continue
     var = db.var[:, i]

@@ -9,6 +9,7 @@ from quadMath import prettifyQuad
 
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
+from TracyWidom import TracyWidom
 
 
 class Database:
@@ -283,7 +284,7 @@ class QuartileDatabase(Database):
         ax.set_ylabel("Mean Nth Quartile")
 
         cm = plt.get_cmap("gist_heat")
-        colors = [cm(1.0 * i / len(self.Ns) / 1.5) for i in range(len(self.Ns))]
+        colors = [cm(1.0 * i / len(self.quantiles) / 1.5) for i in range(len(self.quantiles))]
 
         for i, quant in enumerate(self.quantiles):
             Nstr = prettifyQuad(quant)
@@ -316,7 +317,7 @@ class QuartileDatabase(Database):
         ax.set_ylabel("Variance of Nth Quartile / lnN^(2/3)")
 
         cm = plt.get_cmap("gist_heat")
-        colors = [cm(1.0 * i / len(self.Ns) / 1.5) for i in range(len(self.Ns))]
+        colors = [cm(1.0 * i / len(self.quantiles) / 1.5) for i in range(len(self.quantiles))]
 
         for i, quant in enumerate(self.quantiles):
             if np.isinf(quant):
@@ -366,7 +367,7 @@ class VelocityDatabase(Database):
 
         super().__init__(files)
 
-        self.vs = self.getVs()
+        self.velocities = self.getVelocities()
 
     def calculateMeanVar(self, verbose=False):
         """
@@ -398,62 +399,109 @@ class VelocityDatabase(Database):
         self.mean = mean_sum.astype(np.float64) / len(self)
         self.var = squared_sum.astype(np.float64) / len(self) - self.mean ** 2
 
-    def getVs(self):
+    def getVelocities(self):
         """
         Return the measured velocities from the files.
 
         Returns
         -------
-        vs : list
+        velocities : list
             Velocities from the files
         """
 
         with open(self.files[0]) as f:
-            vs = g.readline().split(",")[1:]
-            vs = [float(i) for i in vs]
-        return vs
+            velocities = f.readline().split(",")[1:]
+            velocities = [float(i) for i in velocities]
+        return velocities
 
-    def plotMean(self, save_dir="."):
+    def plotMeans(self, save_dir="."):
         """
         Plot the mean of each velocity as a function of time and compare to the
         theory.
         """
 
-        for i, v in enumerate(self.vs):
+        for i, v in enumerate(self.velocities):
             theory = th.theoreticalPbMean(v, self.time)
             fig, ax = plt.subplots()
             ax.set_xlabel("Time")
-            ax.set_ylabel("ln(Pb(vt, t))")
-            ax.plot(self.time, self.mean[:, i], label="Data", c="r")
-            ax.plot(self.time, theory, label="Theory")
+            ax.set_ylabel("|ln(Pb(vt, t))|")
+            ax.plot(self.time, abs(self.mean[:, i]), label="Data", c="r")
+            ax.plot(self.time, abs(theory), label=th.PbMeanStr, ls='--')
             ax.set_title(f"v={v}")
             ax.set_xscale("log")
             ax.set_yscale("log")
             ax.legend()
             fig.savefig(
-                os.path.join(os.path.abspath(save_dir), "Mean{v}.png"),
+                os.path.join(os.path.abspath(save_dir), f"Mean{v}.png"),
                 bbox_inches="tight",
             )
             plt.close(fig)
 
-    def plotVar(self, save_dir="."):
+    def plotVars(self, save_dir="."):
         """
         Plot the variance of each velocity as a function of time and compare to
         the theory.
         """
 
-        for i, v in enumerate(self.vs):
+        for i, v in enumerate(self.velocities):
             theory = th.theoreticalPbVar(v, self.time)
             fig, ax = plt.subplots()
             ax.set_xlabel("Time")
             ax.set_ylabel("Var(ln(Pb(vt, t)))")
             ax.plot(self.time, self.var[:, i], label="Data", c="r")
-            ax.plot(self.time, theory, label="Theory")
+            ax.plot(self.time, theory, label=th.PbVarStr, ls='--')
             ax.set_title(f"v={v}")
             ax.set_xscale("log")
             ax.set_yscale("log")
             ax.legend()
             fig.savefig(
-                os.path.join(os.path.abspath(save_dir), "Var{v}.png"),
+                os.path.join(os.path.abspath(save_dir), f"Var{v}.png"),
                 bbox_inches="tight",
             )
+
+    def plotDistribution(self, save_dir='.', save_file='FinalTime.txt', load_file=None, verbose=False):
+        """
+        Plot the Tracy Widom distribution at the maximum time.
+        """
+
+        if load_file is not None:
+            total_data = np.loadtxt(load_file)
+
+        else:
+            total_data = np.empty((len(self.files), self.shape[1] - 1))
+            for row, f in enumerate(self.files):
+                data = loadArrayQuad(f, self.shape, delimiter=",", skiprows=1)
+                data = data[-1, 1:]
+                data = np.log(data).astype(np.float64)
+                total_data[row] = data
+                if verbose:
+                    print(f)
+
+            np.savetxt(save_file, total_data)
+
+        tw = TracyWidom(beta=2)
+        for i, v in enumerate(self.velocities):
+            data = total_data[:, i]
+            data = data[~np.isinf(data)]
+            data = data[~np.isnan(data)]
+            print(len(data))
+            
+            I = 1 - np.sqrt(1 - v ** 2)
+            sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
+            scale = self.time[-1] ** (1 / 3) * sigma
+            offset = I * self.time[-1]
+
+            fig, ax = plt.subplots()
+            ax.set_xlabel("(ln(Pb(vt, t)) + I(v)t) / t^(1/3) * sigma")
+            ax.set_ylabel("Probability Density")
+            ax.set_title(f"v={v}")
+            ax.hist((data + offset) / scale, density=True, bins=100)
+
+            x = np.linspace(-5, 5, 100)
+            pdf = tw.pdf(x)
+            ax.plot(x, pdf, label="TW Distribution")
+            ax.set_yscale("log")
+            ax.legend()
+
+            fig.savefig(os.path.join(save_dir, f"Histogram{v}.png"), bbox_inches="tight")
+            plt.close(fig)

@@ -1,6 +1,9 @@
 import sys
+import os
 
-sys.path.append("../DiffusionCDF/")
+# Need to link to diffusionPDF library (PyBind11 code)
+path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'DiffusionCDF')
+sys.path.append(path)
 
 import diffusionCDF
 import numpy as np

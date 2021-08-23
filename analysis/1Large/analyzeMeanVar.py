@@ -31,11 +31,11 @@ print("Maximum time: ", max(db.time))
 
 db.plotMeans(save_dir="./figures/Means/")
 db.plotVars(save_dir="./figures/Vars/")
-db.plotMeansEvolve(save_dir="./figures/Means/")
+db.plotMeansEvolve(save_dir="./figures/Means/", legend=False)
 db.plotVarsEvolve(save_dir="./figures/Vars/", legend=True)
 
 
-for i, N in enumerate(db.getNs()):
+for i, N in enumerate(db.quantiles):
     var = db.var[:, i]
     Nstr = prettifyQuad(N)
     lnN = np.log(N).astype(float)

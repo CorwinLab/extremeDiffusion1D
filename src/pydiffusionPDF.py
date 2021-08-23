@@ -2,7 +2,10 @@ import numpy as np
 import sys
 import os
 
-sys.path.append(os.path.abspath("../DiffusionPDF"))
+# Need to link to diffusionPDF library (PyBind11 code)
+path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'DiffusionPDF')
+sys.path.append(path)
+
 import diffusionPDF
 import csv
 import npquad
@@ -411,7 +414,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         # Sort quantiles in descending order
         quantiles = np.sort(quantiles)[::-1]
 
-        header = ["time", "MaxEdge"] + quantiles
+        header = ["time", "MaxEdge"] + list(quantiles)
         writer.writerow(header)
 
         for t in time:
