@@ -1,17 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=QSweep
-#SBATCH --time=10-00:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH --error=/home/jhass2/CleanData/logs/QSweep/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-<<<<<<< HEAD
 #SBATCH --array=0-1000
 #SBATCH --output=/home/jhass2/CleanData/logs/QSweep/%A-%a.err
 #SBATCH --nice=100
-=======
-#SBATCH --array=0-100
-#SBATCH --output=/home/jhass2/CleanData/logs/QSweep/%A-%a.err
->>>>>>> e56286dc5eb7abac96bf924fdcac9bd65f45554d
 
 TOPDIR=/home/jhass2/CleanData/QSweep/
 BETA=1.0
