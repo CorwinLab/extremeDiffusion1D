@@ -1,8 +1,9 @@
 import sys
 import os
 
-sys.path.append(os.path.abspath("../src"))
-sys.path.append(os.path.abspath("../DiffusionPDF"))
+src_path = os.path.join(os.path.dirname(__file__), '..', 'src')
+sys.path.append(src_path)
+
 from pydiffusionPDF import DiffusionPDF
 import quadMath
 import fileIO
@@ -74,7 +75,7 @@ def runExperiment(
     # Note: the quartiles will be sorted in descending order in evolveAndSaveQuartiles
     quartiles = quadMath.logarange(q_start, q_stop, q_step, endpoint=True)
 
-    d.evolveAndSaveQuartiles(save_times, quartiles, save_file)
+    d.evolveAndSaveQuantiles(save_times, quartiles, save_file)
 
     fileIO.saveArrayQuad(save_occ, d.occupancy)
 

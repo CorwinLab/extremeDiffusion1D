@@ -1,7 +1,6 @@
 import sys
 
-sys.path.append("../src")
-sys.path.append("../recurrenceRelation")
+sys.path.append("../../src")
 
 from pyrecurrence import Recurrance
 from nativePyRecurrenceRelation import makeRec, findQuintile

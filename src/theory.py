@@ -108,6 +108,7 @@ def theoreticalPbatT(vs, t):
     sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
     return -I * t + t ** (1 / 3) * sigma * M
 
+PbMeanStr = r"$-I * t + t^{1/3}\sigma M$"
 
 def theoreticalPbMean(v, t):
     """
@@ -134,6 +135,8 @@ def theoreticalPbMean(v, t):
     return -I * t + t ** (1 / 3) * sigma * M
 
 
+PbVarStr = r"$t^{2/3}\sigma^{2} V$"
+
 def theoreticalPbVar(v, t):
     """
     For a specified v get the variance of the probability of being greater than
@@ -156,5 +159,5 @@ def theoreticalPbVar(v, t):
     V = 0.813
     I = 1 - np.sqrt(1 - v ** 2)
     sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
-    theory = (time ** (2 / 3)) * sigma ** 2 * V
+    theory = (t ** (2 / 3)) * sigma ** 2 * V
     return theory
