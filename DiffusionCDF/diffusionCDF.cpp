@@ -79,7 +79,7 @@ double DiffusionCDF::generateBeta()
 DiffusionTimeCDF::DiffusionTimeCDF(const double _beta, const unsigned long int _tMax) : DiffusionCDF(_beta, _tMax)
 {
   CDF.resize(tMax + 1);
-  CDF[0] = 1; 
+  CDF[0] = 1;
 }
 
 void DiffusionTimeCDF::iterateTimeStep()
@@ -150,13 +150,13 @@ DiffusionPositionCDF::DiffusionPositionCDF(const double _beta, const unsigned lo
 void DiffusionPositionCDF::stepPosition()
 {
   std::vector<RealType> CDF_next(tMax+1, 0); // Initialize all values to 0
-  for (unsigned long int n = position; n < tMax + 1; n++){
+  for (unsigned long int n = position+1; n < tMax + 1; n++){
     RealType beta = RealType(generateBeta());
-    if (n == position){
+    if (n == position+1){
       CDF_next[n] = beta * CDF[n-1];
     }
     else{
-      CDF_next[n] = beta * CDF[n-1] + (1 - beta) * CDF[n];
+      CDF_next[n] = beta * CDF[n-1] + (1 - beta) * CDF_next[n-1];
     }
   }
   CDF = CDF_next;

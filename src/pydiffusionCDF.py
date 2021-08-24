@@ -177,7 +177,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             writer.writerow(row)
         f.close()
 
-class DiffusionPositionCDF(diffusionCDF.DiffusionTimeCDF):
+class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
     """
     Class to iterate through the position of the CDF.
     """
