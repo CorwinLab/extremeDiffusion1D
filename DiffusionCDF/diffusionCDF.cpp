@@ -79,6 +79,7 @@ double DiffusionCDF::generateBeta()
 DiffusionTimeCDF::DiffusionTimeCDF(const double _beta, const unsigned long int _tMax) : DiffusionCDF(_beta, _tMax)
 {
   CDF.resize(tMax + 1);
+  CDF[0] = 1; 
 }
 
 void DiffusionTimeCDF::iterateTimeStep()
