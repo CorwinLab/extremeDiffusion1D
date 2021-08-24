@@ -17,10 +17,10 @@ typedef boost::multiprecision::float128 RealType;
 #ifndef DIFFUSIONCDF_HPP_
 #define DIFFUSIONCDF_HPP_
 
-class DiffusionCDF {
-private:
-  std::vector<RealType> zB;
-  unsigned long int t;
+// Base Diffusion class
+class DiffusionCDF{
+protected:
+  std::vector<RealType> CDF;
   double beta;
   unsigned long int tMax;
 
@@ -42,16 +42,41 @@ public:
 
   double getBeta() { return beta; };
 
-  std::vector<RealType> getzB() { return zB; };
+  std::vector<RealType> getCDF() { return CDF; };
 
   unsigned long int gettMax() { return tMax; };
 
   void setBetaSeed(const unsigned int seed) { gen.seed(seed); };
 
+};
+
+class DiffusionTimeCDF: public DiffusionCDF {
+private:
+  unsigned long int t = 0;
+
+public:
+  DiffusionTimeCDF(const double _beta, const unsigned long int _tMax);
+
   unsigned long int getTime() { return t; };
 
   // Functions that do things
   void iterateTimeStep();
+
+  unsigned long int findQuantile(RealType quantile);
+
+  std::vector<unsigned long int> findQuantiles(std::vector<RealType> quantiles);
+};
+
+class DiffusionPositionCDF: public DiffusionCDF{
+private:
+  unsigned long int position = 0;
+
+public:
+  DiffusionPositionCDF(const double _beta, const unsigned long int _tMax);
+  unsigned long int getPosition() { return position; };
+
+  // Functions that do things
+  void stepPosition();
 
   unsigned long int findQuantile(RealType quantile);
 
