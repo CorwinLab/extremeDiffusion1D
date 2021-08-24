@@ -137,6 +137,19 @@ def test_pyDiffusion_evolveAndSaveQuantiles():
     assert np.all(evolved_quantiles == iterated_quantiles)
     assert np.all([1, 2, 3, 4, 5] == data[:, 0]) # times should be the same
 
+def test_pyDiffusion_probDistFlagFalse():
+    """
+    Check that the probDistFlag keeps the same number of particles. Note that
+    for larger particles some particles will be lost due to rounding. It's usually
+    fairly small compared to the total number of particles though.
+    """
+
+    nParticles = np.quad("10")
+    diff = DiffusionPDF(nParticles, beta=1, occupancySize=10, probDistFlag=False)
+    for _ in range(10):
+        diff.iterateTimestep()
+        assert np.sum(diff.occupancy) == nParticles
+
 def test_cleanup():
     """
     Really just want to delete any files that are still remaining once all the

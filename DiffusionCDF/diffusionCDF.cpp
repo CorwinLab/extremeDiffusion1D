@@ -42,7 +42,6 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 } // namespace detail
 } // namespace pybind11
 
-
 DiffusionCDF::DiffusionCDF(const double _beta, const unsigned long int _tMax)
 {
   beta = _beta;
@@ -80,7 +79,6 @@ double DiffusionCDF::generateBeta()
 DiffusionTimeCDF::DiffusionTimeCDF(const double _beta, const unsigned long int _tMax) : DiffusionCDF(_beta, _tMax)
 {
   CDF.resize(tMax + 1);
-  CDF[0] = 1;
 }
 
 void DiffusionTimeCDF::iterateTimeStep()
@@ -145,12 +143,24 @@ std::vector<unsigned long int> DiffusionTimeCDF::findQuantiles(
 
 DiffusionPositionCDF::DiffusionPositionCDF(const double _beta, const unsigned long int _tMax) : DiffusionCDF(_beta, _tMax)
 {
-  CDF.resize(tMax+1); // Initialize so that CDF(n=0, t) = 1
-  position = 0;
+  CDF.resize(tMax+1, 1); // Initialize so that CDF(n=0, t) = 1
 }
 
 void DiffusionPositionCDF::stepPosition()
-{ int whatever = 0; }
+{
+  std::vector<RealType> CDF_next(tMax+1, 0); // Initialize all values to 0
+  for (unsigned long int n = position; n < tMax + 1; n++){
+    RealType beta = RealType(generateBeta());
+    if (n == position){
+      CDF_next[n] = beta * CDF[n-1];
+    }
+    else{
+      CDF_next[n] = beta * CDF[n-1] + (1 - beta) * CDF[n];
+    }
+  }
+  CDF = CDF_next;
+  position += 1;
+}
 
 unsigned long int DiffusionPositionCDF::findQuantile(RealType quantile)
 { std::cout << "Do some shit";
