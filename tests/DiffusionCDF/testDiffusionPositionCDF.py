@@ -44,3 +44,23 @@ def test_einsteinbias_CDF_findquantile():
         quantile_position.append(diff2.findQuantile(10))
 
     assert np.all(diff.getQuantilesMeasurement()[0] == quantile_position)
+
+def test_einsteinbias_CDF_findquantiles():
+    """
+    Test if the einstein bias find multiple quantiles works correctly.
+    """
+    tMax = 10
+    quantiles = [5, 10, 100]
+    diff = DiffusionPositionCDF(np.inf, tMax, quantiles)
+    for _ in range(tMax):
+        diff.stepPosition()
+
+    position_quantiles = np.array(diff.getQuantilesMeasurement()).T
+
+    diffTime = DiffusionTimeCDF(np.inf, tMax)
+    time_quantiles = [diffTime.findQuantiles(quantiles)]
+    for _ in range(tMax):
+        diffTime.iterateTimeStep()
+        time_quantiles.append(diffTime.findQuantiles(quantiles))
+
+    assert np.all(position_quantiles == time_quantiles)
