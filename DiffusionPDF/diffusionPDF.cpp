@@ -74,7 +74,20 @@ DiffusionPDF::DiffusionPDF(const RealType _nParticles,
 
 RealType DiffusionPDF::toNextSite(RealType currentSite, RealType bias)
 {
-  return (currentSite * bias);
+  if (bias >= 0.99999 || bias <= 0.000001 || probDistFlag){
+    return (currentSite * bias);
+  }
+
+  if (currentSize < smallCutoff) {
+    return binomial(gen, boost::random::binomial_distribution<>::param_type(currentSite, bias));
+  }
+  else if (currentSize > largeCutoff) {
+    return (currentSite * bias);
+  }
+  else {
+    double mediumVariance = sqrt(currentSite * bias * (1 - bias));
+    return normal(gen, boost::random::normal_distribution<>::param_type(currentSite * bias, mediumVariance));
+  }
 }
 
 double DiffusionPDF::generateBeta()

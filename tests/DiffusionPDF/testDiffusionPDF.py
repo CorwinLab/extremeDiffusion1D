@@ -115,6 +115,7 @@ def test_pyDiffusion_findQuantiles_ascendingOrder():
     assert diff.findQuantiles([10, 100]) == [2.5, 1.5]
     assert diff.findQuantiles([100, 10]) == [2.5, 1.5]
 
+
 def test_pyDiffusion_evolveAndSaveQuantiles():
     """
     Check that the evolveAndSaveQuantiles function works the same as finding
@@ -122,9 +123,11 @@ def test_pyDiffusion_evolveAndSaveQuantiles():
     """
 
     diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
-    diff.evolveAndSaveQuantiles(time=[1, 2, 3, 4, 5], quantiles=[100, 10], file="Data.txt")
+    diff.evolveAndSaveQuantiles(
+        time=[1, 2, 3, 4, 5], quantiles=[100, 10], file="Data.txt"
+    )
     data = np.loadtxt("Data.txt", delimiter=",", skiprows=1)
-    evolved_quantiles = data[:, [2,3]] # Quartiles are the 2nd and 3rd columns
+    evolved_quantiles = data[:, [2, 3]]  # Quartiles are the 2nd and 3rd columns
 
     iterated_quantiles = []
     diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
@@ -135,7 +138,8 @@ def test_pyDiffusion_evolveAndSaveQuantiles():
     iterated_quantiles = np.array(iterated_quantiles)
 
     assert np.all(evolved_quantiles == iterated_quantiles)
-    assert np.all([1, 2, 3, 4, 5] == data[:, 0]) # times should be the same
+    assert np.all([1, 2, 3, 4, 5] == data[:, 0])  # times should be the same
+
 
 def test_pyDiffusion_probDistFlagFalse():
     """
@@ -149,6 +153,7 @@ def test_pyDiffusion_probDistFlagFalse():
     for _ in range(10):
         diff.iterateTimestep()
         assert np.sum(diff.occupancy) == nParticles
+
 
 def test_cleanup():
     """

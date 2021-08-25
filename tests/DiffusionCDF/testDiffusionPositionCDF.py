@@ -8,6 +8,7 @@ import numpy as np
 import npquad
 import pytest
 
+
 def test_einsteinbias_CDF():
     """
     Test if the einstein bias case works correctly.
@@ -28,6 +29,7 @@ def test_einsteinbias_CDF():
     timeCDF = np.array(timeCDF)
     assert np.all(totalCDF == timeCDF)
 
+
 def test_einsteinbias_CDF_findquantile():
     """
     Test if the einstein bias finding quantile works correctly.
@@ -44,6 +46,7 @@ def test_einsteinbias_CDF_findquantile():
         quantile_position.append(diff2.findQuantile(10))
 
     assert np.all(diff.getQuantilesMeasurement()[0] == quantile_position)
+
 
 def test_einsteinbias_CDF_findquantiles():
     """

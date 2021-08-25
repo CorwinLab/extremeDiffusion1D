@@ -3,7 +3,7 @@ import sys
 import os
 
 # Need to link to diffusionPDF library (PyBind11 code)
-path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'DiffusionPDF')
+path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "DiffusionPDF")
 sys.path.append(path)
 
 import diffusionPDF

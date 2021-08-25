@@ -14,9 +14,7 @@ from quadMath import prettifyQuad, logarange
 import theory as th
 from fileIO import loadArrayQuad
 
-files = glob.glob(
-    "/home/jacob/Desktop/corwinLabMount/CleanData/PhysQSweep/Q*.txt"
-)
+files = glob.glob("/home/jacob/Desktop/corwinLabMount/CleanData/PhysQSweep/Q*.txt")
 
 print("Number of files: ", len(files))
 
@@ -33,5 +31,5 @@ else:
 
 print("Maximum Time:", max(db.time))
 
-db.plotMeans(save_dir='./figures/Means/', verbose=True)
-db.plotVars(save_dir='./figures/Vars/', verbose=True)
+db.plotMeans(save_dir="./figures/Means/", verbose=True)
+db.plotVars(save_dir="./figures/Vars/", verbose=True)

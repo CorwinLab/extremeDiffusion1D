@@ -32,6 +32,8 @@ private:
   // std::uniform_real_distribution<> dis(0.0, 1.0);
   std::uniform_real_distribution<> dis;
   boost::random::beta_distribution<> beta_dist;
+  boost::random::binomial_distribution<> binomial;
+  boost::random::beta_distribution<> beta_dist; 
 
   std::pair<std::vector<unsigned long int>, std::vector<unsigned long int>>
       edges;

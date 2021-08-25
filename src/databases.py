@@ -284,7 +284,9 @@ class QuartileDatabase(Database):
         ax.set_ylabel("Mean Nth Quartile")
 
         cm = plt.get_cmap("gist_heat")
-        colors = [cm(1.0 * i / len(self.quantiles) / 1.5) for i in range(len(self.quantiles))]
+        colors = [
+            cm(1.0 * i / len(self.quantiles) / 1.5) for i in range(len(self.quantiles))
+        ]
 
         for i, quant in enumerate(self.quantiles):
             Nstr = prettifyQuad(quant)
@@ -317,7 +319,9 @@ class QuartileDatabase(Database):
         ax.set_ylabel("Variance of Nth Quartile / lnN^(2/3)")
 
         cm = plt.get_cmap("gist_heat")
-        colors = [cm(1.0 * i / len(self.quantiles) / 1.5) for i in range(len(self.quantiles))]
+        colors = [
+            cm(1.0 * i / len(self.quantiles) / 1.5) for i in range(len(self.quantiles))
+        ]
 
         for i, quant in enumerate(self.quantiles):
             if np.isinf(quant):
@@ -426,7 +430,7 @@ class VelocityDatabase(Database):
             ax.set_xlabel("Time")
             ax.set_ylabel("|ln(Pb(vt, t))|")
             ax.plot(self.time, abs(self.mean[:, i]), label="Data", c="r")
-            ax.plot(self.time, abs(theory), label=th.PbMeanStr, ls='--')
+            ax.plot(self.time, abs(theory), label=th.PbMeanStr, ls="--")
             ax.set_title(f"v={v}")
             ax.set_xscale("log")
             ax.set_yscale("log")
@@ -449,7 +453,7 @@ class VelocityDatabase(Database):
             ax.set_xlabel("Time")
             ax.set_ylabel("Var(ln(Pb(vt, t)))")
             ax.plot(self.time, self.var[:, i], label="Data", c="r")
-            ax.plot(self.time, theory, label=th.PbVarStr, ls='--')
+            ax.plot(self.time, theory, label=th.PbVarStr, ls="--")
             ax.set_title(f"v={v}")
             ax.set_xscale("log")
             ax.set_yscale("log")
@@ -459,7 +463,9 @@ class VelocityDatabase(Database):
                 bbox_inches="tight",
             )
 
-    def plotDistribution(self, save_dir='.', save_file='FinalTime.txt', load_file=None, verbose=False):
+    def plotDistribution(
+        self, save_dir=".", save_file="FinalTime.txt", load_file=None, verbose=False
+    ):
         """
         Plot the Tracy Widom distribution at the maximum time.
         """
@@ -485,7 +491,7 @@ class VelocityDatabase(Database):
             data = data[~np.isinf(data)]
             data = data[~np.isnan(data)]
             print(len(data))
-            
+
             I = 1 - np.sqrt(1 - v ** 2)
             sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
             scale = self.time[-1] ** (1 / 3) * sigma
@@ -503,5 +509,7 @@ class VelocityDatabase(Database):
             ax.set_yscale("log")
             ax.legend()
 
-            fig.savefig(os.path.join(save_dir, f"Histogram{v}.png"), bbox_inches="tight")
+            fig.savefig(
+                os.path.join(save_dir, f"Histogram{v}.png"), bbox_inches="tight"
+            )
             plt.close(fig)

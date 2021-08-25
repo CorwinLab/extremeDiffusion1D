@@ -1,7 +1,7 @@
 import sys
 import os
 
-src_path = os.path.join(os.path.dirname(__file__), '..', 'src')
+src_path = os.path.join(os.path.dirname(__file__), "..", "src")
 sys.path.append(src_path)
 
 from pydiffusionPDF import DiffusionPDF
@@ -72,7 +72,9 @@ def runExperiment(
     q_step = int(q_step)
     probDistFlag = bool(int(probDistFlag))
 
-    d = DiffusionPDF(N, beta=beta, occupancySize=num_of_steps, probDistFlag=probDistFlag)
+    d = DiffusionPDF(
+        N, beta=beta, occupancySize=num_of_steps, probDistFlag=probDistFlag
+    )
 
     save_times = np.geomspace(1, num_of_steps, num_of_save_times, dtype=np.int64)
     save_times = np.unique(save_times)

@@ -15,7 +15,7 @@ import time
 N = 3
 numbers_to_test = [10, 100, 1000, 10000]
 
-'''
+"""
 py_means = []
 for n in numbers_to_test:
     times = []
@@ -26,7 +26,7 @@ for n in numbers_to_test:
         findQuintile(zB, 1000)
         times.append(time.time() - start)
     py_means.append(np.mean(times))
-'''
+"""
 
 c_time_means = []
 for n in numbers_to_test:
@@ -54,7 +54,7 @@ for n in numbers_to_test:
 fig, ax = plt.subplots()
 ax.set_xlabel("Maximum Simulation Time")
 ax.set_ylabel("Runtime (s)")
-#ax.scatter(numbers_to_test, py_means, label="Python")
+# ax.scatter(numbers_to_test, py_means, label="Python")
 ax.scatter(numbers_to_test, c_time_means, label="C++ Iterate Time")
 ax.scatter(numbers_to_test, c_position_means, label="C++ Iterate Position")
 ax.legend()

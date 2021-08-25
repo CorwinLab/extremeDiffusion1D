@@ -2,13 +2,14 @@ import sys
 import os
 
 # Need to link to diffusionPDF library (PyBind11 code)
-path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'DiffusionCDF')
+path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "DiffusionCDF")
 sys.path.append(path)
 
 import diffusionCDF
 import numpy as np
 import npquad
 import csv
+
 
 class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
     """
@@ -176,6 +177,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             row = [self.time] + list(NthQuantiles)
             writer.writerow(row)
         f.close()
+
 
 class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
     """
