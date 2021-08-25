@@ -142,21 +142,44 @@ std::vector<unsigned long int> DiffusionTimeCDF::findQuantiles(
   return quantilePositions;
 }
 
-DiffusionPositionCDF::DiffusionPositionCDF(const double _beta, const unsigned long int _tMax) : DiffusionCDF(_beta, _tMax)
+DiffusionPositionCDF::DiffusionPositionCDF(const double _beta, const unsigned long int _tMax, std::vector<RealType> _quantiles) : DiffusionCDF(_beta, _tMax)
 {
-  CDF.resize(tMax+1, 1); // Initialize so that CDF(n=0, t) = 1
+  // Initialize such that CDF(n=0, t) = 1
+  CDF.resize(tMax+1, 1);
+  quantiles = _quantiles;
+
+  // Create a measurment array such that each column is a different quantile
+  // measurement and each row is a differeent time.
+  quantilesMeasurement.resize(quantiles.size());
+  for (unsigned long int i=0; i < quantilesMeasurement.size(); i++){
+    quantilesMeasurement[i].resize(tMax+1, 0);
+    // At t=0, all the quantiles will be 2 (2*n + 2 - t for n=t=0)
+    quantilesMeasurement[i][0] = 2;
+  }
 }
 
 void DiffusionPositionCDF::stepPosition()
 {
-  std::vector<RealType> CDF_next(tMax+1, 0); // Initialize all values to 0
-  for (unsigned long int n = position+1; n < tMax + 1; n++){
+  // Initialize all values to 0 since below CDF(n, n) is 0
+  std::vector<RealType> CDF_next(tMax+1, 0);
+
+  for (unsigned long int t = position+1; t < tMax + 1; t++){
     RealType beta = RealType(generateBeta());
-    if (n == position+1){
-      CDF_next[n] = beta * CDF[n-1];
+    if (t == position+1){
+      CDF_next[t] = beta * CDF[t-1];
     }
     else{
-      CDF_next[n] = beta * CDF[n-1] + (1 - beta) * CDF_next[n-1];
+      CDF_next[t] = beta * CDF[t-1] + (1 - beta) * CDF_next[t-1];
+    }
+
+    // Now want to loop through every quantile vector and update positions of
+    // each quantile at the current time.
+    for (unsigned long int i=0; i < quantiles.size(); i++){
+      if (CDF_next[t] > 1 / quantiles[i]){
+        // quantilesMeasurement[i][t] is the ith quantile in the list at time t
+        // Note: position will always be greater so don't need to check this.
+        quantilesMeasurement[i][t] = 2 * (position + 1) + 2 - t;
+      }
     }
   }
   CDF = CDF_next;
@@ -164,8 +187,7 @@ void DiffusionPositionCDF::stepPosition()
 }
 
 unsigned long int DiffusionPositionCDF::findQuantile(RealType quantile)
-{ std::cout << "Do some shit";
-  return 0; }
+{ return 0; }
 
 std::vector<unsigned long int> DiffusionPositionCDF::findQuantiles(std::vector<RealType> quantiles)
 {
@@ -191,8 +213,10 @@ PYBIND11_MODULE(diffusionCDF, m)
       .def("findQuantiles", &DiffusionTimeCDF::findQuantiles, py::arg("quantiles"));
 
   py::class_<DiffusionPositionCDF, DiffusionCDF>(m, "DiffusionPositionCDF")
-      .def(py::init<const double, const unsigned long int>(), py::arg("beta"), py::arg("tMax"))
+      .def(py::init<const double, const unsigned long int, std::vector<RealType> >(), py::arg("beta"), py::arg("tMax"), py::arg("quantiles"))
       .def("getPosition", &DiffusionPositionCDF::getPosition)
+      .def("getQuantilesMeasurement", &DiffusionPositionCDF::getQuantilesMeasurement)
+      .def("getQuantiles", &DiffusionPositionCDF::getQuantiles)
       .def("stepPosition", &DiffusionPositionCDF::stepPosition)
       .def("findQuantile", &DiffusionPositionCDF::findQuantile, py::arg("quantile"))
       .def("findQuantiles", &DiffusionPositionCDF::findQuantiles, py::arg("quantiles"));

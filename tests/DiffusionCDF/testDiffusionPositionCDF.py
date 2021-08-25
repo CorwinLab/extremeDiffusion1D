@@ -13,7 +13,7 @@ def test_einsteinbias_CDF():
     Test if the einstein bias case works correctly.
     """
 
-    diff = DiffusionPositionCDF(np.inf, 5)
+    diff = DiffusionPositionCDF(np.inf, 5, [10])
     totalCDF = [diff.CDF]
     for _ in range(5):
         diff.stepPosition()
@@ -27,3 +27,20 @@ def test_einsteinbias_CDF():
         timeCDF.append(diff.CDF)
     timeCDF = np.array(timeCDF)
     assert np.all(totalCDF == timeCDF)
+
+def test_einsteinbias_CDF_findquantile():
+    """
+    Test if the einstein bias finding quantile works correctly.
+    """
+    tMax = 10
+    diff = DiffusionPositionCDF(np.inf, tMax, [10])
+    for _ in range(tMax):
+        diff.stepPosition()
+
+    diff2 = DiffusionTimeCDF(np.inf, tMax)
+    quantile_position = [diff2.findQuantile(10)]
+    for _ in range(tMax):
+        diff2.iterateTimeStep()
+        quantile_position.append(diff2.findQuantile(10))
+
+    assert np.all(diff.getQuantilesMeasurement()[0] == quantile_position)

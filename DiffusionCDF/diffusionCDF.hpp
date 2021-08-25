@@ -70,10 +70,14 @@ public:
 class DiffusionPositionCDF: public DiffusionCDF{
 private:
   unsigned long int position = 0;
+  std::vector<RealType> quantiles;
+  std::vector<std::vector<unsigned long int> > quantilesMeasurement;
 
 public:
-  DiffusionPositionCDF(const double _beta, const unsigned long int _tMax);
+  DiffusionPositionCDF(const double _beta, const unsigned long int _tMax, std::vector<RealType> _quantiles);
   unsigned long int getPosition() { return position; };
+  std::vector<std::vector<unsigned long int> > getQuantilesMeasurement() { return quantilesMeasurement; };
+  std::vector<RealType> getQuantiles() { return quantiles; };
 
   // Functions that do things
   void stepPosition();
