@@ -26,8 +26,8 @@ def test_pyDiffusion_fromOccupancyTime():
     N = np.quad("1e4500")
     beta = 1
     time_steps = 1000
-    probDistFlag = True
-    d = DiffusionPDF(N, beta, time_steps, probDistFlag)
+    ProbDistFlag = True
+    d = DiffusionPDF(N, beta, time_steps, ProbDistFlag)
     d.evolveToTime(time_steps)
 
     d2 = DiffusionPDF.fromOccupancyTime(
@@ -36,7 +36,7 @@ def test_pyDiffusion_fromOccupancyTime():
         resize=0,
         time=d.currentTime,
         occupancy=d.occupancy,
-        probDistFlag=probDistFlag,
+        ProbDistFlag=ProbDistFlag,
     )
     assert d == d2
 
@@ -49,8 +49,8 @@ def test_pyDiffusion_fromOccupancyTime_resize():
     N = np.quad("1e4500")
     beta = 1
     time_steps = 1000
-    probDistFlag = True
-    d = DiffusionPDF(N, beta, time_steps, probDistFlag)
+    ProbDistFlag = True
+    d = DiffusionPDF(N, beta, time_steps, ProbDistFlag)
     d.evolveToTime(time_steps)
 
     d2 = DiffusionPDF.fromOccupancyTime(
@@ -59,7 +59,7 @@ def test_pyDiffusion_fromOccupancyTime_resize():
         resize=1000,
         time=d.currentTime,
         occupancy=d.occupancy,
-        probDistFlag=probDistFlag,
+        ProbDistFlag=ProbDistFlag,
     )
 
     assert len(d2.occupancy) == 2001, "Occupancy was not resized correctly"
@@ -141,19 +141,32 @@ def test_pyDiffusion_evolveAndSaveQuantiles():
     assert np.all([1, 2, 3, 4, 5] == data[:, 0])  # times should be the same
 
 
-def test_pyDiffusion_probDistFlagFalse():
+def test_pyDiffusion_ProbDistFlagFalse():
     """
-    Check that the probDistFlag keeps the same number of particles. Note that
+    Check that the ProbDistFlag keeps the same number of particles. Note that
     for larger particles some particles will be lost due to rounding. It's usually
     fairly small compared to the total number of particles though.
     """
 
     nParticles = np.quad("10")
-    diff = DiffusionPDF(nParticles, beta=1, occupancySize=10, probDistFlag=False)
+    diff = DiffusionPDF(nParticles, beta=1, occupancySize=10, ProbDistFlag=False)
     for _ in range(10):
         diff.iterateTimestep()
         assert np.sum(diff.occupancy) == nParticles
 
+def test_pyDiffusion_ProbDistFlagFalse_LargeParticles():
+    """
+    Check that ProbDistFlag keeps the same number of particles for a large number
+    of particles within a certain percent different tolerance.
+    """
+    tMax = 100
+    percent_tolerance = 1e-30
+    nParticles = np.quad("1e4500")
+    diff = DiffusionPDF(nParticles, beta=1, occupancySize=tMax, ProbDistFlag=False)
+    for _ in range(tMax):
+        diff.iterateTimestep()
+        percent_difference = (np.sum(diff.occupancy) - nParticles) / nParticles
+        assert percent_difference < percent_tolerance
 
 def test_cleanup():
     """

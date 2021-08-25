@@ -1,14 +1,14 @@
 #!/bin/bash
-#SBATCH --job-name=PhysQSweep
+#SBATCH --job-name=Discrete
 #SBATCH --time=1-00:00:00
-#SBATCH --error=/home/jhass2/CleanData/logs/PhysQSweep/%A-%a.err
+#SBATCH --error=/home/jhass2/CleanData/logs/Discrete/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --array=0-1000
-#SBATCH --output=/home/jhass2/CleanData/logs/PhysQSweep/%A-%a.err
+#SBATCH --output=/home/jhass2/CleanData/logs/Discrete/%A-%a.err
 #SBATCH --nice=100
 
-TOPDIR=/home/jhass2/CleanData/PhysQSweep/
+TOPDIR=/home/jhass2/CleanData/Discrete/
 BETA=1.0
 N_EXP=4500
 NUM_OF_STEPS=300000

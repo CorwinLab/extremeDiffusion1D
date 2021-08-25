@@ -169,7 +169,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
     @classmethod
     def fromOccupancyTime(
-        cls, beta, nParticles, resize, time, occupancy, probDistFlag=True
+        cls, beta, nParticles, resize, time, occupancy, ProbDistFlag=True
     ):
         """
         Create a DiffusionPDF class with a specific time and occupancy. Used to
