@@ -1,21 +1,21 @@
 #!/bin/bash
-#SBATCH --job-name=Discrete
-#SBATCH --time=1-00:00:00
-#SBATCH --error=/home/jhass2/CleanData/logs/Discrete/%A-%a.err
+#SBATCH --job-name=MaxPart100
+#SBATCH --time=30-00:00:00
+#SBATCH --error=/home/jhass2/CleanData/logs/MaxPart100/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --array=0-1000
-#SBATCH --output=/home/jhass2/CleanData/logs/Discrete/%A-%a.err
-#SBATCH --nice=100
+#SBATCH --output=/home/jhass2/CleanData/logs/MaxPart100/%A-%a.out
+#SBATCH --nice=1000
 
-TOPDIR=/home/jhass2/CleanData/Discrete/
+TOPDIR=/home/jhass2/CleanData/MaxPart100/
 BETA=1.0
-N_EXP=4500
-NUM_OF_STEPS=300000
-NUM_OF_SAVE_TIMES=5000
+N_EXP=100
+NUM_OF_STEPS=13000000
+NUM_OF_SAVE_TIMES=7500
 QUARTILE_START=5
-QUARTILE_STOP=20
-Q_STEP=1
+QUARTILE_STOP=100
+Q_STEP=10
 PROBDISTFLAG=0
 
 python3 NthQuartileDriver.py $TOPDIR $SLURM_ARRAY_TASK_ID $BETA $N_EXP $NUM_OF_STEPS $NUM_OF_SAVE_TIMES $QUARTILE_START $QUARTILE_STOP $Q_STEP $PROBDISTFLAG

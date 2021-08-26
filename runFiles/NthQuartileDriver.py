@@ -73,7 +73,7 @@ def runExperiment(
     probDistFlag = bool(int(probDistFlag))
 
     d = DiffusionPDF(
-        N, beta=beta, occupancySize=num_of_steps, probDistFlag=probDistFlag
+        N, beta=beta, occupancySize=num_of_steps, ProbDistFlag=probDistFlag
     )
 
     save_times = np.geomspace(1, num_of_steps, num_of_save_times, dtype=np.int64)
