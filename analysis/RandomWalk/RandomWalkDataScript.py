@@ -2,8 +2,7 @@ import sys
 import os
 
 sys.path.append(os.path.abspath("../../src"))
-sys.path.append(os.path.abspath("../../cDiffusion"))
-from pydiffusion import Diffusion
+from pydiffusionPDF import DiffusionPDF
 import numpy as np
 
 
@@ -25,7 +24,7 @@ def runExperiment(beta, save_file):
     """
     N = 1
     num_of_steps = 10_000
-    d = Diffusion(
+    d = DiffusionPDF(
         N,
         beta=beta,
         occupancySize=num_of_steps,
