@@ -94,7 +94,9 @@ class Database:
 
 
 class QuartileDatabase(Database):
-    def __init__(self, files, readQuantiles=True, delimiter=",", skiprows=1, nParticles=None):
+    def __init__(
+        self, files, readQuantiles=True, delimiter=",", skiprows=1, nParticles=None
+    ):
         """
         Create a Database with the selected files.
 
@@ -166,7 +168,9 @@ class QuartileDatabase(Database):
         self.var = squared_sum.astype(np.float64) / len(self) - self.mean ** 2
 
         self.maxMean = maxEdge_mean_sum.astype(np.float64) / len(self)
-        self.maxVar = maxEdge_squared_sum.astype(np.float64) / len(self) - self.maxMean ** 2
+        self.maxVar = (
+            maxEdge_squared_sum.astype(np.float64) / len(self) - self.maxMean ** 2
+        )
 
     def getQuantiles(self):
         """
@@ -288,9 +292,9 @@ class QuartileDatabase(Database):
                 label=th.NthQuartVarStrLargeTimes,
             )
             ax.plot(
-            self.time / np.log(quant).astype(np.float64),
-            self.time / np.log(quant).astype(np.float64),
-            label='Linear'
+                self.time / np.log(quant).astype(np.float64),
+                self.time / np.log(quant).astype(np.float64),
+                label="Linear",
             )
             ax.set_xscale("log")
             ax.set_yscale("log")
@@ -300,7 +304,6 @@ class QuartileDatabase(Database):
                 bbox_inches="tight",
             )
             plt.close(fig)
-
 
     def plotMaxMean(self, save_dir=".", xscale=True):
         """
@@ -371,9 +374,11 @@ class QuartileDatabase(Database):
             logTheory,
             label=th.NthQuartVarStrLargeTimes,
         )
-        ax.plot(self.time / np.log(self.nParticles).astype(np.float64),
-                self.time / np.log(self.nParticles).astype(np.float64),
-                label='Linear')
+        ax.plot(
+            self.time / np.log(self.nParticles).astype(np.float64),
+            self.time / np.log(self.nParticles).astype(np.float64),
+            label="Linear",
+        )
 
         ax.set_xscale("log")
         ax.set_yscale("log")
@@ -383,7 +388,6 @@ class QuartileDatabase(Database):
             bbox_inches="tight",
         )
         plt.close(fig)
-
 
     def plotMeansEvolve(self, save_dir=".", legend=True):
         """

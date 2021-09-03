@@ -154,6 +154,7 @@ def test_pyDiffusion_ProbDistFlagFalse():
         diff.iterateTimestep()
         assert np.sum(diff.occupancy) == nParticles
 
+
 def test_pyDiffusion_ProbDistFlagFalse_LargeParticles():
     """
     Check that ProbDistFlag keeps the same number of particles for a large number
@@ -167,6 +168,7 @@ def test_pyDiffusion_ProbDistFlagFalse_LargeParticles():
         diff.iterateTimestep()
         percent_difference = (np.sum(diff.occupancy) - nParticles) / nParticles
         assert percent_difference < percent_tolerance
+
 
 def test_cleanup():
     """

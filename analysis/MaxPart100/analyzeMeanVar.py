@@ -14,17 +14,19 @@ from quadMath import prettifyQuad, logarange
 import theory as th
 from fileIO import loadArrayQuad
 
-files = glob.glob("/home/jacob/Desktop/corwinLabMount/CleanData/MaxPart/Q*.txt")
+files = glob.glob("/home/jacob/Desktop/corwinLabMount/CleanData/MaxPart100/Q*.txt")
+files = files[:5]
 print("Number of files: ", len(files))
+
 """
-files = glob.glob("/home/jacob/Desktop/corwinLabMount/CleanData/MaxPart/O*.txt")
+files = glob.glob("/home/jacob/Desktop/corwinLabMount/CleanData/MaxPart100/O*.txt")
 for f in files:
     occ = np.loadtxt(f, delimiter=",")
     print(np.where(occ != 0))
     print("{:e}".format(np.sum(occ)))
 """
 
-db = QuartileDatabase(files, nParticles=np.quad("1e10"))
+db = QuartileDatabase(files, nParticles=np.quad("1e100"))
 
 run_again = True
 if not os.path.exists("./Mean.txt") or not os.path.exists("./Var.txt") or run_again:
