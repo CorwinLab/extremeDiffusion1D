@@ -47,8 +47,8 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 DiffusionPDF::DiffusionPDF(const RealType _nParticles,
                      const double _beta,
                      const unsigned long int occupancySize,
-                     const bool _probDistFlag)
-    : nParticles(_nParticles), ProbDistFlag(_probDistFlag),
+                     const bool _ProbDistFlag)
+    : nParticles(_nParticles), ProbDistFlag(_ProbDistFlag),
       beta(_beta)
 {
   if (isnan(nParticles) || isinf(nParticles)){
@@ -74,7 +74,34 @@ DiffusionPDF::DiffusionPDF(const RealType _nParticles,
 
 RealType DiffusionPDF::toNextSite(RealType currentSite, RealType bias)
 {
-  return (currentSite * bias);
+  // If generating the probability distribution just default to the
+  // number of particles * bias
+  if (ProbDistFlag){
+    return (currentSite * bias);
+  }
+
+  // The boost binomial can sometimes return negative numbers (or inf) for
+  // large or small biases. So we default to number of particles * bias
+  if (bias >= 0.99999 || bias <= 0.000001) {
+    return (currentSite * bias);
+  }
+
+  // For smallCutoff need to downcast currentSite to double. And then cast
+  // answer to RealType.
+  if (currentSite < smallCutoff) {
+   
+    return RealType(binomial(gen, boost::random::binomial_distribution<>::param_type(double(currentSite), double(bias))));
+  }
+
+  else if (currentSite > largeCutoff) {
+    return (currentSite * bias);
+  }
+  // If less than largeCutoff use sqrt(N * p * (1-p)) * randn(-1, 1)
+  else {
+    
+    RealType mediumVariance = sqrt(currentSite * bias * (1 - bias));
+    return currentSite * bias + mediumVariance * (2*RealType(dis(gen))-1);
+  }
 }
 
 double DiffusionPDF::generateBeta()
@@ -124,12 +151,10 @@ void DiffusionPDF::iterateTimestep()
   for (auto i = prevMinIndex; i < prevMaxIndex + 2; i++) {
     RealType *occ = &occupancy.at(i);
 
-    double bias;
-    RealType floatbias;
+    RealType bias = 0;
     if (*occ != 0) {
-      bias = DiffusionPDF::generateBeta();
-      floatbias = RealType(bias);
-      toNextSite = DiffusionPDF::toNextSite(*occ, floatbias);
+      bias = RealType(DiffusionPDF::generateBeta());
+      toNextSite = DiffusionPDF::toNextSite(*occ, bias);
       if (!ProbDistFlag) {
         toNextSite = round(toNextSite);
       }
@@ -276,7 +301,7 @@ PYBIND11_MODULE(diffusionPDF, m)
            py::arg("numberOfParticles"),
            py::arg("beta"),
            py::arg("occupancySize"),
-           py::arg("probDistFlag") = true)
+           py::arg("ProbDistFlag") = true)
 
       .def("getOccupancy", &DiffusionPDF::getOccupancy)
       .def("setOccupancy", &DiffusionPDF::setOccupancy, py::arg("occupancy"))
@@ -287,6 +312,10 @@ PYBIND11_MODULE(diffusionPDF, m)
            &DiffusionPDF::setProbDistFlag,
            py::arg("ProbDistFlag"))
       .def("getProbDistFlag", &DiffusionPDF::getProbDistFlag)
+      .def("getSmallCutoff", &DiffusionPDF::getSmallCutoff)
+      .def("setSmallCutoff", &DiffusionPDF::setSmallCutoff, py::arg("smallCutoff"))
+      .def("getLargeCutoff", &DiffusionPDF::getLargeCutoff)
+      .def("setLargeCutoff", &DiffusionPDF::setLargeCutoff, py::arg("largeCutoff"))
       .def("getEdges", &DiffusionPDF::getEdges)
       .def("getTime", &DiffusionPDF::getTime)
       .def("setTime", &DiffusionPDF::setTime)

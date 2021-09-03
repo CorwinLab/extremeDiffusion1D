@@ -3,7 +3,7 @@ import sys
 import os
 
 # Need to link to diffusionPDF library (PyBind11 code)
-path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'DiffusionPDF')
+path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "DiffusionPDF")
 sys.path.append(path)
 
 import diffusionPDF
@@ -169,7 +169,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
     @classmethod
     def fromOccupancyTime(
-        cls, beta, nParticles, resize, time, occupancy, probDistFlag=True
+        cls, beta, nParticles, resize, time, occupancy, ProbDistFlag=True
     ):
         """
         Create a DiffusionPDF class with a specific time and occupancy. Used to
@@ -373,7 +373,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         while self.getTime() < time:
             self.iterateTimestep()
 
-    def evolveAndSaveQuantiles(self, time, quantiles, file):
+    def evolveAndSaveQuantiles(self, time, quantiles, file, append=False):
         """
         Incrementally evolves the system forward to the specified times and saves
         the specified quantiles after each increment.
@@ -388,6 +388,10 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
         file : string
             Filename (or path) to save the time and quantiles
+
+        append : bool
+            Whether or not to append to the input file. This is generally used
+            to continue evolving an occupancy after its been saved.
 
         Examples
         --------
@@ -408,14 +412,19 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         stores everything to a numpy array and then saves it.
         """
 
-        f = open(file, "w")
+        if append:
+            f = open(file, "a")
+        else:
+            f = open(file, "w")
+
         writer = csv.writer(f)
 
         # Sort quantiles in descending order
         quantiles = np.sort(quantiles)[::-1]
 
-        header = ["time", "MaxEdge"] + list(quantiles)
-        writer.writerow(header)
+        if not append:
+            header = ["time", "MaxEdge"] + list(quantiles)
+            writer.writerow(header)
 
         for t in time:
             self.evolveToTime(t)
@@ -560,9 +569,3 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         print("Indices: ", idx)
         print("Occupancy:", np.array(self.getOccupancy())[nonzeros])
         print("Prob: ", np.array(Ns) / self.getNParticles())
-
-if __name__ == "__main__":
-    diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
-    diff.evolveAndSaveQuantiles(time=[1, 2, 3, 4, 5], quantiles=[100, 10], file="Data.txt")
-    with open("Data.txt", "r") as f:
-        print(f.read())

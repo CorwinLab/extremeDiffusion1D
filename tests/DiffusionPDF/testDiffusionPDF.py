@@ -26,8 +26,8 @@ def test_pyDiffusion_fromOccupancyTime():
     N = np.quad("1e4500")
     beta = 1
     time_steps = 1000
-    probDistFlag = True
-    d = DiffusionPDF(N, beta, time_steps, probDistFlag)
+    ProbDistFlag = True
+    d = DiffusionPDF(N, beta, time_steps, ProbDistFlag)
     d.evolveToTime(time_steps)
 
     d2 = DiffusionPDF.fromOccupancyTime(
@@ -36,7 +36,7 @@ def test_pyDiffusion_fromOccupancyTime():
         resize=0,
         time=d.currentTime,
         occupancy=d.occupancy,
-        probDistFlag=probDistFlag,
+        ProbDistFlag=ProbDistFlag,
     )
     assert d == d2
 
@@ -49,8 +49,8 @@ def test_pyDiffusion_fromOccupancyTime_resize():
     N = np.quad("1e4500")
     beta = 1
     time_steps = 1000
-    probDistFlag = True
-    d = DiffusionPDF(N, beta, time_steps, probDistFlag)
+    ProbDistFlag = True
+    d = DiffusionPDF(N, beta, time_steps, ProbDistFlag)
     d.evolveToTime(time_steps)
 
     d2 = DiffusionPDF.fromOccupancyTime(
@@ -59,7 +59,7 @@ def test_pyDiffusion_fromOccupancyTime_resize():
         resize=1000,
         time=d.currentTime,
         occupancy=d.occupancy,
-        probDistFlag=probDistFlag,
+        ProbDistFlag=ProbDistFlag,
     )
 
     assert len(d2.occupancy) == 2001, "Occupancy was not resized correctly"
@@ -115,6 +115,7 @@ def test_pyDiffusion_findQuantiles_ascendingOrder():
     assert diff.findQuantiles([10, 100]) == [2.5, 1.5]
     assert diff.findQuantiles([100, 10]) == [2.5, 1.5]
 
+
 def test_pyDiffusion_evolveAndSaveQuantiles():
     """
     Check that the evolveAndSaveQuantiles function works the same as finding
@@ -122,9 +123,11 @@ def test_pyDiffusion_evolveAndSaveQuantiles():
     """
 
     diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
-    diff.evolveAndSaveQuantiles(time=[1, 2, 3, 4, 5], quantiles=[100, 10], file="Data.txt")
+    diff.evolveAndSaveQuantiles(
+        time=[1, 2, 3, 4, 5], quantiles=[100, 10], file="Data.txt"
+    )
     data = np.loadtxt("Data.txt", delimiter=",", skiprows=1)
-    evolved_quantiles = data[:, [2,3]] # Quartiles are the 2nd and 3rd columns
+    evolved_quantiles = data[:, [2, 3]]  # Quartiles are the 2nd and 3rd columns
 
     iterated_quantiles = []
     diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
@@ -135,7 +138,37 @@ def test_pyDiffusion_evolveAndSaveQuantiles():
     iterated_quantiles = np.array(iterated_quantiles)
 
     assert np.all(evolved_quantiles == iterated_quantiles)
-    assert np.all([1, 2, 3, 4, 5] == data[:, 0]) # times should be the same
+    assert np.all([1, 2, 3, 4, 5] == data[:, 0])  # times should be the same
+
+
+def test_pyDiffusion_ProbDistFlagFalse():
+    """
+    Check that the ProbDistFlag keeps the same number of particles. Note that
+    for larger particles some particles will be lost due to rounding. It's usually
+    fairly small compared to the total number of particles though.
+    """
+
+    nParticles = np.quad("10")
+    diff = DiffusionPDF(nParticles, beta=1, occupancySize=10, ProbDistFlag=False)
+    for _ in range(10):
+        diff.iterateTimestep()
+        assert np.sum(diff.occupancy) == nParticles
+
+
+def test_pyDiffusion_ProbDistFlagFalse_LargeParticles():
+    """
+    Check that ProbDistFlag keeps the same number of particles for a large number
+    of particles within a certain percent different tolerance.
+    """
+    tMax = 100
+    percent_tolerance = 1e-30
+    nParticles = np.quad("1e4500")
+    diff = DiffusionPDF(nParticles, beta=1, occupancySize=tMax, ProbDistFlag=False)
+    for _ in range(tMax):
+        diff.iterateTimestep()
+        percent_difference = (np.sum(diff.occupancy) - nParticles) / nParticles
+        assert percent_difference < percent_tolerance
+
 
 def test_cleanup():
     """

@@ -2,7 +2,7 @@ import sys
 import os
 
 # Need to link to diffusionPDF library (PyBind11 code)
-path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'DiffusionCDF')
+path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "DiffusionCDF")
 sys.path.append(path)
 
 import diffusionCDF
@@ -11,10 +11,9 @@ import npquad
 import csv
 
 
-class DiffusionCDF(diffusionCDF.DiffusionCDF):
+class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
     """
-    Create a class that models the recurrance relation outlined in the BC
-    model paper.
+    Create a class that iterates through the time of the CDF.
 
     Attributes
     ----------
@@ -35,20 +34,24 @@ class DiffusionCDF(diffusionCDF.DiffusionCDF):
         return self.__str__()
 
     @property
-    def beta(self):
-        return self.getBeta()
-
-    @property
-    def zB(self):
-        return self.getzB()
-
-    @property
     def time(self):
         return self.getTime()
 
     @property
+    def beta(self):
+        return self.getBeta()
+
+    @property
+    def CDF(self):
+        return self.getCDF()
+
+    @property
     def tMax(self):
         return self.gettMax()
+
+    @property
+    def setBetaSeed(self, seed):
+        super().setBetaSeed(seed)
 
     def iterateTimeStep(self):
         """
@@ -93,14 +96,14 @@ class DiffusionCDF(diffusionCDF.DiffusionCDF):
         for _ in range(num):
             self.iterateTimeStep()
 
-    def findQuantile(self, N):
+    def findQuantile(self, quantile):
         """
         Find the corresponding quantile.
 
         Parameters
         ----------
-        N : np.quad
-            Nth quantile to measure
+        quantile : np.quad
+            Quantile to measure
 
         Returns
         -------
@@ -108,20 +111,20 @@ class DiffusionCDF(diffusionCDF.DiffusionCDF):
             Position of Nth quantile
         """
 
-        return super().findQuantile(N)
+        return super().findQuantile(quantile)
 
-    def findQuantiles(self, Ns, descending=False):
+    def findQuantiles(self, quantiles, descending=False):
         """
         Find the corresponding quantiles. Should be faster than a list compression
         over findQuntile b/c it does it in one loop.
 
         Parameters
         ----------
-        Ns : numpy array (dtype np.quad)
+        quantiles : numpy array (dtype np.quad)
             Nth quantiles to measure
 
         descending : bool
-            Whether or not the incoming Ns are in descending or ascending order.
+            Whether or not the incoming quantiles are in descending or ascending order.
             If they are not in descending order we flip the output quantiles.
 
         Returns
@@ -131,9 +134,9 @@ class DiffusionCDF(diffusionCDF.DiffusionCDF):
         """
 
         if descending:
-            return np.array(super().findQuantiles(Ns))
+            return np.array(super().findQuantiles(quantiles))
         else:
-            returnVals = super().findQuantiles(Ns)
+            returnVals = super().findQuantiles(quantiles)
             returnVals.reverse()
             return np.array(returnVals)
 
@@ -174,3 +177,101 @@ class DiffusionCDF(diffusionCDF.DiffusionCDF):
             row = [self.time] + list(NthQuantiles)
             writer.writerow(row)
         f.close()
+
+
+class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
+    """
+    Class to iterate through the position of the CDF.
+    """
+
+    def __str__(self):
+        return f"DiffusionCDF(beta={self.beta}, time={self.position})"
+
+    def __repr__(self):
+        return self.__str__()
+
+    @property
+    def beta(self):
+        return self.getBeta()
+
+    @property
+    def CDF(self):
+        return self.getCDF()
+
+    @property
+    def tMax(self):
+        return self.gettMax()
+
+    @property
+    def setBetaSeed(self, seed):
+        super().setBetaSeed(seed)
+
+    @property
+    def position(self):
+        return self.getPosition()
+
+    def stepPosition(self):
+        """
+        Move the system forward one step in the position.
+        """
+
+        if self.position == self.tMax:
+            raise ValueError("Cannot evolve the system to a position larger than tMax")
+
+        super().stepPosition()
+
+    def evolveToPosition(self, n):
+        """
+        Move the system forward to a specified position.
+
+        Parameters
+        ----------
+        n : int
+            Position to move the system forward to.
+        """
+
+        while self.position < n:
+            self.stepPosition()
+
+    def evolvePositions(self, num_positions):
+        """
+        Move the system forward a fixed number of positions.
+        """
+
+        for _ in range(num_positions):
+            self.stepPosition()
+
+    def findQuantile(self, quantile):
+        """
+        Find a quantile from the CDF.    class DiffusionPositionCDF(diffusionCDF.DiffusionTimeCDF, DiffusionCDF):
+
+
+        Parameters
+        ----------
+        quantile : float or np.quad
+            Quantile to measure
+
+        Returns
+        -------
+        int
+            Position of quantile.
+        """
+
+        return super().findQuantile(quantile)
+
+    def findQuantiles(self, quantiles):
+        """
+        Find several quantiles from the CDF.
+
+        Parameters
+        ----------
+        quantiles : numpy array or list (dtype = np.quad)
+            Quantiles to measure
+
+        Returns
+        -------
+        numpy array
+            Positions of the quantiles
+        """
+
+        return super().findQuantiles(quantiles)

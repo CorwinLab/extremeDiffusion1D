@@ -21,6 +21,8 @@ private:
   RealType nParticles;
   bool ProbDistFlag;
   double beta;
+  double smallCutoff = pow(2, 31) - 2;
+  double largeCutoff = 1e64;
 
   // It would be nice if this could be a generic distribution as:
   // boost::random::distribution bias
@@ -32,6 +34,7 @@ private:
   // std::uniform_real_distribution<> dis(0.0, 1.0);
   std::uniform_real_distribution<> dis;
   boost::random::beta_distribution<> beta_dist;
+  boost::random::binomial_distribution<> binomial;
 
   std::pair<std::vector<unsigned long int>, std::vector<unsigned long int>>
       edges;
@@ -74,6 +77,12 @@ public:
     return edges;
   };
 
+  double getSmallCutoff() { return smallCutoff; };
+  void setSmallCutoff(const double _smallCutoff) { smallCutoff = _smallCutoff; };
+
+  double getLargeCutoff() { return largeCutoff; };
+  void setLargeCutoff(const double _largeCutoff) { largeCutoff = _largeCutoff; };
+  
   // Functions that do things
 
   void iterateTimestep();

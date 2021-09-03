@@ -1,7 +1,7 @@
 import sys
 import os
 
-src_path = os.path.join(os.path.dirname(__file__), '..', 'src')
+src_path = os.path.join(os.path.dirname(__file__), "..", "src")
 sys.path.append(src_path)
 
 from pydiffusionPDF import DiffusionPDF
@@ -23,6 +23,7 @@ def runExperiment(
     q_start=50,
     q_stop=4500,
     q_step=50,
+    probDistFlag=1,
 ):
     """
     Run one Diffusion experiment for values of N & beta and then store the edges
@@ -57,6 +58,9 @@ def runExperiment(
 
     q_step : int, optional (50)
         Exponent step size between quartiles.
+
+    probDistFlag : bool (1 or True)
+        Whether or not to keep the number of particles constant or not.
     """
 
     N = np.quad(f"1e{N_exp}")
@@ -66,8 +70,11 @@ def runExperiment(
     q_start = int(q_start)
     q_stop = int(q_stop)
     q_step = int(q_step)
+    probDistFlag = bool(int(probDistFlag))
 
-    d = DiffusionPDF(N, beta=beta, occupancySize=num_of_steps, probDistFlag=True)
+    d = DiffusionPDF(
+        N, beta=beta, occupancySize=num_of_steps, ProbDistFlag=probDistFlag
+    )
 
     save_times = np.geomspace(1, num_of_steps, num_of_save_times, dtype=np.int64)
     save_times = np.unique(save_times)
@@ -91,6 +98,7 @@ if __name__ == "__main__":
         quartile_start,
         quartile_stop,
         q_step,
+        probDistFlag,
     ) = sys.argv[1:]
 
     save_dir = f"{topDir}"
@@ -112,6 +120,7 @@ if __name__ == "__main__":
         "q_start": quartile_start,
         "q_stop": quartile_stop,
         "q_step": q_step,
+        "probDistFlag": probDistFlag,
     }
     vars_file = os.path.join(save_dir, "variables.json")
     today = date.today()

@@ -45,6 +45,10 @@ class Database:
     def time(self):
         return self._example_file[:, 0].astype(np.float64)
 
+    @property
+    def center(self):
+        return self.time * 0.5
+
     @classmethod
     def fromDir(cls, directory):
         """
@@ -90,7 +94,9 @@ class Database:
 
 
 class QuartileDatabase(Database):
-    def __init__(self, files, readQuantiles=True, delimiter=",", skiprows=1):
+    def __init__(
+        self, files, readQuantiles=True, delimiter=",", skiprows=1, nParticles=None
+    ):
         """
         Create a Database with the selected files.
 
@@ -105,6 +111,8 @@ class QuartileDatabase(Database):
         if readQuantiles:
             self.quantiles = self.getQuantiles()
 
+        self.nParticles = nParticles
+
     def calculateMeanVar(self, verbose=False):
         """
         Calculate the mean of the selected data along the columns or rows.
@@ -117,8 +125,14 @@ class QuartileDatabase(Database):
             Really only used if you want to see progress over time.
         """
 
-        squared_sum = None
-        mean_sum = None
+        rows = self.shape[0]
+        cols = self.shape[1] - 2  # exclude the time and max columns
+        shape = (rows, cols)
+        squared_sum = np.zeros(shape, dtype=np.quad)
+        mean_sum = np.zeros(shape, dtype=np.quad)
+
+        maxEdge_mean_sum = np.zeros(rows, dtype=np.quad)
+        maxEdge_squared_sum = np.zeros(rows, dtype=np.quad)
 
         for f in self.files:
             data = loadArrayQuad(
@@ -127,24 +141,28 @@ class QuartileDatabase(Database):
             time = data[:, 0]
             # second column is maximum edge which we don't really care about
             # for probDist=True
-            maxEdge = 2 * data[:, 1]
+            maxEdge = 2 * (data[:, 1] - self.center)
             data = 2 * data[:, 2:]
 
-            if squared_sum is None:
-                squared_sum = data ** 2
-            else:
-                squared_sum += data ** 2
+            squared_sum += data ** 2
+            mean_sum += data
 
-            if mean_sum is None:
-                mean_sum = data
-            else:
-                mean_sum += data
+            maxEdge_mean_sum += maxEdge
+            maxEdge_squared_sum += maxEdge ** 2
 
             if verbose:
                 print(f)
 
-        self.mean = mean_sum.astype(np.float64) / len(self)
-        self.var = squared_sum.astype(np.float64) / len(self) - self.mean ** 2
+        mean_sum = mean_sum.astype(np.float64)
+        squared_sum = squared_sum.astype(np.float64)
+        maxEdge_mean_sum = maxEdge_mean_sum.astype(np.float64)
+        maxEdge_squared_sum = maxEdge_squared_sum.astype(np.float64)
+
+        self.mean = mean_sum / len(self)
+        self.var = squared_sum / len(self) - self.mean ** 2
+
+        self.maxMean = maxEdge_mean_sum / len(self)
+        self.maxVar = maxEdge_squared_sum / len(self) - self.maxMean ** 2
 
     def getQuantiles(self):
         """
@@ -265,6 +283,11 @@ class QuartileDatabase(Database):
                 logTheory,
                 label=th.NthQuartVarStrLargeTimes,
             )
+            ax.plot(
+                self.time / np.log(quant).astype(np.float64),
+                self.time / np.log(quant).astype(np.float64),
+                label="Linear",
+            )
             ax.set_xscale("log")
             ax.set_yscale("log")
             ax.legend(fontsize=12)
@@ -273,6 +296,90 @@ class QuartileDatabase(Database):
                 bbox_inches="tight",
             )
             plt.close(fig)
+
+    def plotMaxMean(self, save_dir=".", xscale=True):
+        """
+        Plot the mean maximum particle position. Need to have set nPartilces for
+        this to work properly.
+        """
+
+        Nstr = prettifyQuad(self.nParticles)
+
+        theory = th.theoreticalNthQuart(self.nParticles, self.time)
+        fig, ax = plt.subplots()
+        ax.set_ylabel("Mean Maximum Particle Position")
+        ax.set_title(f"N={Nstr}")
+
+        if xscale:
+            time = self.time / np.log(self.nParticles).astype(np.float64)
+            ax.set_xlabel("Time / ln(N)")
+        else:
+            time = self.time
+            ax.set_xlabel("Time")
+
+        ax.plot(
+            self.time / np.log(self.nParticles).astype(np.float64),
+            self.maxMean,
+            label="Mean",
+        )
+        ax.plot(
+            self.time / np.log(self.nParticles).astype(np.float64),
+            theory,
+            label=th.NthQuartStr,
+        )
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.legend()
+        fig.savefig(
+            os.path.join(os.path.abspath(save_dir), f"MaxMean{Nstr}.png"),
+            bbox_inches="tight",
+        )
+        plt.close(fig)
+
+    def plotMaxVar(self, save_dir=".", xscale=True):
+        """
+        Plot the variance of the maximum particle position. Need to have set nParticles
+        for this to work.
+        """
+
+        Nstr = prettifyQuad(self.nParticles)
+
+        theory = th.theoreticalNthQuartVar(self.nParticles, self.time)
+        logTheory = th.theoreticalNthQuartVarLargeTimes(self.nParticles, self.time)
+
+        fig, ax = plt.subplots()
+        ax.set_xlabel("Time")
+        ax.set_ylabel("Variance of Maximum Particle")
+        ax.set_title(f"N={Nstr}")
+        ax.plot(
+            self.time / np.log(self.nParticles).astype(np.float64),
+            self.maxVar,
+            label="Variance",
+        )
+        ax.plot(
+            self.time / np.log(self.nParticles).astype(np.float64),
+            theory,
+            label=th.NthQuartVarStr,
+        )
+        ax.plot(
+            self.time / np.log(self.nParticles).astype(np.float64),
+            logTheory,
+            label=th.NthQuartVarStrLargeTimes,
+        )
+        ax.plot(
+            self.time / np.log(self.nParticles).astype(np.float64),
+            self.time / np.log(self.nParticles).astype(np.float64),
+            label="Linear",
+        )
+
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.legend(fontsize=12)
+        fig.savefig(
+            os.path.join(os.path.abspath(save_dir), f"MaxVar{Nstr}.png"),
+            bbox_inches="tight",
+        )
+        plt.close(fig)
 
     def plotMeansEvolve(self, save_dir=".", legend=True):
         """
@@ -284,7 +391,9 @@ class QuartileDatabase(Database):
         ax.set_ylabel("Mean Nth Quartile")
 
         cm = plt.get_cmap("gist_heat")
-        colors = [cm(1.0 * i / len(self.quantiles) / 1.5) for i in range(len(self.quantiles))]
+        colors = [
+            cm(1.0 * i / len(self.quantiles) / 1.5) for i in range(len(self.quantiles))
+        ]
 
         for i, quant in enumerate(self.quantiles):
             Nstr = prettifyQuad(quant)
@@ -317,7 +426,9 @@ class QuartileDatabase(Database):
         ax.set_ylabel("Variance of Nth Quartile / lnN^(2/3)")
 
         cm = plt.get_cmap("gist_heat")
-        colors = [cm(1.0 * i / len(self.quantiles) / 1.5) for i in range(len(self.quantiles))]
+        colors = [
+            cm(1.0 * i / len(self.quantiles) / 1.5) for i in range(len(self.quantiles))
+        ]
 
         for i, quant in enumerate(self.quantiles):
             if np.isinf(quant):
@@ -374,8 +485,11 @@ class VelocityDatabase(Database):
         Calculate the mean and variance of the dataset.
         """
 
-        squared_sum = None
-        mean_sum = None
+        rows = self.shape[0]
+        cols = self.shape[1] - 1  # exclude the time column
+        shape = (rows, cols)
+        squared_sum = np.zeros(shape, dtype=np.quad)
+        mean_sum = np.zeros(shape, dtype=np.quad)
 
         for f in self.files:
             data = loadArrayQuad(f, self.shape, delimiter=",", skiprows=1)
@@ -383,21 +497,17 @@ class VelocityDatabase(Database):
             data = data[:, 1:]
             data = np.log(data)
 
-            if squared_sum is None:
-                squared_sum = data ** 2
-            else:
-                squared_sum += data ** 2
-
-            if mean_sum is None:
-                mean_sum = data
-            else:
-                mean_sum += data
+            squared_sum += data ** 2
+            mean_sum += data
 
             if verbose:
                 print(f)
 
-        self.mean = mean_sum.astype(np.float64) / len(self)
-        self.var = squared_sum.astype(np.float64) / len(self) - self.mean ** 2
+        mean_sum = mean_sum.astype(np.float64)
+        squared_sum = squared_sum.astype(np.float64)
+
+        self.mean = mean_sum / len(self)
+        self.var = squared_sum / len(self) - self.mean ** 2
 
     def getVelocities(self):
         """
@@ -426,7 +536,7 @@ class VelocityDatabase(Database):
             ax.set_xlabel("Time")
             ax.set_ylabel("|ln(Pb(vt, t))|")
             ax.plot(self.time, abs(self.mean[:, i]), label="Data", c="r")
-            ax.plot(self.time, abs(theory), label=th.PbMeanStr, ls='--')
+            ax.plot(self.time, abs(theory), label=th.PbMeanStr, ls="--")
             ax.set_title(f"v={v}")
             ax.set_xscale("log")
             ax.set_yscale("log")
@@ -449,7 +559,7 @@ class VelocityDatabase(Database):
             ax.set_xlabel("Time")
             ax.set_ylabel("Var(ln(Pb(vt, t)))")
             ax.plot(self.time, self.var[:, i], label="Data", c="r")
-            ax.plot(self.time, theory, label=th.PbVarStr, ls='--')
+            ax.plot(self.time, theory, label=th.PbVarStr, ls="--")
             ax.set_title(f"v={v}")
             ax.set_xscale("log")
             ax.set_yscale("log")
@@ -459,7 +569,9 @@ class VelocityDatabase(Database):
                 bbox_inches="tight",
             )
 
-    def plotDistribution(self, save_dir='.', save_file='FinalTime.txt', load_file=None, verbose=False):
+    def plotDistribution(
+        self, save_dir=".", save_file="FinalTime.txt", load_file=None, verbose=False
+    ):
         """
         Plot the Tracy Widom distribution at the maximum time.
         """
@@ -485,7 +597,7 @@ class VelocityDatabase(Database):
             data = data[~np.isinf(data)]
             data = data[~np.isnan(data)]
             print(len(data))
-            
+
             I = 1 - np.sqrt(1 - v ** 2)
             sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
             scale = self.time[-1] ** (1 / 3) * sigma
@@ -503,5 +615,7 @@ class VelocityDatabase(Database):
             ax.set_yscale("log")
             ax.legend()
 
-            fig.savefig(os.path.join(save_dir, f"Histogram{v}.png"), bbox_inches="tight")
+            fig.savefig(
+                os.path.join(save_dir, f"Histogram{v}.png"), bbox_inches="tight"
+            )
             plt.close(fig)

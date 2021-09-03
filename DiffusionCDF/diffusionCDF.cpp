@@ -42,14 +42,10 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 } // namespace detail
 } // namespace pybind11
 
-
 DiffusionCDF::DiffusionCDF(const double _beta, const unsigned long int _tMax)
 {
   beta = _beta;
-  t = 0;
   tMax = _tMax;
-  zB.resize(tMax+1); // Initialize so that zB(n=0, t=0) = 1
-  zB[0] = 1;
 
   if (_beta != 0) {
     boost::random::beta_distribution<>::param_type params(_beta, _beta);
@@ -80,31 +76,37 @@ double DiffusionCDF::generateBeta()
   }
 }
 
-void DiffusionCDF::iterateTimeStep()
+DiffusionTimeCDF::DiffusionTimeCDF(const double _beta, const unsigned long int _tMax) : DiffusionCDF(_beta, _tMax)
 {
-  std::vector<RealType> zB_next(tMax+1);
+  CDF.resize(tMax + 1);
+  CDF[0] = 1;
+}
+
+void DiffusionTimeCDF::iterateTimeStep()
+{
+  std::vector<RealType> CDF_next(tMax+1);
   for (unsigned long int n = 0; n <= t+1; n++){
     if (n == 0){
-      zB_next[n] = 1; // Need zB(n=0, t) = 1
+      CDF_next[n] = 1; // Need CDF(n=0, t) = 1
     }
     else if (n == t+1){
       RealType beta = RealType(generateBeta());
-      zB_next[n] = beta * zB[n-1];
+      CDF_next[n] = beta * CDF[n-1];
     }
     else{
       RealType beta = RealType(generateBeta());
-      zB_next[n] = beta * zB[n-1] + (1 - beta) * zB[n];
+      CDF_next[n] = beta * CDF[n-1] + (1 - beta) * CDF[n];
     }
   }
-  zB = zB_next;
+  CDF = CDF_next;
   t += 1;
 }
 
-unsigned long int DiffusionCDF::findQuantile(RealType quantile)
+unsigned long int DiffusionTimeCDF::findQuantile(RealType quantile)
 {
   unsigned long int quantilePosition;
   for (unsigned long int n = t; n >= 0; n--){
-    if (zB[n] > 1 / quantile){
+    if (CDF[n] > 1 / quantile){
       quantilePosition = 2* n + 2 - t;
       break;
     }
@@ -112,7 +114,7 @@ unsigned long int DiffusionCDF::findQuantile(RealType quantile)
   return quantilePosition;
 }
 
-std::vector<unsigned long int> DiffusionCDF::findQuantiles(
+std::vector<unsigned long int> DiffusionTimeCDF::findQuantiles(
   std::vector<RealType> quantiles)
 {
   // Sort incoming quantiles b/c we need them to be in descending order for
@@ -123,7 +125,7 @@ std::vector<unsigned long int> DiffusionCDF::findQuantiles(
   std::vector<unsigned long int> quantilePositions(quantiles.size());
   unsigned long int quantile_idx = 0;
   for (unsigned long int n = t; n >= 0; n--){
-    while(zB[n] > 1 / quantiles[quantile_idx]){
+    while(CDF[n] > 1 / quantiles[quantile_idx]){
       quantilePositions[quantile_idx] = 2 * n + 2 - t;
       quantile_idx += 1;
 
@@ -140,17 +142,82 @@ std::vector<unsigned long int> DiffusionCDF::findQuantiles(
   return quantilePositions;
 }
 
+DiffusionPositionCDF::DiffusionPositionCDF(const double _beta, const unsigned long int _tMax, std::vector<RealType> _quantiles) : DiffusionCDF(_beta, _tMax)
+{
+  // Initialize such that CDF(n=0, t) = 1
+  CDF.resize(tMax+1, 1);
+  quantiles = _quantiles;
+
+  // Create a measurment array such that each column is a different quantile
+  // measurement and each row is a differeent time.
+  quantilesMeasurement.resize(quantiles.size());
+  for (unsigned long int i=0; i < quantilesMeasurement.size(); i++){
+    quantilesMeasurement[i].resize(tMax+1, 0);
+    // At t=0, all the quantiles will be 2 (2*n + 2 - t for n=t=0)
+    quantilesMeasurement[i][0] = 2;
+  }
+}
+
+void DiffusionPositionCDF::stepPosition()
+{
+  // Initialize all values to 0 since below CDF(n, n) is 0
+  std::vector<RealType> CDF_next(tMax+1, 0);
+
+  for (unsigned long int t = position+1; t < tMax + 1; t++){
+    RealType beta = RealType(generateBeta());
+    if (t == position+1){
+      CDF_next[t] = beta * CDF[t-1];
+    }
+    else{
+      CDF_next[t] = beta * CDF[t-1] + (1 - beta) * CDF_next[t-1];
+    }
+
+    // Now want to loop through every quantile vector and update positions of
+    // each quantile at the current time.
+    for (unsigned long int i=0; i < quantiles.size(); i++){
+      if (CDF_next[t] > 1 / quantiles[i]){
+        // quantilesMeasurement[i][t] is the ith quantile in the list at time t
+        // Note: position will always be greater so don't need to check this.
+        quantilesMeasurement[i][t] = 2 * (position + 1) + 2 - t;
+      }
+    }
+  }
+  CDF = CDF_next;
+  position += 1;
+}
+
+unsigned long int DiffusionPositionCDF::findQuantile(RealType quantile)
+{ return 0; }
+
+std::vector<unsigned long int> DiffusionPositionCDF::findQuantiles(std::vector<RealType> quantiles)
+{
+  std::vector<unsigned long int> quantilePositions(quantiles.size());
+  return quantilePositions;
+}
+
 PYBIND11_MODULE(diffusionCDF, m)
 {
   m.doc() = "Diffusion recurrance relation";
   py::class_<DiffusionCDF>(m, "DiffusionCDF")
       .def(py::init<const double, const unsigned long int>(), py::arg("beta"), py::arg("tMax"))
       .def("getBeta", &DiffusionCDF::getBeta)
-      .def("getzB", &DiffusionCDF::getzB)
+      .def("getCDF", &DiffusionCDF::getCDF)
       .def("gettMax", &DiffusionCDF::gettMax)
-      .def("setBetaSeed", &DiffusionCDF::setBetaSeed, py::arg("seed"))
-      .def("getTime", &DiffusionCDF::getTime)
-      .def("iterateTimeStep", &DiffusionCDF::iterateTimeStep)
-      .def("findQuantile", &DiffusionCDF::findQuantile, py::arg("quantile"))
-      .def("findQuantiles", &DiffusionCDF::findQuantiles, py::arg("quantiles"));
+      .def("setBetaSeed", &DiffusionCDF::setBetaSeed, py::arg("seed"));
+
+  py::class_<DiffusionTimeCDF, DiffusionCDF>(m, "DiffusionTimeCDF")
+      .def(py::init<const double, const unsigned long int>(), py::arg("beta"), py::arg("tMax"))
+      .def("getTime", &DiffusionTimeCDF::getTime)
+      .def("iterateTimeStep", &DiffusionTimeCDF::iterateTimeStep)
+      .def("findQuantile", &DiffusionTimeCDF::findQuantile, py::arg("quantile"))
+      .def("findQuantiles", &DiffusionTimeCDF::findQuantiles, py::arg("quantiles"));
+
+  py::class_<DiffusionPositionCDF, DiffusionCDF>(m, "DiffusionPositionCDF")
+      .def(py::init<const double, const unsigned long int, std::vector<RealType> >(), py::arg("beta"), py::arg("tMax"), py::arg("quantiles"))
+      .def("getPosition", &DiffusionPositionCDF::getPosition)
+      .def("getQuantilesMeasurement", &DiffusionPositionCDF::getQuantilesMeasurement)
+      .def("getQuantiles", &DiffusionPositionCDF::getQuantiles)
+      .def("stepPosition", &DiffusionPositionCDF::stepPosition)
+      .def("findQuantile", &DiffusionPositionCDF::findQuantile, py::arg("quantile"))
+      .def("findQuantiles", &DiffusionPositionCDF::findQuantiles, py::arg("quantiles"));
 }

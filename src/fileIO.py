@@ -26,12 +26,11 @@ def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
     arr : numpy array (dtype=np.quad)
         Data as an array with quad precision
 
-    Note
-    ----
-    It doesn't look like this will throw an error if the shape is incorrect.
-    Should probably just get rid of the shape parameter overall and append
-    to the empty numpy array. Did this to avoid np.quad errors but it's
-    going to core dump either way.
+    Throws
+    ------
+    ValueError
+        Throws if shape is larger than the size of the file. This is to avoid
+        silently returning values at the end of the array that are empty.
     """
 
     arr = np.empty(shape, dtype=np.quad)

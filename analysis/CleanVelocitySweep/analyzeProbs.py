@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("../../src")
 from databases import VelocityDatabase
 import glob
@@ -26,4 +27,4 @@ else:
 
 db.plotMeans("./figures/Means")
 db.plotVars("./figures/Vars")
-db.plotDistribution("./figures/Histograms", verbose=True, load_file='FinalTime.txt')
+db.plotDistribution("./figures/Histograms", verbose=True, load_file="FinalTime.txt")

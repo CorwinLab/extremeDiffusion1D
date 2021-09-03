@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=LargeQuartile
+#SBATCH --job-name=VelocitySweep
 #SBATCH --time=5-00:00:00
 #SBATCH --error=/home/jhass2/CleanData/logs/VelocitySweep/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --array=0-10000
+#SBATCH --array=0-10000%20
 #SBATCH --output=/home/jhass2/CleanData/logs/VelocitySweep/%A-%a.err
 
 TOPDIR=/home/jhass2/CleanData/VelocitySweep/
