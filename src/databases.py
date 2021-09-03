@@ -125,11 +125,14 @@ class QuartileDatabase(Database):
             Really only used if you want to see progress over time.
         """
 
-        squared_sum = None
-        mean_sum = None
+        rows = self.shape[0]
+        cols = self.shape[1] - 2  # exclude the time and max columns
+        shape = (rows, cols)
+        squared_sum = np.zeros(shape, dtype=np.quad)
+        mean_sum = np.zeros(shape, dtype=np.quad)
 
-        maxEdge_mean_sum = None
-        maxEdge_squared_sum = None
+        maxEdge_mean_sum = np.zeros(rows, dtype=np.quad)
+        maxEdge_squared_sum = np.zeros(rows, dtype=np.quad)
 
         for f in self.files:
             data = loadArrayQuad(
@@ -141,36 +144,25 @@ class QuartileDatabase(Database):
             maxEdge = 2 * (data[:, 1] - self.center)
             data = 2 * data[:, 2:]
 
-            if squared_sum is None:
-                squared_sum = data ** 2
-            else:
-                squared_sum += data ** 2
+            squared_sum += data ** 2
+            mean_sum += data
 
-            if mean_sum is None:
-                mean_sum = data
-            else:
-                mean_sum += data
-
-            if maxEdge_mean_sum is None:
-                maxEdge_mean_sum = maxEdge
-            else:
-                maxEdge_mean_sum += maxEdge
-
-            if maxEdge_squared_sum is None:
-                maxEdge_squared_sum = maxEdge ** 2
-            else:
-                maxEdge_squared_sum += maxEdge ** 2
+            maxEdge_mean_sum += maxEdge
+            maxEdge_squared_sum += maxEdge ** 2
 
             if verbose:
                 print(f)
 
-        self.mean = mean_sum.astype(np.float64) / len(self)
-        self.var = squared_sum.astype(np.float64) / len(self) - self.mean ** 2
+        mean_sum = mean_sum.astype(np.float64)
+        squared_sum = squared_sum.astype(np.float64)
+        maxEdge_mean_sum = maxEdge_mean_sum.astype(np.float64)
+        maxEdge_squared_sum = maxEdge_squared_sum.astype(np.float64)
 
-        self.maxMean = maxEdge_mean_sum.astype(np.float64) / len(self)
-        self.maxVar = (
-            maxEdge_squared_sum.astype(np.float64) / len(self) - self.maxMean ** 2
-        )
+        self.mean = mean_sum / len(self)
+        self.var = squared_sum / len(self) - self.mean ** 2
+
+        self.maxMean = maxEdge_mean_sum / len(self)
+        self.maxVar = maxEdge_squared_sum / len(self) - self.maxMean ** 2
 
     def getQuantiles(self):
         """
@@ -493,8 +485,11 @@ class VelocityDatabase(Database):
         Calculate the mean and variance of the dataset.
         """
 
-        squared_sum = None
-        mean_sum = None
+        rows = self.shape[0]
+        cols = self.shape[1] - 1  # exclude the time column
+        shape = (rows, cols)
+        squared_sum = np.zeros(shape, dtype=np.quad)
+        mean_sum = np.zeros(shape, dtype=np.quad)
 
         for f in self.files:
             data = loadArrayQuad(f, self.shape, delimiter=",", skiprows=1)
@@ -502,21 +497,17 @@ class VelocityDatabase(Database):
             data = data[:, 1:]
             data = np.log(data)
 
-            if squared_sum is None:
-                squared_sum = data ** 2
-            else:
-                squared_sum += data ** 2
-
-            if mean_sum is None:
-                mean_sum = data
-            else:
-                mean_sum += data
+            squared_sum += data ** 2
+            mean_sum += data
 
             if verbose:
                 print(f)
 
-        self.mean = mean_sum.astype(np.float64) / len(self)
-        self.var = squared_sum.astype(np.float64) / len(self) - self.mean ** 2
+        mean_sum = mean_sum.astype(np.float64)
+        squared_sum = squared_sum.astype(np.float64)
+
+        self.mean = mean_sum / len(self)
+        self.var = squared_sum / len(self) - self.mean ** 2
 
     def getVelocities(self):
         """

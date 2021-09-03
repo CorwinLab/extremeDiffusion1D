@@ -1,7 +1,7 @@
 import sys
 
 sys.path.append("../src/")
-from pydiffusion import Diffusion
+from pydiffusionPDF import DiffusionPDF
 import matplotlib
 
 matplotlib.use("Agg")
@@ -11,7 +11,7 @@ import numpy as np
 N = 10000
 numSteps = np.log(N) ** (5 / 2)
 numSteps = int(numSteps)
-d = Diffusion(N, 1, numSteps)
+d = DiffusionPDF(N, 1, numSteps)
 allOcc = np.zeros(shape=(numSteps + 1, numSteps + 1))
 
 for i in range(numSteps):

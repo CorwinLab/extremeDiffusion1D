@@ -1,7 +1,7 @@
 import sys
 
 sys.path.append("../src")
-from pydiffusionPDF as DiffusionPDF
+from pydiffusionPDF import DiffusionPDF
 import matplotlib
 
 matplotlib.use("Agg")
