@@ -2,13 +2,16 @@
 import numpy as np
 
 # @jit(nopython=True)
-def makeRec(tMax):
+def makeRec(tMax, bias='einstein'):
     # Place a one on every diagonal entry
     # zB[n,t]
     zB = np.zeros((tMax, tMax))
     for n in range(tMax):
         for t in range(n, tMax):
-            bias = 0.5
+            if bias == 'einstein':
+                bias = 0.5
+            else:
+                bias = np.random.beta(1, 1)
             if n == t:
                 zB[n, t] = 1
             elif n == 0:

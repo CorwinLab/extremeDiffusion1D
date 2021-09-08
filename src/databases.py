@@ -348,7 +348,7 @@ class QuartileDatabase(Database):
         logTheory = th.theoreticalNthQuartVarLargeTimes(self.nParticles, self.time)
 
         fig, ax = plt.subplots()
-        ax.set_xlabel("Time")
+        ax.set_xlabel("Time / lnN")
         ax.set_ylabel("Variance of Maximum Particle")
         ax.set_title(f"N={Nstr}")
         ax.plot(
@@ -371,6 +371,8 @@ class QuartileDatabase(Database):
             self.time / np.log(self.nParticles).astype(np.float64),
             label="Linear",
         )
+
+        ax.vlines()
 
         ax.set_xscale("log")
         ax.set_yscale("log")
@@ -464,6 +466,76 @@ class QuartileDatabase(Database):
         )
         plt.close(fig)
 
+    def plotVarKPZ(self, save_dir='.'):
+        """
+        Plot the variance versus the predicted KPZ behavior.
+        """
+
+        for i, quant in enumerate(self.quantiles):
+            Nstr = prettifyQuad(quant)
+            fig, ax = plt.subplots()
+            logN = np.log(quant).astype(np.float64)
+            xaxis = logN**2 / self.time
+            yaxis = logN / self.time * self.var[:, i]
+            ax.plot(xaxis, yaxis)
+            ax.set_xlabel("lnN^2 / t")
+            ax.set_ylabel("lnN / t * Var(Qb(N,t))")
+            ax.set_title(f"N={Nstr}")
+            ax.set_xscale('log')
+            fig.savefig(os.path.join(os.path.abspath(save_dir), f"KPZVar{Nstr}.png"), bbox_inches="tight")
+            plt.close(fig)
+
+    def plotGumbalDistOverTime(self, quantile):
+        """
+        Look for the differences in 10*quantile - 0.1*quantile and see if they
+        look like the Gumbal distribution.
+        """
+
+        idx = self.quantiles.index(quantile)
+
+        # Make sure the quantiles differ by a factor of 10. The quantiles go
+        # largest to smallest. So idx-1 is largest and idx+1 is smallest.
+        assert (self.quantiles[idx-1] / self.quantiles[idx] == 10)
+        assert (self.quantiles[idx] / self.quantiles[idx+1] == 10)
+        assert (self.quantiles[idx-1] / self.quantiles[idx+1] == 100)
+
+        diff = self.mean[:, idx-1] - self.mean[:, idx+1]
+
+        fig, ax = plt.subplots()
+        ax.plot(self.time, diff, label="Date")
+        ax.plot(self.time, np.sqrt(self.time), label='t^(1/2)')
+        ax.set_title(f"N={quantile}")
+        ax.set_ylabel("10*N - 0.1*N")
+        ax.set_xlabel("Time")
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        fig.savefig("GumbelNumber.png")
+
+    def plotGumbalDist(self, quantile, verbose=False):
+        """
+        Make a histogram of the difference between the 10*quantile and 0.1*quantile
+        quantiles at the maximum time.
+        """
+
+        idx = self.quantiles.index(quantile)
+
+        # Make sure the quantiles differ by a factor of 10. The quantiles go
+        # largest to smallest. So idx-1 is largest and idx+1 is smallest.
+        assert (self.quantiles[idx-1] / self.quantiles[idx] == 10)
+        assert (self.quantiles[idx] / self.quantiles[idx+1] == 10)
+        assert (self.quantiles[idx-1] / self.quantiles[idx+1] == 100)
+
+        diff = []
+        for f in self.files:
+            final_time = loadArrayQuad(f, skiprows=len(self._example_file)-1, shape=len(self.quantiles)+2)
+            final_time = final_time[2:]
+            diff.append((final_time[idx-1] - final_time[idx+1]).astype(np.float64))
+            if verbose:
+                print(f)
+
+        fig, ax = plt.subplots()
+        ax.hist(diff, bins=100)
+        fig.savefig("GumbelHist.png")
 
 class VelocityDatabase(Database):
     def __init__(self, files):
@@ -619,3 +691,96 @@ class VelocityDatabase(Database):
                 os.path.join(save_dir, f"Histogram{v}.png"), bbox_inches="tight"
             )
             plt.close(fig)
+
+    def plotAllVars(self, save_dir='.'):
+        """
+        Plot all the velocities on the same plot.
+        """
+        cm = plt.get_cmap("gist_heat")
+        colors = [
+            cm(1.0 * i / len(self.velocities) / 1.5) for i in range(len(self.velocities))
+        ]
+        fig, ax = plt.subplots()
+        for i, v in enumerate(self.velocities):
+            I = 1 - np.sqrt(1 - v ** 2)
+            sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
+            var = self.var[:, i]
+            ax.plot(self.time, var / self.time**(2/3) / sigma **2 / 0.813, label="{0:.1f}".format(v), c=colors[i])
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_xlabel("Time")
+        ax.set_ylabel("Variance / (t^2/3 * sigma^2 * 0.813)")
+        ax.legend()
+        fig.savefig(
+            os.path.join(save_dir, f"Vars.png"), bbox_inches="tight"
+        )
+
+    def plotResidual(self, save_dir='.'):
+        """
+        Plot the residuals of the variance. And try to do a curve fit - this isn't
+        working at all.
+        """
+        cm = plt.get_cmap("gist_heat")
+        colors = [
+            cm(1.0 * i / len(self.velocities) / 1.5) for i in range(len(self.velocities))
+        ]
+        for i, v in enumerate(self.velocities):
+            fig, ax = plt.subplots()
+            theory = th.theoreticalPbVar(v, self.time)
+            residual = abs(self.var[:, i] - theory) / theory * 100
+            idx = np.where(~np.isnan(residual))[0]
+            time = self.time[idx]
+            residual = residual[idx]
+            ax.plot(time[100:], residual[100:], label="{0:.1f}".format(v), c='k')
+            conf = np.polyfit(np.log(time[100:]), np.log(residual[100:]), 1)
+            #ax.plot(time[100:], conf[0] * time[100:] + conf[1])
+            ax.set_xscale('log')
+            ax.set_ylabel("Variance Percent Change")
+            ax.legend()
+            fig.savefig(
+                os.path.join(save_dir, f"Residual{v}.png"), bbox_inches="tight"
+            )
+
+class CDFQuartileDatabase(QuartileDatabase):
+    """
+    Making this b/c the QuartileDatabase needs to factor everything by multiply
+    the data by 2 to get it to match the theoretically predicted values.
+    """
+    def calculateMeanVar(self, verbose=False):
+        """
+        Calculate the mean of the selected data along the columns or rows.
+        Assumes that the first column is the time.
+
+        Parameters
+        ----------
+        verbose : bool
+            Whether to print the file names out when each is finished or not.
+            Really only used if you want to see progress over time.
+        """
+
+        rows = self.shape[0]
+        cols = self.shape[1] - 1  # exclude the time and max columns
+        shape = (rows, cols)
+        squared_sum = np.zeros(shape, dtype=np.quad)
+        mean_sum = np.zeros(shape, dtype=np.quad)
+
+        for f in self.files:
+            data = loadArrayQuad(
+                f, self.shape, delimiter=self.delimiter, skiprows=self.skiprows
+            )
+            time = data[:, 0]
+            # second column is maximum edge which we don't really care about
+            # for probDist=True
+            data = data[:, 1:]
+
+            squared_sum += data ** 2
+            mean_sum += data
+
+            if verbose:
+                print(f)
+
+        mean_sum = mean_sum.astype(np.float64)
+        squared_sum = squared_sum.astype(np.float64)
+
+        self.mean = mean_sum / len(self)
+        self.var = squared_sum / len(self) - self.mean ** 2

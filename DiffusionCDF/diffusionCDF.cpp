@@ -153,7 +153,7 @@ DiffusionPositionCDF::DiffusionPositionCDF(const double _beta, const unsigned lo
   quantilesMeasurement.resize(quantiles.size());
   for (unsigned long int i=0; i < quantilesMeasurement.size(); i++){
     quantilesMeasurement[i].resize(tMax+1, 0);
-    // At t=0, all the quantiles will be 2 (2*n + 2 - t for n=t=0)
+    // At t=0, all the quantiles will be 2 (2*n + 2 - t for n=t=0) - I think this is mainly for testing.
     quantilesMeasurement[i][0] = 2;
   }
 }
@@ -186,15 +186,6 @@ void DiffusionPositionCDF::stepPosition()
   position += 1;
 }
 
-unsigned long int DiffusionPositionCDF::findQuantile(RealType quantile)
-{ return 0; }
-
-std::vector<unsigned long int> DiffusionPositionCDF::findQuantiles(std::vector<RealType> quantiles)
-{
-  std::vector<unsigned long int> quantilePositions(quantiles.size());
-  return quantilePositions;
-}
-
 PYBIND11_MODULE(diffusionCDF, m)
 {
   m.doc() = "Diffusion recurrance relation";
@@ -217,7 +208,5 @@ PYBIND11_MODULE(diffusionCDF, m)
       .def("getPosition", &DiffusionPositionCDF::getPosition)
       .def("getQuantilesMeasurement", &DiffusionPositionCDF::getQuantilesMeasurement)
       .def("getQuantiles", &DiffusionPositionCDF::getQuantiles)
-      .def("stepPosition", &DiffusionPositionCDF::stepPosition)
-      .def("findQuantile", &DiffusionPositionCDF::findQuantile, py::arg("quantile"))
-      .def("findQuantiles", &DiffusionPositionCDF::findQuantiles, py::arg("quantiles"));
+      .def("stepPosition", &DiffusionPositionCDF::stepPosition);
 }

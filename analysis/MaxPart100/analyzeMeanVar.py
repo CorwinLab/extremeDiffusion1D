@@ -15,22 +15,21 @@ import theory as th
 from fileIO import loadArrayQuad
 
 files = glob.glob("/home/jacob/Desktop/corwinLabMount/CleanData/MaxPart100/Q*.txt")
-files = files[:5]
-print("Number of files: ", len(files))
+max_files = []
 
-"""
-files = glob.glob("/home/jacob/Desktop/corwinLabMount/CleanData/MaxPart100/O*.txt")
 for f in files:
-    occ = np.loadtxt(f, delimiter=",")
-    print(np.where(occ != 0))
-    print("{:e}".format(np.sum(occ)))
-"""
+    times = np.loadtxt(f, delimiter=",", skiprows=1, usecols=0)
+    if times[-1] != 13000000:
+        continue
+    max_files.append(f)
+    print(f)
 
+files = max_files
 db = QuartileDatabase(files, nParticles=np.quad("1e100"))
-
+print(len(db))
 run_again = True
 if not os.path.exists("./Mean.txt") or not os.path.exists("./Var.txt") or run_again:
-    db.calculateMeanVar(verbose=False)
+    db.calculateMeanVar(verbose=True)
     np.savetxt("Mean.txt", db.mean)
     np.savetxt("Var.txt", db.var)
 else:

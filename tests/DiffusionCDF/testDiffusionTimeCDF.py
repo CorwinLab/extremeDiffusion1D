@@ -78,8 +78,8 @@ def test_einsteinbias_quartile_large():
     Test if Eric's code matches when calculating quartiles at large times.
     """
 
-    tMax = 50
-    quintile = 10
+    tMax = 1000
+    quintile = 100
     CDF = makeRec(tMax)
     qs = findQuintile(CDF, quintile).astype(int)
     rec = DiffusionTimeCDF(beta=np.inf, tMax=tMax - 1)

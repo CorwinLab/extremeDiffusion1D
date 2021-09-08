@@ -81,10 +81,6 @@ public:
 
   // Functions that do things
   void stepPosition();
-
-  unsigned long int findQuantile(RealType quantile);
-
-  std::vector<unsigned long int> findQuantiles(std::vector<RealType> quantiles);
 };
 
 #endif /* DIFFUSIONCDF_HPP_ */

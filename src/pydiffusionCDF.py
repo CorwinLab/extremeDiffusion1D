@@ -17,8 +17,8 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
 
     Attributes
     ----------
-    zB : numpy array (dtype of np.quad)
-        The current recurrance vector zB(n, t)
+    CDF : numpy array (dtype of np.quad)
+        The current recurrance vector CDF(n, t)
 
     time : int
         Current time in the recurrance relation
@@ -210,6 +210,14 @@ class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
     def position(self):
         return self.getPosition()
 
+    @property
+    def quantilePositions(self):
+        return self.getQuantilesMeasurement()
+
+    @property
+    def quantiles(self):
+        return self.getQuantiles()
+
     def stepPosition(self):
         """
         Move the system forward one step in the position.
@@ -241,37 +249,43 @@ class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
         for _ in range(num_positions):
             self.stepPosition()
 
-    def findQuantile(self, quantile):
+    def evolveToQuantile(self, max_quantile_position):
         """
-        Find a quantile from the CDF.    class DiffusionPositionCDF(diffusionCDF.DiffusionTimeCDF, DiffusionCDF):
+        Evolve the system until it finds the first time the largest quantile is
+        found.
+        """
 
+        assert max_quantile_position < 2 * (self.tMax + 1) + 2 - self.tMax
+        max_quantile_idx = self.quantiles.index(max(self.quantiles))
+        max_quantile_pos = self.quantilePositions[max_quantile_idx][-1]
+
+        # Halting criteria is if we can still iterate in position and
+        # the maximum quantile is less than the max_quantile_position.
+        # Also, there's undefined behaviour in finding the quartile when t >> n.
+        # The integer rolls over since it's negative and produces as huge number.
+        # So I also added a check if the position is greater than tMax we still
+        # haven't gotten there I think.
+        while not self.position == self.tMax and (max_quantile_pos < max_quantile_position or max_quantile_pos > self.tMax):
+            self.stepPosition()
+            max_quantile_pos = self.quantilePositions[max_quantile_idx][-1]
+
+    def findFirstTime(self, positions):
+        """
+        Find the first time each quantile is greater than a specified position.
 
         Parameters
         ----------
-        quantile : float or np.quad
-            Quantile to measure
+        positions : list
+            Quantile positions to record the first time of passing.
 
         Returns
         -------
-        int
-            Position of quantile.
+        first_times : list
+            First time when each quantile passes the input position
         """
 
-        return super().findQuantile(quantile)
-
-    def findQuantiles(self, quantiles):
-        """
-        Find several quantiles from the CDF.
-
-        Parameters
-        ----------
-        quantiles : numpy array or list (dtype = np.quad)
-            Quantiles to measure
-
-        Returns
-        -------
-        numpy array
-            Positions of the quantiles
-        """
-
-        return super().findQuantiles(quantiles)
+        first_times = []
+        for position, recorded_positions in zip(positions, self.quantilePositions):
+            time = np.where(recorded_positions > position)
+            first_times.append(time)
+        return first_times
