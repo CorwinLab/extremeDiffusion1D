@@ -61,7 +61,7 @@ def theoreticalNthQuartVar(N, time):
     return (2 * logN) ** (2 / 3) * (time / logN - 1) ** (4 / 3) / (2 * time / logN - 1)
 
 
-NthQuartVarStrLargeTimes = r"$t^{1/2} * \pi^{1/2}/2$"
+NthQuartVarStrLargeTimes = r"$t^{1/2}\pi^{1/2}/2$"
 
 
 def theoreticalNthQuartVarLargeTimes(N, time):

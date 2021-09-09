@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("../src/")
 sys.path.append("../tests/DiffusionCDF")
 from nativePyDiffusionCDF import makeRec, findQuintile
@@ -22,10 +23,22 @@ CDF = makeRec(tMax)
 qs = findQuintile(CDF, quantile).astype(int)
 
 fig, ax = plt.subplots()
-ax.plot(np.arange(1, d.tMax+2) / np.log(quantile), d.quantilePositions[0], label='C++ Position Iteration')
-ax.plot(np.arange(1, d.tMax+1) / np.log(quantile), timeQuantile, label='C++ Time Iteration')
-ax.plot(np.arange(1, d.tMax+1) / np.log(quantile), qs, label='Eric Code')
-ax.plot(np.arange(0, d.tMax) / np.log(quantile), theoreticalNthQuart(quantile, np.arange(0, d.tMax)), label='Theory')
+ax.plot(
+    np.arange(1, d.tMax + 2) / np.log(quantile),
+    d.quantilePositions[0],
+    label="C++ Position Iteration",
+)
+ax.plot(
+    np.arange(1, d.tMax + 1) / np.log(quantile),
+    timeQuantile,
+    label="C++ Time Iteration",
+)
+ax.plot(np.arange(1, d.tMax + 1) / np.log(quantile), qs, label="Eric Code")
+ax.plot(
+    np.arange(0, d.tMax) / np.log(quantile),
+    theoreticalNthQuart(quantile, np.arange(0, d.tMax)),
+    label="Theory",
+)
 ax.set_xlabel("Time / lnN")
 ax.set_ylabel("Quantile")
 ax.legend()

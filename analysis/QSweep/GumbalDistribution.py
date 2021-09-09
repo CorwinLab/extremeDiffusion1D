@@ -1,6 +1,7 @@
 import numpy as np
 import glob
 import sys
+
 sys.path.append("../../src")
 from databases import QuartileDatabase
 
