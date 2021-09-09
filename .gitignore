@@ -9,6 +9,10 @@ cDiffusion/.vs/cDiffusion/v16/Browse.VC.db
 N50/
 times/
 
+#Latex stuff
+*.aux
+*.log
+
 #Files
 test_one_liner.cpp
 
@@ -18,6 +22,8 @@ test_one_liner.cpp
 
 # Keep example files
 !/examples/*
+!/Paper/Figures/*
+!/Paper/*.png
 
 # C extensions
 *.out
