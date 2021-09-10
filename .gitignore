@@ -19,6 +19,7 @@ test_one_liner.cpp
 # Data
 *.txt
 *.png
+*.json
 
 # Keep example files
 !/examples/*

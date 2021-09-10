@@ -18,6 +18,16 @@ def test_equals():
     d.evolveToTime(100)
     assert d == d
 
+def test_iteratePastOccupancySize():
+    """
+    Make sure that we can't iterate past the size of the edges (or max time). 
+    """
+
+    d = DiffusionPDF(np.quad("1e4500"), beta=1, occupancySize=100)
+    d.id = 0
+    with pytest.raises(RuntimeError) as exinfo:
+        d.evolveToTime(101)
+    assert "Cannot iterate past the size of the edges" in str(exinfo.value)
 
 def test_pyDiffusion_findQuantiles():
     """
@@ -141,7 +151,7 @@ def test_pyDiffusion_savedState():
     diff2 = DiffusionPDF.fromFiles("Variables1.json", "Occupancy1.txt", "Edges1.json")
     assert all(diff2.occupancy == diff.occupancy)
 
-    diff2.resizeOccupancy(3)
+    diff2.resizeOccupancyAndEdges(3)
     assert all(diff2.occupancy[:1001] == diff.occupancy)
     assert all(diff2.occupancy[1001:] == 0)
 
@@ -160,7 +170,7 @@ def test_pyDiffusion_savedStateIterate():
 
     # Load occupancy from the saved variables
     diff2 = DiffusionPDF.fromFiles("Variables1.json", "Occupancy1.txt", "Edges1.json")
-    diff2.resizeOccupancy(5)
+    diff2.resizeOccupancyAndEdges(5)
     diff2.evolveToTime(diff2.currentTime+5)
 
     # Check if it's the same as if we just evolved regularly
@@ -168,14 +178,19 @@ def test_pyDiffusion_savedStateIterate():
     diff3.id = 1
     diff3.evolveToTime(1000+5)
     assert all(diff2.occupancy == diff3.occupancy)
-    assert False
+
+def remove(file):
+    if os.path.exists(file):
+        os.remove(file)
 
 def test_cleanup():
     """
     Really just want to delete any files that are still remaining once all the
     tests have been run.
     """
-    if os.path.exists("Data.txt"):
-        os.remove("Data.txt")
-    if os.path.exists("Variables0.json"):
-        os.remove("Variables0.json")
+    remove("Data.txt")
+    remove("VariablesNone.json")
+    remove("Edges1.json")
+    remove("Occupancy1.txt")
+    remove("Variables1.json")
+    remove("Variables0.json")

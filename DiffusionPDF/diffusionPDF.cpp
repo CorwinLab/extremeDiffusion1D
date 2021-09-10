@@ -305,7 +305,7 @@ PYBIND11_MODULE(diffusionPDF, m)
 
       .def("getOccupancy", &DiffusionPDF::getOccupancy)
       .def("setOccupancy", &DiffusionPDF::setOccupancy, py::arg("occupancy"))
-      .def("resizeOccupancy", &DiffusionPDF::resizeOccupancy, py::arg("size"))
+      .def("resizeOccupancyAndEdges", &DiffusionPDF::resizeOccupancyAndEdges, py::arg("size"))
       .def("getNParticles", &DiffusionPDF::getNParticles)
       .def("getBeta", &DiffusionPDF::getBeta)
       .def("setProbDistFlag",

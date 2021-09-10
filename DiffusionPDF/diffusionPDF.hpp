@@ -63,7 +63,11 @@ public:
   };
   std::vector<RealType> getOccupancy() { return occupancy; };
 
-  void resizeOccupancy(unsigned long int size) { occupancy.insert(occupancy.end(), size, RealType(0)); };
+  void resizeOccupancyAndEdges(unsigned long int size) {
+    occupancy.insert(occupancy.end(), size, RealType(0));
+    edges.first.insert(edges.first.end(), size, 0);
+    edges.second.insert(edges.second.end(), size, 0); 
+  };
 
   void setBetaSeed(const unsigned int seed) { gen.seed(seed); };
 

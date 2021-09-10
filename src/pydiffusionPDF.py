@@ -79,7 +79,6 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         self._last_saved_time = time.process_time()  # seconds
         self._save_interval = 3600 * 2  # Set to save occupancy every 2 hours.
         self.id = None  # Need to also get SLURM ID
-        self.minEdgeOffset = 0
 
     def __str__(self):
         return f"DiffusionPDF(N={self.getNParticles()}, beta={self.getBeta()}, size={len(self.getEdges()[0])}, time={self.getTime()})"
@@ -135,16 +134,12 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
     @property
     def minDistance(self):
-        """
-        In case the simulation was restarted need to offset by minEdgeOffset.
-        """
-
-        minEdge = np.array(self.getEdges()[0][:self.currentTime+1]) + self.minEdgeOffset
+        minEdge = np.array(self.getEdges()[0][: self.currentTime + 1])
         return minEdge - self.center
 
     @property
     def maxDistance(self):
-        maxEdge = np.array(self.getEdges()[1][:self.currentTime+1]) + self.minEdgeOffset
+        maxEdge = np.array(self.getEdges()[1][: self.currentTime + 1])
         return maxEdge - self.center
 
     @property
@@ -195,7 +190,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
     def edges(self, edges):
         self.setEdges(edges)
 
-    def resizeOccupancy(self, size):
+    def resizeOccupancyAndEdges(self, size):
         """
         Add elements to the end of the occupancy vector.
 
@@ -205,7 +200,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             Number of elements to add to occupancy
         """
 
-        super().resizeOccupancy(size)
+        super().resizeOccupancyAndEdges(size)
 
     def saveVariables(self):
         """
@@ -219,7 +214,6 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             "probDistFlag": self.probDistFlag,
             "smallCutoff": self.smallCutoff,
             "largeCutoff": self.largeCutoff,
-            "minEdgeOffset": self.minEdgeOffset,
         }
 
         with open(f"Variables{self.id}.json", "w+") as file:
@@ -232,9 +226,17 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
         minIdx = self.edges[0][self.currentTime]
         maxIdx = self.edges[1][self.currentTime]
-        fileIO.saveArrayQuad(f"Occupancy{self.id}.txt", self.occupancy[minIdx:maxIdx+1])
+        fileIO.saveArrayQuad(
+            f"Occupancy{self.id}.txt", self.occupancy[minIdx : maxIdx + 1]
+        )
 
-        vars = {"minEdge": minIdx, "maxEdge": maxIdx, "time": self.currentTime}
+        vars = {
+            "time": self.currentTime,
+            "minEdges": self.edges[0][: self.currentTime + 1],
+            "maxEdges": self.edges[1][: self.currentTime + 1],
+            "minIdx": minIdx,
+            "maxIdx": maxIdx,
+        }
 
         with open(f"Edges{self.id}.json", "w+") as file:
             json.dump(vars, file)
@@ -269,7 +271,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         with open(edges_file, "r") as file:
             edges = json.load(file)
 
-        occupancySize = edges["maxEdge"] - edges["minEdge"] + 1
+        occupancySize = edges["maxIdx"] - edges["minIdx"] + 1
         occupancy = fileIO.loadArrayQuad(occupancy_file, shape=occupancySize)
 
         d = DiffusionPDF(
@@ -279,15 +281,15 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             vars["probDistFlag"],
         )
 
+        occupancy = np.concatenate(
+            [np.zeros(edges["minIdx"], dtype=np.quad), occupancy]
+        )
         d.occupancy = occupancy
-        d.smallCutoff = vars['smallCutoff']
-        d.largeCutoff = vars['largeCutoff']
+        d.smallCutoff = vars["smallCutoff"]
+        d.largeCutoff = vars["largeCutoff"]
+        d.edges = (edges["minEdges"], edges["maxEdges"])
+        d.currentTime = edges["time"]
 
-        # need to set the max edge to search the length of the array
-        currentEdges = d.edges
-        currentEdges[1][0] = occupancySize - 1
-        d.edges = currentEdges
-        d.minEdgeOffset = edges['minEdge']
         return d
 
     def setBetaSeed(self, seed):
@@ -310,11 +312,15 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
         if self.currentTime == 0:
             self.saveVariables()
+
         # Save the occupancy periodically so we can start it up later.
-        # TODO: also save time and edges so we know where we are in space.
         if (time.process_time() - self._last_saved_time) > self._save_interval:
             self.saveState()
             self._last_saved_time = time.process_time()
+
+        # Need to throw error if trying to go past the edges
+        if self.currentTime + 2 > len(self.edges[0]):
+            raise RuntimeError("Cannot iterate past the size of the edges")
 
         super().iterateTimestep()
 
@@ -343,7 +349,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
         assert quantile > 1, "Quantile must be > 1, but quantile: {quantile}"
 
-        return np.array(super().findQuantile(quantile)) + self.minEdgeOffset
+        return np.array(super().findQuantile(quantile))
 
     def findQuantiles(self, quantiles):
         """
@@ -370,8 +376,6 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         Looks like this is much faster than using list comprehension with
         NthquantileSingleSided.
 
-        Need to add the minEdgeOffset in case we are restarting the simulation.
-
         Examples
         --------
         >>> d = Diffusion(1, beta=np.inf, occupancySize=5)
@@ -384,7 +388,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
         assert np.all(np.array(quantiles) > 1), "All quantiles must be > 1."
 
-        return np.array(super().findQuantiles(quantiles)) + self.minEdgeOffset
+        return np.array(super().findQuantiles(quantiles))
 
     def pGreaterThanX(self, idx):
         """
@@ -520,7 +524,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
             NthQuantiles = self.findQuantiles(quantiles)
             maxEdge = self.maxDistance[-1]
-             # need to unpack NthQuantiles since it's returned as a np array
+            # need to unpack NthQuantiles since it's returned as a np array
             row = [self.getTime(), maxEdge, *NthQuantiles]
             writer.writerow(row)
         f.close()
@@ -584,7 +588,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
     def evolveAndSave(self, time, quantiles, file):
         """
         Incrementally evolves the system forward to the specified times and saves
-        the specified quantiles after each increment. The data is stored as a
+        the specified quantiles a2fter each increment. The data is stored as a
         numpy array which may make it slower than the evolveAndSaveQuantile method.
 
         Parameters
