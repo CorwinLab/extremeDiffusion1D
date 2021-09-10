@@ -14,58 +14,9 @@ def test_equals():
     """
 
     d = DiffusionPDF(np.quad("1e4500"), beta=1, occupancySize=100)
+    d.id = 0
     d.evolveToTime(100)
     assert d == d
-
-
-def test_pyDiffusion_fromOccupancyTime():
-    """
-    Test to see if the fromOccupancyTime method correctly returns the same object
-    that it was initialized from.
-    """
-    N = np.quad("1e4500")
-    beta = 1
-    time_steps = 1000
-    ProbDistFlag = True
-    d = DiffusionPDF(N, beta, time_steps, ProbDistFlag)
-    d.evolveToTime(time_steps)
-
-    d2 = DiffusionPDF.fromOccupancyTime(
-        beta,
-        N,
-        resize=0,
-        time=d.currentTime,
-        occupancy=d.occupancy,
-        ProbDistFlag=ProbDistFlag,
-    )
-    assert d == d2
-
-
-def test_pyDiffusion_fromOccupancyTime_resize():
-    """
-    Test to see if hte fromOccupancyTime method correctly resizes the occupancy.
-    """
-
-    N = np.quad("1e4500")
-    beta = 1
-    time_steps = 1000
-    ProbDistFlag = True
-    d = DiffusionPDF(N, beta, time_steps, ProbDistFlag)
-    d.evolveToTime(time_steps)
-
-    d2 = DiffusionPDF.fromOccupancyTime(
-        beta,
-        N,
-        resize=1000,
-        time=d.currentTime,
-        occupancy=d.occupancy,
-        ProbDistFlag=ProbDistFlag,
-    )
-
-    assert len(d2.occupancy) == 2001, "Occupancy was not resized correctly"
-    assert np.all(
-        d2.occupancy[:1001] == d.occupancy
-    ), "Occupany was not initialized correctly."
 
 
 def test_pyDiffusion_findQuantiles():
@@ -77,12 +28,12 @@ def test_pyDiffusion_findQuantiles():
     """
 
     diff = DiffusionPDF(1, beta=np.inf, occupancySize=5)
+    diff.id = 0
     diff.evolveToTime(5)
     assert diff.findQuantile(10) == 1.5
     assert diff.findQuantile(100) == 2.5
     qs = diff.findQuantiles([100, 10])
-    qs.reverse()
-    assert qs == [1.5, 2.5]
+    assert all(qs == [2.5, 1.5])
 
 
 def test_pyDiffusion_findQuantiles_multiplePartilces():
@@ -94,12 +45,13 @@ def test_pyDiffusion_findQuantiles_multiplePartilces():
     """
 
     diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
+    diff.id = 0
     diff.evolveToTime(5)
 
     assert diff.findQuantile(10) == 1.5
     assert diff.findQuantile(100) == 2.5
     qs = diff.findQuantiles([100, 10])
-    assert qs == [2.5, 1.5]
+    assert all(qs == [2.5, 1.5])
 
 
 def test_pyDiffusion_findQuantiles_ascendingOrder():
@@ -110,10 +62,11 @@ def test_pyDiffusion_findQuantiles_ascendingOrder():
     """
 
     diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
+    diff.id = 0
     diff.evolveToTime(5)
 
-    assert diff.findQuantiles([10, 100]) == [2.5, 1.5]
-    assert diff.findQuantiles([100, 10]) == [2.5, 1.5]
+    assert all(diff.findQuantiles([10, 100]) == [2.5, 1.5])
+    assert all(diff.findQuantiles([100, 10]) == [2.5, 1.5])
 
 
 def test_pyDiffusion_evolveAndSaveQuantiles():
@@ -123,6 +76,7 @@ def test_pyDiffusion_evolveAndSaveQuantiles():
     """
 
     diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
+    diff.id = 0
     diff.evolveAndSaveQuantiles(
         time=[1, 2, 3, 4, 5], quantiles=[100, 10], file="Data.txt"
     )
@@ -131,6 +85,7 @@ def test_pyDiffusion_evolveAndSaveQuantiles():
 
     iterated_quantiles = []
     diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
+    diff.id = 0
     for _ in range(5):
         diff.iterateTimestep()
         iterated_quantiles.append(diff.findQuantiles([100, 10]))
@@ -139,7 +94,6 @@ def test_pyDiffusion_evolveAndSaveQuantiles():
 
     assert np.all(evolved_quantiles == iterated_quantiles)
     assert np.all([1, 2, 3, 4, 5] == data[:, 0])  # times should be the same
-
 
 def test_pyDiffusion_ProbDistFlagFalse():
     """
@@ -150,6 +104,7 @@ def test_pyDiffusion_ProbDistFlagFalse():
 
     nParticles = np.quad("10")
     diff = DiffusionPDF(nParticles, beta=1, occupancySize=10, ProbDistFlag=False)
+    diff.id = 0
     for _ in range(10):
         diff.iterateTimestep()
         assert np.sum(diff.occupancy) == nParticles
@@ -164,11 +119,56 @@ def test_pyDiffusion_ProbDistFlagFalse_LargeParticles():
     percent_tolerance = 1e-30
     nParticles = np.quad("1e4500")
     diff = DiffusionPDF(nParticles, beta=1, occupancySize=tMax, ProbDistFlag=False)
+    diff.id = 0
     for _ in range(tMax):
         diff.iterateTimestep()
         percent_difference = (np.sum(diff.occupancy) - nParticles) / nParticles
         assert percent_difference < percent_tolerance
 
+def test_pyDiffusion_savedState():
+    """
+    Check that the variables and occupancy are being properly saved. And that we
+    can resize the occupancy and get the same thing back.
+    """
+
+    nParticles = 1
+    tMax = 1000
+    diff = DiffusionPDF(nParticles, beta=np.inf, occupancySize=tMax, ProbDistFlag=True)
+    diff.id = 1
+    diff.evolveToTime(tMax)
+    diff.saveState()
+
+    diff2 = DiffusionPDF.fromFiles("Variables1.json", "Occupancy1.txt", "Edges1.json")
+    assert all(diff2.occupancy == diff.occupancy)
+
+    diff2.resizeOccupancy(3)
+    assert all(diff2.occupancy[:1001] == diff.occupancy)
+    assert all(diff2.occupancy[1001:] == 0)
+
+def test_pyDiffusion_savedStateIterate():
+    """
+    Check that the variables save and that we can iterate after loading the
+    occupancy.
+    """
+
+    nParticles = 1
+    tMax = 1000
+    diff = DiffusionPDF(nParticles, beta=np.inf, occupancySize=tMax, ProbDistFlag=True)
+    diff.id = 1
+    diff.evolveToTime(tMax)
+    diff.saveState()
+
+    # Load occupancy from the saved variables
+    diff2 = DiffusionPDF.fromFiles("Variables1.json", "Occupancy1.txt", "Edges1.json")
+    diff2.resizeOccupancy(5)
+    diff2.evolveToTime(diff2.currentTime+5)
+
+    # Check if it's the same as if we just evolved regularly
+    diff3 = DiffusionPDF(nParticles, beta=np.inf, occupancySize=tMax+5, ProbDistFlag=True)
+    diff3.id = 1
+    diff3.evolveToTime(1000+5)
+    assert all(diff2.occupancy == diff3.occupancy)
+    assert False
 
 def test_cleanup():
     """
@@ -177,3 +177,5 @@ def test_cleanup():
     """
     if os.path.exists("Data.txt"):
         os.remove("Data.txt")
+    if os.path.exists("Variables0.json"):
+        os.remove("Variables0.json")

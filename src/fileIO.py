@@ -70,7 +70,7 @@ def saveArrayQuad(save_file, arr):
 
     if isinstance(arr, list):
         arr = np.array(arr, dtype=np.quad)
-        
+
     with open(save_file, "w+") as f:
         writer = csv.writer(f)
         if arr.ndim == 1:

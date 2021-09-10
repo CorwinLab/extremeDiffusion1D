@@ -89,7 +89,7 @@ RealType DiffusionPDF::toNextSite(RealType currentSite, RealType bias)
   // For smallCutoff need to downcast currentSite to double. And then cast
   // answer to RealType.
   if (currentSite < smallCutoff) {
-   
+
     return RealType(binomial(gen, boost::random::binomial_distribution<>::param_type(double(currentSite), double(bias))));
   }
 
@@ -98,7 +98,7 @@ RealType DiffusionPDF::toNextSite(RealType currentSite, RealType bias)
   }
   // If less than largeCutoff use sqrt(N * p * (1-p)) * randn(-1, 1)
   else {
-    
+
     RealType mediumVariance = sqrt(currentSite * bias * (1 - bias));
     return currentSite * bias + mediumVariance * (2*RealType(dis(gen))-1);
   }
@@ -317,6 +317,7 @@ PYBIND11_MODULE(diffusionPDF, m)
       .def("getLargeCutoff", &DiffusionPDF::getLargeCutoff)
       .def("setLargeCutoff", &DiffusionPDF::setLargeCutoff, py::arg("largeCutoff"))
       .def("getEdges", &DiffusionPDF::getEdges)
+      .def("setEdges", &DiffusionPDF::setEdges)
       .def("getTime", &DiffusionPDF::getTime)
       .def("setTime", &DiffusionPDF::setTime)
       .def("iterateTimestep", &DiffusionPDF::iterateTimestep)

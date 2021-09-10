@@ -63,7 +63,7 @@ public:
   };
   std::vector<RealType> getOccupancy() { return occupancy; };
 
-  void resizeOccupancy(unsigned long int size) { occupancy.resize(size); };
+  void resizeOccupancy(unsigned long int size) { occupancy.insert(occupancy.end(), size, RealType(0)); };
 
   void setBetaSeed(const unsigned int seed) { gen.seed(seed); };
 
@@ -71,18 +71,22 @@ public:
 
   void setTime(const unsigned long int _time) { time = _time; };
 
-  std::pair<std::vector<unsigned long int>, std::vector<unsigned long int>>
+  std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> >
   getEdges()
   {
     return edges;
   };
+
+  void setEdges(std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > _edges){
+    edges = _edges;
+  }
 
   double getSmallCutoff() { return smallCutoff; };
   void setSmallCutoff(const double _smallCutoff) { smallCutoff = _smallCutoff; };
 
   double getLargeCutoff() { return largeCutoff; };
   void setLargeCutoff(const double _largeCutoff) { largeCutoff = _largeCutoff; };
-  
+
   // Functions that do things
 
   void iterateTimestep();

@@ -1,6 +1,8 @@
 import numpy as np
 import sys
 import os
+import time
+import json
 
 # Need to link to diffusionPDF library (PyBind11 code)
 path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "DiffusionPDF")
@@ -9,6 +11,7 @@ sys.path.append(path)
 import diffusionPDF
 import csv
 import npquad
+import fileIO
 
 
 class DiffusionPDF(diffusionPDF.DiffusionPDF):
@@ -33,6 +36,9 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         Whether or not to include fractional particles or not. If True doesn't
         round the particles shifting and if False then rounds the particles so
         there is always a whole number of particles.
+
+    id : int
+        SLURM ID used to save state periodically.
 
     Attributes
     ----------
@@ -67,6 +73,13 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         round the particles shifting and if False then rounds the particles so
         there is always a whole number of particles.
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._last_saved_time = time.process_time()  # seconds
+        self._save_interval = 3600 * 2  # Set to save occupancy every 2 hours.
+        self.id = None  # Need to also get SLURM ID
+        self.minEdgeOffset = 0
 
     def __str__(self):
         return f"DiffusionPDF(N={self.getNParticles()}, beta={self.getBeta()}, size={len(self.getEdges()[0])}, time={self.getTime()})"
@@ -122,12 +135,16 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
     @property
     def minDistance(self):
-        minEdge = self.getEdges()[0]
+        """
+        In case the simulation was restarted need to offset by minEdgeOffset.
+        """
+
+        minEdge = np.array(self.getEdges()[0][:self.currentTime+1]) + self.minEdgeOffset
         return minEdge - self.center
 
     @property
     def maxDistance(self):
-        maxEdge = self.getEdges()[1]
+        maxEdge = np.array(self.getEdges()[1][:self.currentTime+1]) + self.minEdgeOffset
         return maxEdge - self.center
 
     @property
@@ -154,62 +171,124 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
     def probDistFlag(self, flag):
         self.setProbDistFlag(flag)
 
+    @property
+    def smallCutoff(self):
+        return self.getSmallCutoff()
+
+    @smallCutoff.setter
+    def smallCutoff(self, smallCutoff):
+        self.setSmallCutoff(smallCutoff)
+
+    @property
+    def largeCutoff(self):
+        return self.getLargeCutoff()
+
+    @largeCutoff.setter
+    def largeCutoff(self, largeCutoff):
+        self.setLargeCutoff(largeCutoff)
+
+    @property
+    def edges(self):
+        return self.getEdges()
+
+    @edges.setter
+    def edges(self, edges):
+        self.setEdges(edges)
+
     def resizeOccupancy(self, size):
         """
-        Change the size of the occupancy to the provide size. Should probably
-        only resize to sizes greater than current occupancy size.
+        Add elements to the end of the occupancy vector.
 
         Parameters
         ----------
         size : int
-            Size to change the occupancy to.
+            Number of elements to add to occupancy
         """
 
         super().resizeOccupancy(size)
 
-    @classmethod
-    def fromOccupancyTime(
-        cls, beta, nParticles, resize, time, occupancy, ProbDistFlag=True
-    ):
+    def saveVariables(self):
         """
-        Create a DiffusionPDF class with a specific time and occupancy. Used to
-        resume experiments after saving the occupancy.
+        Save the current object's variables. These should be constants so
+        we'll just save them at the first timestep.
+        """
+
+        vars = {
+            "nParticles": str(self.nParticles),
+            "beta": self.beta,
+            "probDistFlag": self.probDistFlag,
+            "smallCutoff": self.smallCutoff,
+            "largeCutoff": self.largeCutoff,
+            "minEdgeOffset": self.minEdgeOffset,
+        }
+
+        with open(f"Variables{self.id}.json", "w+") as file:
+            json.dump(vars, file)
+
+    def saveState(self):
+        """
+        Save all the relevant data of the current object.
+        """
+
+        minIdx = self.edges[0][self.currentTime]
+        maxIdx = self.edges[1][self.currentTime]
+        fileIO.saveArrayQuad(f"Occupancy{self.id}.txt", self.occupancy[minIdx:maxIdx+1])
+
+        vars = {"minEdge": minIdx, "maxEdge": maxIdx, "time": self.currentTime}
+
+        with open(f"Edges{self.id}.json", "w+") as file:
+            json.dump(vars, file)
+
+    @classmethod
+    def fromFiles(cls, variables_file, occupancy_file, edges_file):
+        """
+        Create a DiffusionPDF class from variables saved with saveVariables()
+        and saveState().
 
         Parameters
         ----------
-        beta : float
-            Value of beta for the beta distribution to draw from.
+        variables_file : str
+            File that contains the parameters, nParticles, beta, probDistFlag,
+            smallCutoff, and largeCutoff.
 
-        nParticles : float or np.quad
-            Number of partilces in the occupancy.
+        occupancy_file : str
+            Occupancy at the current state
 
-        resize : int
-            Number of elements to add to occupancy. This is equivalent to maximum
-            time to go out to.
-
-        time : int
-            Current time of the system to initialize.
-
-        occupancy : numpy array (dtype np.quad)
-            Current occupancy of the system to initialize.
-
-        probDistFlat : bool (True)
-            Whether or not to include fractional particles or not. If True doesn't
-            round the particles shifting and if False then rounds the particles so
-            there is always a whole number of particles.
+        edges_file : str
+            File that contains the parameters minEdge, maxEdge and time.
 
         Returns
         -------
-        diff : Diffusion
-            Diffusion object initialized with provided parameters
+        d : DiffusionPDF
+            Diffusion object ready to pick up the simulation.
         """
 
-        diff = DiffusionPDF(nParticles, beta, len(occupancy) - 1)
-        diff.occupancy = occupancy
-        diff.currentTime = time
-        diff.resizeOccupancy(resize + len(diff.occupancy))
+        with open(variables_file, "r") as file:
+            vars = json.load(file)
 
-        return diff
+        with open(edges_file, "r") as file:
+            edges = json.load(file)
+
+        occupancySize = edges["maxEdge"] - edges["minEdge"] + 1
+        occupancy = fileIO.loadArrayQuad(occupancy_file, shape=occupancySize)
+
+        d = DiffusionPDF(
+            np.quad(vars["nParticles"]),
+            vars["beta"],
+            occupancySize,
+            vars["probDistFlag"],
+        )
+
+        d.occupancy = occupancy
+        d.smallCutoff = vars['smallCutoff']
+        d.largeCutoff = vars['largeCutoff']
+
+        # need to set the max edge to search the length of the array
+        currentEdges = d.edges
+        currentEdges[1][0] = occupancySize - 1
+        d.edges = currentEdges
+        d.minEdgeOffset = edges['minEdge']
+        return d
 
     def setBetaSeed(self, seed):
         """
@@ -228,6 +307,14 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         Move the occupancy forward one timestep drawing biases from the beta
         distribution.
         """
+
+        if self.currentTime == 0:
+            self.saveVariables()
+        # Save the occupancy periodically so we can start it up later.
+        # TODO: also save time and edges so we know where we are in space.
+        if (time.process_time() - self._last_saved_time) > self._save_interval:
+            self.saveState()
+            self._last_saved_time = time.process_time()
 
         super().iterateTimestep()
 
@@ -256,7 +343,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
         assert quantile > 1, "Quantile must be > 1, but quantile: {quantile}"
 
-        return super().findQuantile(quantile)
+        return np.array(super().findQuantile(quantile)) + self.minEdgeOffset
 
     def findQuantiles(self, quantiles):
         """
@@ -283,6 +370,8 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         Looks like this is much faster than using list comprehension with
         NthquantileSingleSided.
 
+        Need to add the minEdgeOffset in case we are restarting the simulation.
+
         Examples
         --------
         >>> d = Diffusion(1, beta=np.inf, occupancySize=5)
@@ -295,7 +384,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
         assert np.all(np.array(quantiles) > 1), "All quantiles must be > 1."
 
-        return super().findQuantiles(quantiles)
+        return np.array(super().findQuantiles(quantiles)) + self.minEdgeOffset
 
     def pGreaterThanX(self, idx):
         """
@@ -430,9 +519,9 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             self.evolveToTime(t)
 
             NthQuantiles = self.findQuantiles(quantiles)
-
-            maxEdge = self.getEdges()[1][t]
-            row = [self.getTime(), maxEdge] + NthQuantiles
+            maxEdge = self.maxDistance[-1]
+             # need to unpack NthQuantiles since it's returned as a np array
+            row = [self.getTime(), maxEdge, *NthQuantiles]
             writer.writerow(row)
         f.close()
 
@@ -523,9 +612,9 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
             quantiles = np.array(quantiles)
             quantiles.sort()
-            NthQuantile = self.findQuantiles(self.getNParticles() * quantiles)
+            NthQuantile = self.findQuantiles(quantiles)
 
-            maxEdge = self.getEdges()[1][t]
+            maxEdge = self.maxDistance
             row = [self.getTime(), maxEdge] + NthQuantile
             save_array[row_num, :] = row
         np.savetxt(file, save_array)
