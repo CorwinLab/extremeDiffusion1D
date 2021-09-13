@@ -372,8 +372,6 @@ class QuartileDatabase(Database):
             label="Linear",
         )
 
-        ax.vlines()
-
         ax.set_xscale("log")
         ax.set_yscale("log")
         ax.legend(fontsize=12)

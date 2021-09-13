@@ -17,14 +17,15 @@ from fileIO import loadArrayQuad
 files = glob.glob("/home/jacob/Desktop/corwinLabMount/CleanData/MaxPart100/Q*.txt")
 max_files = []
 
+# Currently returns ~225 files!
 for f in files:
     times = np.loadtxt(f, delimiter=",", skiprows=1, usecols=0)
     if times[-1] != 13000000:
         continue
     max_files.append(f)
     print(f)
-
 files = max_files
+
 db = QuartileDatabase(files, nParticles=np.quad("1e100"))
 print(len(db))
 run_again = True

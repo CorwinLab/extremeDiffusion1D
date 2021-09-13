@@ -11,6 +11,7 @@ def runExperiment(save_dir, id):
     d.id = id
     d.save_dir = save_dir
     d.evolveToTime(int(1e7))
+    d._save_interval = 1
 
 
 if __name__ == '__main__':
