@@ -80,7 +80,6 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         self._last_saved_time = time.process_time()  # seconds
         self._save_interval = 3600 * 2  # Set to save occupancy every 2 hours.
         self.id = None  # Need to also get SLURM ID
-        self.setup()
         self.save_dir = '.'
 
     def __str__(self):

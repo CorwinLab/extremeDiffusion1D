@@ -24,6 +24,8 @@ def runExperiment(
     q_stop=4500,
     q_step=50,
     probDistFlag=1,
+    save_dir='.',
+    sysID=None,
 ):
     """
     Run one Diffusion experiment for values of N & beta and then store the edges
@@ -75,7 +77,8 @@ def runExperiment(
     d = DiffusionPDF(
         N, beta=beta, occupancySize=num_of_steps, ProbDistFlag=probDistFlag
     )
-
+    d.save_dir = save_dir
+    d.id = sysID
     save_times = np.geomspace(1, num_of_steps, num_of_save_times, dtype=np.int64)
     save_times = np.unique(save_times)
 
@@ -107,7 +110,7 @@ if __name__ == "__main__":
     save_file = save_dir + f"Quartiles{sysID}.txt"
     save_file = os.path.abspath(save_file)
 
-    save_occ = save_dir + f"Occupancy{sysID}.txt"
+    save_occ = save_dir + f"FinalOccupancy{sysID}.txt"
     save_occ = os.path.abspath(save_occ)
 
     vars = {
@@ -121,6 +124,8 @@ if __name__ == "__main__":
         "q_stop": quartile_stop,
         "q_step": q_step,
         "probDistFlag": probDistFlag,
+        "save_dir": topDir,
+        "sysID": sysID,
     }
     vars_file = os.path.join(save_dir, "variables.json")
     today = date.today()
