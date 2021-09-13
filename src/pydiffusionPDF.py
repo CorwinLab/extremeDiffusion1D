@@ -97,20 +97,13 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
                 f"Comparison must be between same object types, but other of type {type(other)}"
             )
 
-        occ_same = np.all(self.occupancy == other.occupancy)
-        time_same = self.currentTime == other.currentTime
-        nParticles_same = self.nParticles == other.nParticles
-        beta_same = self.beta == other.beta
-        probDistFlag_same = self.probDistFlag == other.probDistFlag
-        edges_same_length = len(self.getEdges()[0]) == len(other.getEdges()[0])
-
         if (
-            occ_same
-            and time_same
-            and nParticles_same
-            and beta_same
-            and probDistFlag_same
-            and edges_same_length
+            np.all(self.occupancy == other.occupancy) # occupancy same
+            and self.currentTime == other.currentTime
+            and self.nParticles == other.nParticles
+            and self.beta == other.beta
+            and self.probDistFlag == other.probDistFlag
+            and self.edges == other.edges
         ):
             return True
 
@@ -202,26 +195,17 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
         super().resizeOccupancyAndEdges(size)
 
-    def saveVariables(self):
-        """
-        Save the current object's variables. These should be constants so
-        we'll just save them at the first timestep.
-        """
-
-        vars = {
-            "nParticles": str(self.nParticles),
-            "beta": self.beta,
-            "probDistFlag": self.probDistFlag,
-            "smallCutoff": self.smallCutoff,
-            "largeCutoff": self.largeCutoff,
-        }
-
-        with open(f"Variables{self.id}.json", "w+") as file:
-            json.dump(vars, file)
-
     def saveState(self):
         """
-        Save all the relevant data of the current object.
+        Save all the simulation constants to a scalars file and the occupancy
+        to a seperate file.
+
+        Note
+        ----
+        Must have defined the ID attribute for this to work properly.
+
+        The scalars are saved to a file Scalars{id}.json and the occupancy
+        is saved to Occupancy{id}.txt.
         """
 
         minIdx = self.edges[0][self.currentTime]
@@ -236,13 +220,19 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             "maxEdges": self.edges[1][: self.currentTime + 1],
             "minIdx": minIdx,
             "maxIdx": maxIdx,
+            "nParticles": str(self.nParticles),
+            "beta": self.beta,
+            "probDistFlag": self.probDistFlag,
+            "smallCutoff": self.smallCutoff,
+            "largeCutoff": self.largeCutoff,
+            "occupancySize": len(self.occupancy),
         }
 
-        with open(f"Edges{self.id}.json", "w+") as file:
+        with open(f"Scalars{self.id}.json", "w+") as file:
             json.dump(vars, file)
 
     @classmethod
-    def fromFiles(cls, variables_file, occupancy_file, edges_file):
+    def fromFiles(cls, variables_file, occupancy_file):
         """
         Create a DiffusionPDF class from variables saved with saveVariables()
         and saveState().
@@ -256,9 +246,6 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         occupancy_file : str
             Occupancy at the current state
 
-        edges_file : str
-            File that contains the parameters minEdge, maxEdge and time.
-
         Returns
         -------
         d : DiffusionPDF
@@ -268,27 +255,28 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         with open(variables_file, "r") as file:
             vars = json.load(file)
 
-        with open(edges_file, "r") as file:
-            edges = json.load(file)
-
-        occupancySize = edges["maxIdx"] - edges["minIdx"] + 1
-        occupancy = fileIO.loadArrayQuad(occupancy_file, shape=occupancySize)
-
         d = DiffusionPDF(
             np.quad(vars["nParticles"]),
             vars["beta"],
-            occupancySize,
+            vars["occupancySize"],
             vars["probDistFlag"],
         )
 
-        occupancy = np.concatenate(
-            [np.zeros(edges["minIdx"], dtype=np.quad), occupancy]
-        )
+        occupancyLoadLength = vars["maxIdx"] - vars["minIdx"] + 1
+        loadOccupancy = fileIO.loadArrayQuad(occupancy_file, shape=occupancyLoadLength)
+        occupancy = np.zeros(vars["occupancySize"], dtype=np.quad)
+        occupancy[vars["minIdx"] : vars["maxIdx"] + 1] = loadOccupancy
+
+        zerosConcate = np.zeros(vars["occupancySize"] - len(vars["minEdges"]))
+        minEdges = np.concatenate([vars["minEdges"], zerosConcate])
+        maxEdges = np.concatenate([vars["maxEdges"], zerosConcate])
+        edges = (minEdges.astype(int), maxEdges.astype(int))
+
         d.occupancy = occupancy
         d.smallCutoff = vars["smallCutoff"]
         d.largeCutoff = vars["largeCutoff"]
-        d.edges = (edges["minEdges"], edges["maxEdges"])
-        d.currentTime = edges["time"]
+        d.edges = edges
+        d.currentTime = vars["time"]
 
         return d
 
@@ -309,9 +297,6 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         Move the occupancy forward one timestep drawing biases from the beta
         distribution.
         """
-
-        if self.currentTime == 0:
-            self.saveVariables()
 
         # Save the occupancy periodically so we can start it up later.
         if (time.process_time() - self._last_saved_time) > self._save_interval:
@@ -662,3 +647,13 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         print("Indices: ", idx)
         print("Occupancy:", np.array(self.getOccupancy())[nonzeros])
         print("Prob: ", np.array(Ns) / self.getNParticles())
+
+if __name__ == "__main__":
+    d = DiffusionPDF(100, np.inf, int(1e6), ProbDistFlag=False)
+    d.id = 1
+    d.evolveToTime(100)
+    d.saveState()
+
+    d2 = DiffusionPDF.fromFiles("Scalars1.json", "Occupancy1.txt")
+
+    assert (d==d2)
