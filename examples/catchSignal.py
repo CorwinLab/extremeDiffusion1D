@@ -3,10 +3,6 @@ import signal
 import sys
 import numpy as np
 
-def signal_handler(sig, frame):
-    print("This works!")
-    sys.exit(0)
-
 class myClass:
     """
     Example class to test if python class can save an attribute when given the

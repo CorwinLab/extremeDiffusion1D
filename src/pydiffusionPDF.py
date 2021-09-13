@@ -3,6 +3,7 @@ import sys
 import os
 import time
 import json
+import signal
 
 # Need to link to diffusionPDF library (PyBind11 code)
 path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "DiffusionPDF")
@@ -79,6 +80,8 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         self._last_saved_time = time.process_time()  # seconds
         self._save_interval = 3600 * 2  # Set to save occupancy every 2 hours.
         self.id = None  # Need to also get SLURM ID
+        self.setup()
+        self.save_dir = '.'
 
     def __str__(self):
         return f"DiffusionPDF(N={self.getNParticles()}, beta={self.getBeta()}, size={len(self.getEdges()[0])}, time={self.getTime()})"
@@ -87,10 +90,6 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         return self.__str__()
 
     def __eq__(self, other):
-        """
-        Doesn't check if edges are the same b/c we don't really care/use those
-        a whole lot anyways.
-        """
 
         if not isinstance(other, DiffusionPDF):
             raise TypeError(
@@ -183,6 +182,14 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
     def edges(self, edges):
         self.setEdges(edges)
 
+    def setup(self):
+        signal.signal(signal.SIGTERM, self.catch)
+        signal.signal(signal.SIGINT, self.catch)
+
+    def catch(self, sig, frame):
+        self.saveState()
+        sys.exit(0)
+
     def resizeOccupancyAndEdges(self, size):
         """
         Add elements to the end of the occupancy vector.
@@ -208,10 +215,13 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         is saved to Occupancy{id}.txt.
         """
 
+        occupnacy_file = os.path.join(self.save_dir, f"Occupancy{self.id}.txt")
+        scalars_file = os.path.join(self.save_dir, f"Scalars{self.id}.json")
+
         minIdx = self.edges[0][self.currentTime]
         maxIdx = self.edges[1][self.currentTime]
         fileIO.saveArrayQuad(
-            f"Occupancy{self.id}.txt", self.occupancy[minIdx : maxIdx + 1]
+            occupnacy_file, self.occupancy[minIdx : maxIdx + 1]
         )
 
         vars = {
@@ -228,7 +238,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             "occupancySize": len(self.occupancy),
         }
 
-        with open(f"Scalars{self.id}.json", "w+") as file:
+        with open(scalars_file, "w+") as file:
             json.dump(vars, file)
 
     @classmethod
@@ -647,13 +657,3 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         print("Indices: ", idx)
         print("Occupancy:", np.array(self.getOccupancy())[nonzeros])
         print("Prob: ", np.array(Ns) / self.getNParticles())
-
-if __name__ == "__main__":
-    d = DiffusionPDF(100, np.inf, int(1e6), ProbDistFlag=False)
-    d.id = 1
-    d.evolveToTime(100)
-    d.saveState()
-
-    d2 = DiffusionPDF.fromFiles("Scalars1.json", "Occupancy1.txt")
-
-    assert (d==d2)
