@@ -140,12 +140,12 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
     @property
     def minDistance(self):
-        minEdge = np.array(self.getEdges()[0][: self.currentTime + 1])
+        minEdge = np.array(self.getSaveEdges()[0])
         return minEdge - self.center
 
     @property
     def maxDistance(self):
-        maxEdge = np.array(self.getEdges()[1][: self.currentTime + 1])
+        maxEdge = np.array(self.getSaveEdges()[1])
         return maxEdge - self.center
 
     @property
@@ -540,7 +540,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             self.evolveToTime(t)
 
             NthQuantiles = self.findQuantiles(quantiles)
-            maxEdge = self.maxDistance[-1]
+            maxEdge = self.getMaxIdx() - self.currentTime / 2
             # need to unpack NthQuantiles since it's returned as a np array
             row = [self.getTime(), maxEdge, *NthQuantiles]
             writer.writerow(row)
@@ -679,8 +679,3 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         print("Indices: ", idx)
         print("Occupancy:", np.array(self.getOccupancy())[nonzeros])
         print("Prob: ", np.array(Ns) / self.getNParticles())
-
-if __name__ == "__main__":
-    d = DiffusionPDF(100, 1.0, 1000)
-    d.evolveToTime(1000)
-    d.saveState()

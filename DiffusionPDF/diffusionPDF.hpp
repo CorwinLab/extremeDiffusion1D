@@ -72,7 +72,7 @@ public:
     occupancy.insert(occupancy.end(), size, RealType(0));
     edges.first.insert(edges.first.end(), size, 0);
     edges.second.insert(edges.second.end(), size, 0);
-    occupancySize += size; 
+    occupancySize += size;
   };
 
   void setBetaSeed(const unsigned int seed) { gen.seed(seed); };
@@ -90,6 +90,8 @@ public:
   void setEdges(std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > _edges){
     edges = _edges;
   }
+
+  unsigned long int getMaxIdx(){ return edges.second[time]; };
 
   double getSmallCutoff() { return smallCutoff; };
   void setSmallCutoff(const double _smallCutoff) { smallCutoff = _smallCutoff; };
