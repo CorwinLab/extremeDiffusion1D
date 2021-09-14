@@ -43,21 +43,28 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 } // namespace detail
 } // namespace pybind11
 
+template<typename T>
+std::vector<T> slice(std::vector<T> &v, const unsigned long int m, const unsigned long int n){
+  std::vector<T> vec(n - m + 1);
+  std::copy(v.begin() + m, v.begin() + n + 1, vec.begin());
+  return vec;
+}
+
 // Constuctor
 DiffusionPDF::DiffusionPDF(const RealType _nParticles,
                      const double _beta,
-                     const unsigned long int occupancySize,
+                     const unsigned long int _occupancySize,
                      const bool _ProbDistFlag)
     : nParticles(_nParticles), ProbDistFlag(_ProbDistFlag),
-      beta(_beta)
+      beta(_beta), occupancySize(_occupancySize)
 {
   if (isnan(nParticles) || isinf(nParticles)){
     throw std::runtime_error("Number of particles initialized to NaN");
   }
-  edges.first.resize(occupancySize + 1), edges.second.resize(occupancySize + 1);
+  edges.first.resize(_occupancySize + 1), edges.second.resize(_occupancySize + 1);
   edges.first[0] = 0, edges.second[0] = 0;
 
-  occupancy.resize(occupancySize + 1);
+  occupancy.resize(_occupancySize + 1);
   occupancy[0] = nParticles;
 
   if (_beta != 0) {
@@ -70,6 +77,16 @@ DiffusionPDF::DiffusionPDF(const RealType _nParticles,
   gen.seed(rd());
 
   time = 0;
+}
+
+std::vector<RealType> DiffusionPDF::getSaveOccupancy(){
+  return slice(occupancy, edges.first[time], edges.second[time]);
+}
+
+std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > DiffusionPDF::getSaveEdges(){
+  std::vector<unsigned long int> minEdge = slice(edges.first, 0, time);
+  std::vector<unsigned long int> maxEdge = slice(edges.second, 0, time);
+  return std::make_pair(minEdge, maxEdge);
 }
 
 RealType DiffusionPDF::toNextSite(RealType currentSite, RealType bias)
@@ -305,6 +322,9 @@ PYBIND11_MODULE(diffusionPDF, m)
 
       .def("getOccupancy", &DiffusionPDF::getOccupancy)
       .def("setOccupancy", &DiffusionPDF::setOccupancy, py::arg("occupancy"))
+      .def("getOccupancySize", &DiffusionPDF::getOccupancySize)
+      .def("getSaveOccupancy", &DiffusionPDF::getSaveOccupancy)
+      .def("getSaveEdges", &DiffusionPDF::getSaveEdges)
       .def("resizeOccupancyAndEdges", &DiffusionPDF::resizeOccupancyAndEdges, py::arg("size"))
       .def("getNParticles", &DiffusionPDF::getNParticles)
       .def("getBeta", &DiffusionPDF::getBeta)

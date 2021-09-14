@@ -18,6 +18,7 @@ typedef boost::multiprecision::float128 RealType;
 class DiffusionPDF {
 private:
   std::vector<RealType> occupancy;
+  unsigned long int occupancySize;
   RealType nParticles;
   bool ProbDistFlag;
   double beta;
@@ -46,7 +47,7 @@ private:
 public:
   DiffusionPDF(const RealType _nParticles,
             const double _beta,
-            const unsigned long int occupancySize,
+            const unsigned long int _occupancySize,
             const bool _probDistFlag = true);
   ~DiffusionPDF(){};
 
@@ -62,11 +63,16 @@ public:
     occupancy = _occupancy;
   };
   std::vector<RealType> getOccupancy() { return occupancy; };
+  unsigned long int getOccupancySize() { return occupancySize; };
+
+  std::vector<RealType> getSaveOccupancy();
+  std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > getSaveEdges();
 
   void resizeOccupancyAndEdges(unsigned long int size) {
     occupancy.insert(occupancy.end(), size, RealType(0));
     edges.first.insert(edges.first.end(), size, 0);
-    edges.second.insert(edges.second.end(), size, 0); 
+    edges.second.insert(edges.second.end(), size, 0);
+    occupancySize += size; 
   };
 
   void setBetaSeed(const unsigned int seed) { gen.seed(seed); };

@@ -166,7 +166,7 @@ def test_pyDiffusion_savedStateIterate():
     # Load occupancy from the saved variables
     diff2 = DiffusionPDF.fromFiles("Scalars1.json", "Occupancy1.txt")
     diff2.resizeOccupancyAndEdges(5)
-    diff2.evolveToTime(diff2.currentTime+5)
+    diff2.evolveToTime(diff2.currentTime + 5)
 
     # Check if it's the same as if we just evolved regularly
     diff3 = DiffusionPDF(nParticles, beta=np.inf, occupancySize=tMax+5, ProbDistFlag=True)

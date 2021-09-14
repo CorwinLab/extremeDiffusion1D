@@ -12,7 +12,7 @@ def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
     file : str
         Path to file
 
-    shape : tuple
+    shape : tuple or int
         Shape of the array to load
 
     skiprows : int (0)

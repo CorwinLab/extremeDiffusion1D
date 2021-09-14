@@ -38,19 +38,16 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         round the particles shifting and if False then rounds the particles so
         there is always a whole number of particles.
 
-    id : int
-        SLURM ID used to save state periodically.
-
     Attributes
     ----------
     time : numpy array
         Time of the system
 
     currentTime : int
-        Current time of the system - this is just max(time)
+        Current time of the system. This is the maximum of the time array.
 
     center : numpy array
-        Center of the occupancy over time.
+        Center of the occupancy over time. This is time / 2.
 
     minDistance : numpy array
         The distance from the left side of the occupancy over time.
@@ -59,7 +56,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         The distance from the right side of the occupancy over time. This
         is generally the one we care about.
 
-    occupancy : numpy array
+    occupancy : numpy array (dtype = np.quad)
         Number of particles at each position in the system. More formally, this
         is referred to as the partition function.
 
@@ -73,6 +70,24 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         Whether or not to include fractional particles or not. If True doesn't
         round the particles shifting and if False then rounds the particles so
         there is always a whole number of particles.
+
+    smallCutoff : int
+        Used in the discrete simulations to determine when to use the binomial
+        distribution.
+
+    largeCutoff : int
+        Used in the discrete simulations to determine when to approximate the
+        number of particles moving to the right as (beta * number of particles at position)
+
+    save_dir : str
+        Directory to save the Occupancy and Scalars file that will save periodically
+
+    id : int
+        SLURM ID used to save state periodically.
+
+    _save_interval : int
+        Number of seconds that can elapse before saving the Occupancy and Scalars
+        again.
     """
 
     def __init__(self, *args, **kwargs):
@@ -182,10 +197,20 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         self.setEdges(edges)
 
     def setup(self):
-        signal.signal(signal.SIGTERM, self.catch)
-        signal.signal(signal.SIGINT, self.catch)
+        """
+        Used to catch errors that are thrown to terimnate the object. This will
+        ensure that self.catch is run before terminating.
+        """
+
+        signal.signal(signal.SIGTERM, self.catch) # SLURM cancel
+        signal.signal(signal.SIGINT, self.catch) # Ctrl+C
 
     def catch(self, sig, frame):
+        """
+        We just want to save all the relevant data so we can restart the simulation
+        and then exit.
+        """
+
         self.saveState()
         sys.exit(0)
 
@@ -217,16 +242,16 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         occupnacy_file = os.path.join(self.save_dir, f"Occupancy{self.id}.txt")
         scalars_file = os.path.join(self.save_dir, f"Scalars{self.id}.json")
 
-        minIdx = self.edges[0][self.currentTime]
-        maxIdx = self.edges[1][self.currentTime]
         fileIO.saveArrayQuad(
-            occupnacy_file, self.occupancy[minIdx : maxIdx + 1]
+            occupnacy_file, self.getSaveOccupancy()
         )
+        minEdge, maxEdge = self.getSaveEdges()
+        minIdx, maxIdx = minEdge[-1], maxEdge[-1]
 
         vars = {
             "time": self.currentTime,
-            "minEdges": self.edges[0][: self.currentTime + 1],
-            "maxEdges": self.edges[1][: self.currentTime + 1],
+            "minEdges": minEdge,
+            "maxEdges": maxEdge,
             "minIdx": minIdx,
             "maxIdx": maxIdx,
             "nParticles": str(self.nParticles),
@@ -234,7 +259,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             "probDistFlag": self.probDistFlag,
             "smallCutoff": self.smallCutoff,
             "largeCutoff": self.largeCutoff,
-            "occupancySize": len(self.occupancy),
+            "occupancySize": self.getOccupancySize() + 1,
         }
 
         with open(scalars_file, "w+") as file:
@@ -306,16 +331,14 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         Move the occupancy forward one timestep drawing biases from the beta
         distribution.
         """
-
         # Save the occupancy periodically so we can start it up later.
         if (time.process_time() - self._last_saved_time) > self._save_interval:
             self.saveState()
             self._last_saved_time = time.process_time()
 
         # Need to throw error if trying to go past the edges
-        if self.currentTime + 2 > len(self.edges[0]):
+        if self.currentTime + 1 > self.getOccupancySize():
             raise RuntimeError("Cannot iterate past the size of the edges")
-
         super().iterateTimestep()
 
     def findQuantile(self, quantile):
@@ -656,3 +679,8 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         print("Indices: ", idx)
         print("Occupancy:", np.array(self.getOccupancy())[nonzeros])
         print("Prob: ", np.array(Ns) / self.getNParticles())
+
+if __name__ == "__main__":
+    d = DiffusionPDF(100, 1.0, 1000)
+    d.evolveToTime(1000)
+    d.saveState()

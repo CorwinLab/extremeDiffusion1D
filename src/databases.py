@@ -192,6 +192,15 @@ class QuartileDatabase(Database):
 
         self.quantiles = quantiles
 
+    def mean_generator(self):
+        """
+        Helper function to return mean quantile over time and quantile name. As
+        an iterator. 
+        """
+
+        for i, N in enumerate(self.quantiles):
+            yield N, self.mean[:, i]
+
     def plotMeans(self, save_dir=".", xscale=True, verbose=False):
         """
         Plot the mean 1/Nth quantiles for all N's in the database.
