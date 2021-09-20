@@ -33,8 +33,9 @@ db.plotMeans(save_dir="./figures/Means/")
 db.plotVars(save_dir="./figures/Vars/")
 db.plotMeansEvolve(save_dir="./figures/Means/", legend=False)
 db.plotVarsEvolve(save_dir="./figures/Vars/", legend=True)
+db.plotVarKPZ("./figures")
 
-
+'''
 for i, N in enumerate(db.quantiles):
     var = db.var[:, i]
     Nstr = prettifyQuad(N)
@@ -62,3 +63,4 @@ for i, N in enumerate(db.quantiles):
     ax.set_ylim([1e-4, 1e5])
     fig.savefig(f"./figures/VarTurnOn/Var{Nstr}.png", bbox_inches="tight")
     plt.close(fig)
+'''

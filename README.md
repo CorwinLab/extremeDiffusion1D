@@ -1,6 +1,7 @@
 # extremeDiffusion1D
 Simulations of the 1D Barraquand-Corwin model for extreme diffusion. The costly
 functions are written in C++ and then ported to Python using [PyBind11](https://github.com/pybind/pybind11).
+Current paper can be found here: https://www.overleaf.com/2173114897prxgbwzwwjds. 
 
 ## File Structure
 * DiffusionPDF

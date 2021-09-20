@@ -195,7 +195,7 @@ class QuartileDatabase(Database):
     def mean_generator(self):
         """
         Helper function to return mean quantile over time and quantile name. As
-        an iterator. 
+        an iterator.
         """
 
         for i, N in enumerate(self.quantiles):
@@ -482,11 +482,16 @@ class QuartileDatabase(Database):
             Nstr = prettifyQuad(quant)
             fig, ax = plt.subplots()
             logN = np.log(quant).astype(np.float64)
-            xaxis = logN ** 2 / self.time
-            yaxis = logN / self.time * self.var[:, i]
-            ax.plot(xaxis, yaxis)
-            ax.set_xlabel("lnN^2 / t")
-            ax.set_ylabel("lnN / t * Var(Qb(N,t))")
+            xaxis = 4 * logN ** 2 / self.time
+            yaxis = 2 * logN / self.time * self.var[:, i] / xaxis**(2/3)
+
+            t_theory = xaxis[xaxis < 100]
+            theory = np.sqrt(np.pi/2) * (t_theory / 2)**(-1/6) + (1 + 5*np.pi/4 - 8 * np.pi / (3*3**(1/2))) * (t_theory/2)**(1/3)
+
+            ax.plot(xaxis, yaxis * 2**(1/2))
+            ax.plot(t_theory, theory)
+            ax.set_xlabel("4lnN^2 / t")
+            ax.set_ylabel("2lnN / t * Var(Qb(N,t)) / (4lnN^2 / t)^(2/3)")
             ax.set_title(f"N={Nstr}")
             ax.set_xscale("log")
             fig.savefig(
