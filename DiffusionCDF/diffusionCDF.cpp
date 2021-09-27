@@ -7,6 +7,7 @@
 #include <cmath>
 #include <limits>
 #include <algorithm>
+#include <math.h>
 
 #include "pybind11_numpy_scalar.h"
 #include "diffusionCDF.hpp"
@@ -142,6 +143,32 @@ std::vector<unsigned long int> DiffusionTimeCDF::findQuantiles(
   return quantilePositions;
 }
 
+RealType DiffusionTimeCDF::getDiscreteVariance(RealType nParticles)
+{
+  RealType mean = 0;
+  RealType var = 0;
+  long int x;
+  RealType PDF;
+  RealType CDF_n;
+  RealType CDF_prev;
+  for (unsigned long int n=1; n<=t; n++){
+    x = 2*n + 2 - t;
+    CDF_n = exp(-CDF[n] * nParticles);
+    CDF_prev = exp(-CDF[n-1] * nParticles);
+    PDF = CDF_n - CDF_prev;
+    mean += x * PDF;
+  }
+
+  for (unsigned long int n=1; n<=t; n++){
+    x = 2*n + 2 - t;
+    CDF_n = exp(-CDF[n] * nParticles);
+    CDF_prev = exp(-CDF[n-1] * nParticles);
+    PDF = CDF_n - CDF_prev;
+    var += PDF * pow(x-mean, 2);
+  }
+  return var;
+}
+
 DiffusionPositionCDF::DiffusionPositionCDF(const double _beta, const unsigned long int _tMax, std::vector<RealType> _quantiles) : DiffusionCDF(_beta, _tMax)
 {
   // Initialize such that CDF(n=0, t) = 1
@@ -198,6 +225,7 @@ PYBIND11_MODULE(diffusionCDF, m)
 
   py::class_<DiffusionTimeCDF, DiffusionCDF>(m, "DiffusionTimeCDF")
       .def(py::init<const double, const unsigned long int>(), py::arg("beta"), py::arg("tMax"))
+      .def("getDiscreteVariance", &DiffusionTimeCDF::getDiscreteVariance, py::arg("nParticles"))
       .def("getTime", &DiffusionTimeCDF::getTime)
       .def("iterateTimeStep", &DiffusionTimeCDF::iterateTimeStep)
       .def("findQuantile", &DiffusionTimeCDF::findQuantile, py::arg("quantile"))

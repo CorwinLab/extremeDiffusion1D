@@ -140,6 +140,39 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             returnVals.reverse()
             return np.array(returnVals)
 
+    def getDiscreteVariance(self, nParticles):
+        """
+        Get the discrete variance from the CDF.
+
+        Parameters
+        ----------
+        nParticles : float or np.quad
+            Number of particles to get the discrete variance for.
+
+        Returns
+        -------
+        variance : np.quad
+            Variance for the number of particles
+        """
+
+        return super().getDiscreteVariance(nParticles)
+
+    def evolveAndGetVariance(self, times, nParticles, file):
+        """
+        Get the discrete variance at specific times.
+        """
+        f = open(file, "w")
+        writer = csv.writer(f)
+        header = ["time", str(nParticles), "variance"]
+        writer.writerow(header)
+        for t in times:
+            self.evolveToTime(t)
+            discrete = float(self.getDiscreteVariance(nParticles))
+            quantile = self.findQuantile(nParticles)
+            row = [self.time, quantile, discrete]
+            writer.writerow(row)
+        f.close()
+
     def evolveAndSaveQuantile(self, time, quantiles, file):
         """
         Evolve the system to specific times and save the quantiles at those times
@@ -248,3 +281,12 @@ class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
 
         for _ in range(num_positions):
             self.stepPosition()
+
+if __name__ == '__main__':
+    from matplotlib import pyplot as plt
+    tMax = int(1e4)
+    times = np.geomspace(10, tMax, 1000)
+    times = np.unique(times.astype(int))
+    nParticles = np.quad("1000")
+    d = DiffusionTimeCDF(1, tMax)
+    var = d.evolveAndGetVariance(times, nParticles, 'file.txt')

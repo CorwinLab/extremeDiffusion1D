@@ -65,6 +65,8 @@ public:
   unsigned long int findQuantile(RealType quantile);
 
   std::vector<unsigned long int> findQuantiles(std::vector<RealType> quantiles);
+
+  RealType getDiscreteVariance(RealType nParticles);
 };
 
 class DiffusionPositionCDF: public DiffusionCDF{

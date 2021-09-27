@@ -29,7 +29,7 @@ files = max_files
 
 db = QuartileDatabase(files, nParticles=np.quad("1e300"))
 print(len(db))
-run_again = False
+run_again = True
 if not os.path.exists("./Mean.txt") or not os.path.exists("./Var.txt") or run_again:
     db.calculateMeanVar(verbose=True)
     np.savetxt("Mean.txt", db.mean)

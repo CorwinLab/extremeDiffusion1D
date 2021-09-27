@@ -640,6 +640,58 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             save_array[row_num, :] = row
         np.savetxt(file, save_array)
 
+    def evolveAndSaveFirstPassage(self, positions, file):
+        """
+        Evolve the system forward and save the time when the maximum particle has
+        reached a specified distance. Really only useful for when doing discrete
+        simulations.
+
+        Parameters
+        ----------
+        positions : list or numpy array
+            Positions to record first passage time for
+
+        file : str
+            File to save the first passage time to
+
+        Examples
+        --------
+        >>> d = DiffusionPDF(1, np.inf, 6, ProbDistFlag=True)
+        >>> d.evolveAndSaveFirstPassage([1, 2, 3], 'Times.txt')
+        >>> print(np.loadtxt("Times.txt"))
+        [2. 4. 6.]
+        """
+
+        idx = 0
+        times = []
+        while idx < len(positions):
+            self.iterateTimestep()
+            maxIdx = self.getMaxIdx()
+            maxPosition = maxIdx - self.currentTime / 2
+            if maxPosition >= positions[idx]:
+                times.append(self.currentTime)
+                idx += 1
+        np.savetxt(file, times)
+
+    def evolveAndSaveFirstPassageQuantile(self, positions, quantiles):
+        """
+        Evolve the system forward and save the time when the specifid quantile
+        has reached a specified distance.
+
+        Parameters
+        ----------
+        positions : list or numpy array
+            Positions to record the first passage time for
+
+        quantiles : list or numpy array
+            Quantiles to record the positions for
+
+        file : str
+            File to save the first passage time to
+        """
+
+        return super().evolveAndSaveFirstPassageQuantile(positions, quantiles)
+
     def ProbBiggerX(self, vs, timesteps):
         """
         Troubleshooting function to make sure that pGreaterThanX function
