@@ -258,15 +258,6 @@ std::vector<double> DiffusionPDF::findQuantiles(std::vector<RealType> quantiles)
   return dists;
 }
 
-std::vector<std::vector<unsigned long int> > DiffusionPDF::evolveAndSaveFirstPassageQuantile(
-  std::vector<unsigned long int> positions,
-  std::vector<RealType> quantiles)
-{
-  std::vector<unsigned long int> times(positions.size(), 0);
-  std::vector<std::vector<unsigned long int> > firstPassageTimes(quantiles.size(), times);
-  return firstPassageTimes; 
-}
-
 RealType DiffusionPDF::pGreaterThanX(const unsigned long int idx)
 {
   RealType Nabove = 0.0;

@@ -184,7 +184,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         writer.writerow(header)
         for t in times:
             self.evolveToTime(t)
-            discrete = float(self.getDiscreteVariance(nParticles))
+            discrete = float(self.getDiscreteVarianceDiff(nParticles))
             quantile = self.findQuantile(nParticles)
             row = [self.time, quantile, discrete]
             writer.writerow(row)

@@ -4,7 +4,7 @@
 #SBATCH --error=/home/jhass2/CleanData/logs/MaxPart300/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --array=0-1000
+#SBATCH --array=0-250
 #SBATCH --output=/home/jhass2/CleanData/logs/MaxPart300/%A-%a.out
 #SBATCH --nice=1000
 

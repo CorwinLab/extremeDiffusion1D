@@ -180,7 +180,7 @@ RealType DiffusionTimeCDF::getDiscreteVarianceDiff(RealType nParticles)
     x = 2*n + 2 - t;
     CDF_n = exp(-CDF[n] * nParticles);
     CDF_prev = exp(-CDF[n-1] * nParticles);
-    PDF = CDF_n - CDF_prev;
+    PDF = (CDF_n - CDF_prev) / 2;
     var += PDF * pow(x-mean, 2);
   }
   return var;
