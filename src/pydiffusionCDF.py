@@ -157,6 +157,23 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
 
         return super().getDiscreteVariance(nParticles)
 
+    def getDiscreteVarianceDiff(self, nParticles):
+        """
+        Get discrete variance from the CDF by first calculating the PDF.
+
+        Parameters
+        ----------
+        nParticles : float or np.quad
+            Number of particles to get the discrete variance for.
+
+        Returns
+        -------
+        variance : np.quad
+            Variance for the number of particles
+        """
+
+        return super().getDiscreteVarianceDiff(nParticles)
+
     def evolveAndGetVariance(self, times, nParticles, file):
         """
         Get the discrete variance at specific times.
@@ -289,4 +306,6 @@ if __name__ == '__main__':
     times = np.unique(times.astype(int))
     nParticles = np.quad("1000")
     d = DiffusionTimeCDF(1, tMax)
-    var = d.evolveAndGetVariance(times, nParticles, 'file.txt')
+    d.evolveToTime(tMax)
+    print('Directly from CDF:', d.getDiscreteVariance(nParticles))
+    print('From the PDF:', d.getDiscreteVarianceDiff(nParticles))

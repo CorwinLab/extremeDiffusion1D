@@ -84,6 +84,14 @@ for i, N in enumerate(gumbel_quantiles):
     diff = PDFdb.getGumbalDiff(N) ** 2
     ax.plot(PDFdb.time / logN, diff / logN ** (2 / 3), c=colors[i], label=label)
 
+times = np.loadtxt("../CDFVar/Times.txt")
+discreteVar = np.loadtxt("../CDFVar/DiscreteVariance.txt")
+quantileVar = np.loadtxt("../CDFVar/QuantileVar.txt")
+N = 1000000
+
+ax.plot(times / np.log(N), (discreteVar+quantileVar) / (np.log(N)**(2/3)), label='Discrete from CDF')
+
+ax.set_ylim([10**-3, 10**4])
 ax.legend()
 ax.grid(True)
 

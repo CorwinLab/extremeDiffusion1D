@@ -145,6 +145,23 @@ std::vector<unsigned long int> DiffusionTimeCDF::findQuantiles(
 
 RealType DiffusionTimeCDF::getDiscreteVariance(RealType nParticles)
 {
+  RealType first_sum = 0;
+  RealType second_sum = 0;
+  long int x;
+  long int x0 = 2 - t;
+  for (unsigned long int n=0; n<=t; n++){
+    x = 2*n + 2 - t;
+    RealType exponential = 1 - exp(-CDF[n] * nParticles);
+    second_sum += exponential;
+    first_sum += (x-x0) * exponential;
+  }
+
+  RealType var = 2 * first_sum - pow(second_sum, 2);
+  return var;
+}
+
+RealType DiffusionTimeCDF::getDiscreteVarianceDiff(RealType nParticles)
+{
   RealType mean = 0;
   RealType var = 0;
   long int x;
@@ -155,7 +172,7 @@ RealType DiffusionTimeCDF::getDiscreteVariance(RealType nParticles)
     x = 2*n + 2 - t;
     CDF_n = exp(-CDF[n] * nParticles);
     CDF_prev = exp(-CDF[n-1] * nParticles);
-    PDF = CDF_n - CDF_prev;
+    PDF = (CDF_n - CDF_prev) / 2;
     mean += x * PDF;
   }
 
@@ -225,6 +242,7 @@ PYBIND11_MODULE(diffusionCDF, m)
 
   py::class_<DiffusionTimeCDF, DiffusionCDF>(m, "DiffusionTimeCDF")
       .def(py::init<const double, const unsigned long int>(), py::arg("beta"), py::arg("tMax"))
+      .def("getDiscreteVarianceDiff", &DiffusionTimeCDF::getDiscreteVarianceDiff, py::arg("nParticles"))
       .def("getDiscreteVariance", &DiffusionTimeCDF::getDiscreteVariance, py::arg("nParticles"))
       .def("getTime", &DiffusionTimeCDF::getTime)
       .def("iterateTimeStep", &DiffusionTimeCDF::iterateTimeStep)

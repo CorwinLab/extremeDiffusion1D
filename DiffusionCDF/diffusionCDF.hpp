@@ -66,6 +66,7 @@ public:
 
   std::vector<unsigned long int> findQuantiles(std::vector<RealType> quantiles);
 
+  RealType getDiscreteVarianceDiff(RealType nParticles);
   RealType getDiscreteVariance(RealType nParticles);
 };
 
