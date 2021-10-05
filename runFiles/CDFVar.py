@@ -16,7 +16,7 @@ def runExperiment(
     tMax,
     save_file,
     num_of_save_times=5000,
-    nParticles=int(1e5)
+    nParticles=300
 ):
     """
     Run a simulation of the recurrsion relation from Ivan's model.
@@ -42,7 +42,7 @@ def runExperiment(
     beta = float(beta)
     tMax = int(tMax)
     num_of_save_times = int(num_of_save_times)
-    nParticles = np.quad(nParticles)
+    nParticles = np.quad(f"1e{nParticles}")
 
     rec = DiffusionTimeCDF(beta, tMax)
 

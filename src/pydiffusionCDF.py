@@ -9,23 +9,82 @@ import diffusionCDF
 import numpy as np
 import npquad
 import csv
+import fileIO
+import json
+import time
 
 
 class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
     """
-    Create a class that iterates through the time of the CDF.
+    Create a class that iterates through the time of the CDF. Can also be used to
+    get the discrete variance.
+
+    Parameters
+    ----------
+    tMax : int
+        Maximum time that will be iterated to.
+
+    beta : float
+        Value of beta used in the recurrance relation.
 
     Attributes
     ----------
     CDF : numpy array (dtype of np.quad)
-        The current recurrance vector CDF(n, t)
+        The current recurrance vector Z_B(n, t). This is actually
+        Z_B(n, t) = 1 - CDF(n, t).
 
     time : int
-        Current time in the recurrance relation
+        Current time of the system
 
-    beta : float
-        Value of beta used in the recurrance relation
+    id : int
+        System ID used to save the system state.
+
+    save_dir : str
+        Directory to save the system state to.
+
+    Methods
+    -------
+    setBetaSeed(seed)
+        Set the random seed of the beta distribution.
+
+    iterateTimeStep()
+        Evolve the system forward one step in time.
+
+    evolveToTime(time)
+        Evolve the system to a time.
+
+    saveState()
+        Saves the current state of the system to a file.
+
+    evolveTimesteps(num)
+        Evolve the system forward a number of timesteps.
+
+    findQuantile(quantile)
+        Find the corresponding quantile position.
+
+    findQuantiles(quantiles, descending=False)
+        Find the corresponding quantiles.
+
+    getGumbelVariance(nParticles)
+        Get the gumbel variance from the CDF.
+
+    getGumbelVariancePDF(nParticles)
+        Get gumbel variance from the CDF by first calculating the PDF.
+
+    evolveAndGetVariance(times, nParticles, file)
+        Get the gumbel variance at specific times and save to file.
+
+    evolveAndSaveQuantile(times, quantiles, file)
+        Evolve the system to specific times and save the quantiles at those times
+        to a file.
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._last_saved_time = time.process_time()  # seconds
+        self._save_interval = 3600 * 2  # Set to save occupancy every 2 hours.
+        self.id = None  # Need to also get SLURM ID
+        self.save_dir = '.'
 
     def __str__(self):
         return f"DiffusionCDF(beta={self.beta}, time={self.time})"
@@ -33,24 +92,65 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
     def __repr__(self):
         return self.__str__()
 
+    def __eq__(self, other):
+        if not isinstance(other, DiffusionTimeCDF):
+            raise TypeError(
+                f"Comparison must be between same object types, but other of type {type(other)}"
+            )
+
+        if (
+            self.id == other.id
+            and self.save_dir == other.save_dir
+            and self.beta == other.beta
+            and self.time == other.time
+            and np.all(self.CDF == other.CDF)
+            and self.tMax == other.tMax
+        ):
+            return True
+        return False
+
     @property
     def time(self):
         return self.getTime()
+
+    @time.setter
+    def time(self, time):
+        self.setTime(time)
 
     @property
     def beta(self):
         return self.getBeta()
 
+    @beta.setter
+    def beta(self, beta):
+        self.setBeta(beta)
+
     @property
     def CDF(self):
         return self.getCDF()
+
+    @CDF.setter
+    def CDF(self, CDF):
+        self.setCDF(CDF)
 
     @property
     def tMax(self):
         return self.gettMax()
 
-    @property
+    @tMax.setter
+    def tMax(self, tMax):
+        self.settMax(tMax)
+
     def setBetaSeed(self, seed):
+        '''
+        Set the random seed of the beta distribution.
+
+        Parameters
+        ----------
+        seed : int(?)
+            Random seed to use.
+        '''
+
         super().setBetaSeed(seed)
 
     def iterateTimeStep(self):
@@ -64,9 +164,12 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             time. This would normally Core Dump since trying to allocate memory
             outside array.
         """
+        if (time.process_time() - self._last_saved_time) > self._save_interval:
+            self.saveState()
+            self._last_saved_time = time.process_time()
 
         if self.time >= self.tMax:
-            raise ValueError("Cannot evolve to time greater than tmax")
+            raise ValueError(f"Cannot evolve to time greater than tMax: {self.tMax}")
 
         super().iterateTimeStep()
 
@@ -98,7 +201,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
 
     def findQuantile(self, quantile):
         """
-        Find the corresponding quantile.
+        Find the corresponding quantile position.
 
         Parameters
         ----------
@@ -107,8 +210,8 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
 
         Returns
         -------
-        int
-            Position of Nth quantile
+        float
+            Position of the quantile
         """
 
         return super().findQuantile(quantile)
@@ -140,14 +243,14 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             returnVals.reverse()
             return np.array(returnVals)
 
-    def getDiscreteVariance(self, nParticles):
+    def getGumbelVariance(self, nParticles):
         """
-        Get the discrete variance from the CDF.
+        Get the gumbel variance from the CDF.
 
         Parameters
         ----------
         nParticles : float or np.quad
-            Number of particles to get the discrete variance for.
+            Number of particles to get the gumbel variance for.
 
         Returns
         -------
@@ -155,36 +258,90 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             Variance for the number of particles
         """
 
-        return super().getDiscreteVariance(nParticles)
+        return super().getGumbelVariance(nParticles)
 
-    def getDiscreteVarianceDiff(self, nParticles):
+    def saveState(self):
         """
-        Get discrete variance from the CDF by first calculating the PDF.
+        Save all the simulation constants to a scalars file and the occupancy
+        to a seperate file.
+
+        Note
+        ----
+        Must have defined the ID attribute for this to work properly.
+        The scalars are saved to a file Scalars{id}.json and the occupancy
+        is saved to Occupancy{id}.txt.
+        """
+
+        cdf_file = os.path.join(self.save_dir, f"CDF{self.id}.txt")
+        scalars_file = os.path.join(self.save_dir, f"Scalars{self.id}.json")
+
+        fileIO.saveArrayQuad(cdf_file, self.getSaveCDF())
+
+        vars = {"time": self.time,
+                "beta": self.beta,
+                "tMax": self.tMax,
+                "id": self.id,
+                "save_dir": self.save_dir}
+
+        with open(scalars_file, "w+") as f:
+            json.dump(vars, f)
+
+    @classmethod
+    def fromFiles(cls, cdf_file, scalars_file):
+        """
+        Load a DiffusionTimeCDF object from saved files.
 
         Parameters
         ----------
-        nParticles : float or np.quad
-            Number of particles to get the discrete variance for.
+        cdf_file : str
+            File that contains the CDF of the system
+
+        scalars_file : str
+            File that contains system parameters
 
         Returns
         -------
-        variance : np.quad
-            Variance for the number of particles
+        DiffusionTimeCDF
+            Object loaded from file. Should be equivalent to the saved object.
         """
 
-        return super().getDiscreteVarianceDiff(nParticles)
+        with open(scalars_file, "r") as file:
+            vars = json.load(file)
+
+        load_cdf = fileIO.loadArrayQuad(cdf_file, shape=vars['time']+1)
+        cdf = np.zeros(vars['tMax']+1, dtype=np.quad)
+        cdf[:vars['time']+1] = load_cdf
+
+        d = DiffusionTimeCDF(beta=vars['beta'], tMax=vars['tMax'])
+        d.time = vars['time']
+        d.id = vars['id']
+        d.save_dir = vars['save_dir']
+        d.CDF = cdf
+        return d
 
     def evolveAndGetVariance(self, times, nParticles, file):
         """
-        Get the discrete variance at specific times.
+        Get the gumbel variance at specific times and save to file.
+
+        Parameters
+        ----------
+        times : numpy array or list
+            Times to evolve the system to and save quantiles at.
+
+        nParticles : np.quad
+            Number of particles to record quantile and variance for.
+
+        file : str
+            Destination to save the data to.
         """
+
         f = open(file, "w")
         writer = csv.writer(f)
         header = ["time", str(nParticles), "variance"]
         writer.writerow(header)
         for t in times:
             self.evolveToTime(t)
-            discrete = float(self.getDiscreteVarianceDiff(nParticles))
+            discrete = float(self.getGumbelVariance(nParticles))
             quantile = self.findQuantile(nParticles)
             row = [self.time, quantile, discrete]
             writer.writerow(row)

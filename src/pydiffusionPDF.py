@@ -117,6 +117,8 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             and self.beta == other.beta
             and self.probDistFlag == other.probDistFlag
             and self.edges == other.edges
+            and self.id == other.id
+            and self.save_dir == other.save_dir
         ):
             return True
 
@@ -260,6 +262,8 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             "smallCutoff": self.smallCutoff,
             "largeCutoff": self.largeCutoff,
             "occupancySize": self.getOccupancySize() + 1,
+            "id": self.id,
+            "save_dir": self.save_dir,
         }
 
         with open(scalars_file, "w+") as file:
@@ -311,6 +315,8 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         d.largeCutoff = vars["largeCutoff"]
         d.edges = edges
         d.currentTime = vars["time"]
+        d.save_dir = vars["save_dir"]
+        d.id = vars["id"]
 
         return d
 

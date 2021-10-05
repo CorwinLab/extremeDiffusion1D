@@ -41,10 +41,13 @@ public:
   ~DiffusionCDF(){};
 
   double getBeta() { return beta; };
+  void setBeta(double _beta){ beta = _beta; };
 
   std::vector<RealType> getCDF() { return CDF; };
+  void setCDF(std::vector<RealType> _CDF){ CDF = _CDF; };
 
   unsigned long int gettMax() { return tMax; };
+  void settMax(unsigned long int _tMax){ tMax = _tMax; };
 
   void setBetaSeed(const unsigned int seed) { gen.seed(seed); };
 
@@ -58,6 +61,7 @@ public:
   DiffusionTimeCDF(const double _beta, const unsigned long int _tMax);
 
   unsigned long int getTime() { return t; };
+  void setTime(unsigned long int _t){ t = _t; };
 
   // Functions that do things
   void iterateTimeStep();
@@ -66,22 +70,22 @@ public:
 
   std::vector<unsigned long int> findQuantiles(std::vector<RealType> quantiles);
 
-  RealType getDiscreteVarianceDiff(RealType nParticles);
-  RealType getDiscreteVariance(RealType nParticles);
-  std::pair<std::vector<long int>, std::vector<RealType> > getPDF(RealType nParticles);
-  std::pair<std::vector<long int>, std::vector<RealType> > getCDF(RealType nParticles);
+  RealType getGumbelVariance(RealType nParticles);
+  std::pair<std::vector<long int>, std::vector<RealType> > getDiscretePDF(RealType nParticles);
+  std::pair<std::vector<long int>, std::vector<RealType> > getDiscreteCDF(RealType nParticles);
+  std::vector<RealType> getSaveCDF();
 };
 
 class DiffusionPositionCDF: public DiffusionCDF{
 private:
   unsigned long int position = 0;
   std::vector<RealType> quantiles;
-  std::vector<std::vector<unsigned long int> > quantilesMeasurement;
+  std::vector<std::vector<unsigned long int> > quantilePositions;
 
 public:
   DiffusionPositionCDF(const double _beta, const unsigned long int _tMax, std::vector<RealType> _quantiles);
   unsigned long int getPosition() { return position; };
-  std::vector<std::vector<unsigned long int> > getQuantilesMeasurement() { return quantilesMeasurement; };
+  std::vector<std::vector<unsigned long int> > getQuantilePositions() { return quantilePositions; };
   std::vector<RealType> getQuantiles() { return quantiles; };
 
   // Functions that do things

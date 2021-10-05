@@ -7,6 +7,7 @@ from nativePyDiffusionCDF import makeRec, findQuintile
 import numpy as np
 import npquad
 import pytest
+import os
 
 
 def test_einsteinbias_CDF():
@@ -17,12 +18,12 @@ def test_einsteinbias_CDF():
 
     # Need to do some np magic to make sure Eric's code matches what
     # we're generating. His columns are our rows but reversed.
-    CDF = makeRec(5)
+    CDF = makeRec(5, 'einstein')
     CDF = CDF.T
     for row in range(CDF.shape[0]):
         CDF[row, :] = np.flip(CDF[row, :], axis=0)
         CDF[row, :] = np.roll(CDF[row, :], -CDF.shape[0] + row + 1)
-
+    print(CDF)
     # Need to save each row
     rec = DiffusionTimeCDF(beta=np.inf, tMax=4)
     CDF_c = rec.CDF
@@ -41,7 +42,7 @@ def test_einsteinbias_CDF_large():
     """
 
     N = 50
-    CDF = makeRec(N)
+    CDF = makeRec(N, 'einstein')
     CDF = CDF.T
     for row in range(CDF.shape[0]):
         CDF[row, :] = np.flip(CDF[row, :], axis=0)
@@ -63,7 +64,7 @@ def test_einsteinbias_quartile():
 
     tMax = 5
     quintile = 10
-    CDF = makeRec(tMax)
+    CDF = makeRec(tMax, 'einstein')
     qs = findQuintile(CDF, quintile).astype(int)
     rec = DiffusionTimeCDF(beta=np.inf, tMax=tMax - 1)
     qs_c = [rec.findQuantile(quintile)]
@@ -80,7 +81,7 @@ def test_einsteinbias_quartile_large():
 
     tMax = 1000
     quintile = 100
-    CDF = makeRec(tMax)
+    CDF = makeRec(tMax, 'einstein')
     qs = findQuintile(CDF, quintile).astype(int)
     rec = DiffusionTimeCDF(beta=np.inf, tMax=tMax - 1)
     qs_c = [rec.findQuantile(quintile)]
@@ -88,3 +89,63 @@ def test_einsteinbias_quartile_large():
         rec.iterateTimeStep()
         qs_c.append(rec.findQuantile(quintile))
     assert (qs == qs_c).all()
+
+def test_eq():
+    """
+    Make sure that the equals method works properly
+    """
+    tMax = 100
+    rec = DiffusionTimeCDF(beta=1, tMax=tMax)
+    rec.id = 20
+    rec.evolveToTime(tMax)
+
+    assert rec == rec
+
+def test_saveState():
+    """
+    Make sure saveState and loaded object using fromFiles returns the same
+    object.
+    """
+    tMax = 1000
+    rec = DiffusionTimeCDF(beta=1, tMax=tMax)
+    rec.id = 1
+    rec.evolveToTime(tMax)
+    rec.saveState()
+
+    rec_loaded = DiffusionTimeCDF.fromFiles("CDF1.txt", "Scalars1.json")
+
+    assert rec_loaded == rec
+
+def test_pyDiffusion_savedStateIterate():
+    """
+    Check that the variables save and that we can iterate after loading the
+    occupancy.
+    """
+    tMax = 500
+    rec = DiffusionTimeCDF(beta=np.inf, tMax=tMax+5)
+    rec.id = 0
+    rec.evolveToTime(tMax)
+    rec.saveState()
+
+    rec_loaded = DiffusionTimeCDF.fromFiles("CDF0.txt", "Scalars0.json")
+    rec_loaded.evolveToTime(tMax+5)
+
+    rec3 = DiffusionTimeCDF(beta=np.inf, tMax=tMax+5)
+    rec3.id = 0
+    rec3.evolveToTime(tMax+5)
+
+    assert rec_loaded == rec3
+
+def remove(file):
+    if os.path.exists(file):
+        os.remove(file)
+
+def test_cleanup():
+    """
+    Really just want to delete any files that are still remaining once all the
+    tests have been run.
+    """
+    remove("CDF0.txt")
+    remove("Scalars0.json")
+    remove("CDF1.txt")
+    remove("Scalars1.json")
