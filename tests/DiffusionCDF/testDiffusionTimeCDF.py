@@ -88,3 +88,48 @@ def test_einsteinbias_quartile_large():
         rec.iterateTimeStep()
         qs_c.append(rec.findQuantile(quintile))
     assert (qs == qs_c).all()
+
+def test_saveState():
+    tMax = 1000
+    rec = DiffusionTimeCDF(beta=1, tMax=tMax)
+    rec.id = 1
+    rec.evolveToTime(tMax)
+    rec.saveState()
+
+    rec_loaded = DiffusionTimeCDF.fromFiles("CDF1.txt", "Scalars1.json")
+
+    assert rec_loaded == rec
+
+def test_pyDiffusion_savedStateIterate():
+    """
+    Check that the variables save and that we can iterate after loading the
+    occupancy.
+    """
+    tMax = 500
+    rec = DiffusionTimeCDF(beta=np.inf, tMax=tMax+5)
+    rec.id = 0
+    rec.evolveToTime(tMax)
+    rec.saveState()
+
+    rec_loaded = DiffusionTimeCDF.fromFiles("CDF0.txt", "Scalars0.json")
+    rec_loaded.evolveToTime(tMax+5)
+
+    rec3 = DiffusionTimeCDF(beta=np.inf, tMax=tMax+5)
+    rec3.id = 0
+    rec3.evolveToTime(tMax+5)
+
+    assert rec_loaded == rec3
+
+def remove(file):
+    if os.path.exists(file):
+        os.remove(file)
+
+def test_cleanup():
+    """
+    Really just want to delete any files that are still remaining once all the
+    tests have been run.
+    """
+    remove("CDF0.txt")
+    remove("Scalars0.json")
+    remove("CDF1.txt")
+    remove("Scalars1.json")
