@@ -69,12 +69,13 @@ ax.plot(
 )
 ax.plot(PDFdb.time / logN, PDFdb.time / logN / logN ** (2 / 3), label="Linear")
 
+# Plot the Gumbel Results
 gumbel_quantiles = PDFdb.quantiles[1:-1]
 cm = plt.get_cmap("winter")
 colors = [
     cm(1.0 * i / len(gumbel_quantiles) / 1.5) for i in range(len(gumbel_quantiles))
 ]
-# Plot the Gumbel Results
+
 for i, N in enumerate(gumbel_quantiles):
     if i == 0:
         label = r"$(10N - 0.1N)^{2}$"
