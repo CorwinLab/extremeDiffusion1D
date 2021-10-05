@@ -304,8 +304,5 @@ if __name__ == '__main__':
     tMax = int(1e4)
     times = np.geomspace(10, tMax, 1000)
     times = np.unique(times.astype(int))
-    nParticles = np.quad("1000")
     d = DiffusionTimeCDF(1, tMax)
     d.evolveToTime(tMax)
-    print('Directly from CDF:', d.getDiscreteVariance(nParticles))
-    print('From the PDF:', d.getDiscreteVarianceDiff(nParticles))

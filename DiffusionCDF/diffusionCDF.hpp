@@ -68,6 +68,8 @@ public:
 
   RealType getDiscreteVarianceDiff(RealType nParticles);
   RealType getDiscreteVariance(RealType nParticles);
+  std::pair<std::vector<long int>, std::vector<RealType> > getPDF(RealType nParticles);
+  std::pair<std::vector<long int>, std::vector<RealType> > getCDF(RealType nParticles);
 };
 
 class DiffusionPositionCDF: public DiffusionCDF{

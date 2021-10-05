@@ -143,46 +143,107 @@ std::vector<unsigned long int> DiffusionTimeCDF::findQuantiles(
   return quantilePositions;
 }
 
-RealType DiffusionTimeCDF::getDiscreteVariance(RealType nParticles)
+RealType calculateMean(std::vector<long int> xvals, std::vector<RealType> cdf)
 {
+  RealType mean = 0;
+  int H;
+  for (unsigned long int i=0; i < cdf.size(); i++){
+    if (xvals.at(i) <= 0){
+      H = 0;
+    }
+    else{
+      H = 1;
+    }
+    mean += H - cdf[i];
+  }
+  return mean;
+}
+
+std::pair<std::vector<long int>, std::vector<RealType> > DiffusionTimeCDF::getPDF(RealType nParticles){
+  std::vector<long int> xvals(t);
+  std::vector<RealType> PDF(t);
+  RealType CDF_n, CDF_prev;
+  for (unsigned long int n=1; n<=t; n++){
+    xvals[n-1] = 2*n + 2 - t;
+    CDF_n = exp(-CDF[n] * nParticles);
+    CDF_prev = exp(-CDF[n-1] * nParticles);
+    PDF[n-1] = CDF_n - CDF_prev;
+  }
+  return std::make_pair(xvals, PDF);
+}
+
+std::pair<std::vector<long int>, std::vector<RealType> > DiffusionTimeCDF::getCDF(RealType nParticles){
+  std::vector<long int> xvals(t+1);
+  std::vector<RealType> CDF_n(t+1);
+  for (unsigned long int n=0; n<=t; n++){
+    xvals[n] = 2*n + 2 - t;
+    CDF_n[n] = exp(-CDF[n] * nParticles);
+  }
+  return std::make_pair(xvals, CDF_n);
+
+}
+
+// Note that this shifts the xvals by the mean.
+RealType calculateVariance(std::vector<long int> xvals, std::vector<RealType> cdf)
+{
+  RealType var;
+  // first shift so the mean is zero
+  long int mean = static_cast<long int>(calculateMean(xvals, cdf));
+  std::cout << "CDF Calculated Mean:" << mean << std::endl;
+  std::transform(xvals.begin(), xvals.end(), xvals.begin(), std::bind2nd(std::minus<long int>(), mean));
+  std::cout << "New Mean: " << calculateMean(xvals, cdf) << std::endl;
   RealType first_sum = 0;
   RealType second_sum = 0;
-  long int x;
-  long int x0 = 2 - t;
-  for (unsigned long int n=0; n<=t; n++){
-    x = 2*n + 2 - t;
-    RealType exponential = 1 - exp(-CDF[n] * nParticles);
-    second_sum += exponential;
-    first_sum += (x-x0) * exponential;
+  int H;
+  for (unsigned long int i=0; i < cdf.size(); i++){
+    if (xvals[i] <=0){
+      H = 0;
+    }
+    else{
+      H = 1;
+    }
+    first_sum += 2 * xvals[i] * (H - cdf[i]);
+    second_sum += (H - cdf[i]);
   }
+  var = first_sum - pow(second_sum, 2); // second_sum should be 0 but isn't
+  return var;
+}
 
-  RealType var = 2 * first_sum - pow(second_sum, 2);
+RealType DiffusionTimeCDF::getDiscreteVariance(RealType nParticles)
+{
+  std::pair<std::vector<long int>, std::vector<RealType> > pair = getCDF(nParticles);
+  std::vector<long int> xvals = pair.first;
+  std::vector<RealType> cdf = pair.second;
+  return calculateVariance(xvals, cdf);
+}
+
+RealType calculateMeanPDF(std::vector<long int> xvals, std::vector<RealType> PDF){
+  RealType mean = 0;
+  for (unsigned long int i=0; i < PDF.size(); i++){
+    mean += xvals[i] * PDF[i];
+  }
+  return mean;
+}
+
+RealType calculateVariancePDF(std::vector<long int> xvals, std::vector<RealType> PDF){
+  RealType mean = calculateMeanPDF(xvals, PDF);
+  RealType var = 0;
+  for (unsigned long int i=1; i < PDF.size(); i++){
+    var += PDF[i] * pow(xvals[i] - mean, 2);
+  }
   return var;
 }
 
 RealType DiffusionTimeCDF::getDiscreteVarianceDiff(RealType nParticles)
 {
-  RealType mean = 0;
-  RealType var = 0;
-  long int x;
-  RealType PDF;
-  RealType CDF_n;
-  RealType CDF_prev;
-  for (unsigned long int n=1; n<=t; n++){
-    x = 2*n + 2 - t;
-    CDF_n = exp(-CDF[n] * nParticles);
-    CDF_prev = exp(-CDF[n-1] * nParticles);
-    PDF = (CDF_n - CDF_prev) / 2;
-    mean += x * PDF;
-  }
+  std::pair<std::vector<long int>, std::vector<RealType> > pair = getPDF(nParticles);
+  std::vector<long int> xvals = pair.first;
+  std::vector<RealType> PDF = pair.second;
 
-  for (unsigned long int n=1; n<=t; n++){
-    x = 2*n + 2 - t;
-    CDF_n = exp(-CDF[n] * nParticles);
-    CDF_prev = exp(-CDF[n-1] * nParticles);
-    PDF = (CDF_n - CDF_prev) / 2;
-    var += PDF * pow(x-mean, 2);
-  }
+  RealType mean = calculateMeanPDF(xvals, PDF);
+  RealType var = calculateVariancePDF(xvals, PDF);
+  std::cout << "PDF calculated Mean:" << mean << std::endl;
+  std::cout << "PDF variance:" << var << std::endl;
   return var;
 }
 
@@ -247,7 +308,9 @@ PYBIND11_MODULE(diffusionCDF, m)
       .def("getTime", &DiffusionTimeCDF::getTime)
       .def("iterateTimeStep", &DiffusionTimeCDF::iterateTimeStep)
       .def("findQuantile", &DiffusionTimeCDF::findQuantile, py::arg("quantile"))
-      .def("findQuantiles", &DiffusionTimeCDF::findQuantiles, py::arg("quantiles"));
+      .def("findQuantiles", &DiffusionTimeCDF::findQuantiles, py::arg("quantiles"))
+      .def("getPDF", &DiffusionTimeCDF::getPDF)
+      .def("getCDF", &DiffusionTimeCDF::getCDF);
 
   py::class_<DiffusionPositionCDF, DiffusionCDF>(m, "DiffusionPositionCDF")
       .def(py::init<const double, const unsigned long int, std::vector<RealType> >(), py::arg("beta"), py::arg("tMax"), py::arg("quantiles"))
@@ -255,4 +318,9 @@ PYBIND11_MODULE(diffusionCDF, m)
       .def("getQuantilesMeasurement", &DiffusionPositionCDF::getQuantilesMeasurement)
       .def("getQuantiles", &DiffusionPositionCDF::getQuantiles)
       .def("stepPosition", &DiffusionPositionCDF::stepPosition);
+
+  m.def("calculateMean", &calculateMean, py::arg("xvals"), py::arg("cdf"));
+  m.def("calculateVariance", &calculateVariance, py::arg("xvals"), py::arg("cdf"));
+  m.def("calculateMeanPDF", &calculateMeanPDF, py::arg("xvals"), py::arg("pdf"));
+  m.def("calculateVariancePDF", &calculateVariancePDF, py::arg("xvals"), py::arg("pdf"));
 }
