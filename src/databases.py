@@ -31,8 +31,9 @@ class Database:
         # Load the first array so we can get simple stuff like len of the files
         # and max/min times
         self._example_file = loadArrayQuad(
-            files[0], self.shape, delimiter=delimiter, skiprows=skiprows
+            files[0], delimiter=delimiter, skiprows=skiprows
         )
+        self.time = self._example_file[:, 0].astype(np.float64)
 
         # Set some easy properties
         self.delimiter = delimiter
@@ -40,10 +41,6 @@ class Database:
 
     def __len__(self):
         return len(self.files)
-
-    @property
-    def time(self):
-        return self._example_file[:, 0].astype(np.float64)
 
     @property
     def center(self):
@@ -113,7 +110,7 @@ class QuartileDatabase(Database):
 
         self.nParticles = nParticles
 
-    def calculateMeanVar(self, verbose=False):
+    def calculateMeanVar(self, verbose=False, maxTime=None):
         """
         Calculate the mean of the selected data along the columns or rows.
         Assumes that the first column is the time.
@@ -124,39 +121,55 @@ class QuartileDatabase(Database):
             Whether to print the file names out when each is finished or not.
             Really only used if you want to see progress over time.
         """
+        squared_sum = None
+        mean_sum = None
+        maxEdge_mean_sum = None
+        maxEdge_squared_sum = None
 
-        rows = self.shape[0]
-        cols = self.shape[1] - 2  # exclude the time and max columns
-        shape = (rows, cols)
-        squared_sum = np.zeros(shape, dtype=np.quad)
-        mean_sum = np.zeros(shape, dtype=np.quad)
-
-        maxEdge_mean_sum = np.zeros(rows, dtype=np.quad)
-        maxEdge_squared_sum = np.zeros(rows, dtype=np.quad)
-
+        new_files = []
         for f in self.files:
             data = loadArrayQuad(
-                f, self.shape, delimiter=self.delimiter, skiprows=self.skiprows
+                f, delimiter=self.delimiter, skiprows=self.skiprows
             )
-            time = data[:, 0]
+            time = data[:, 0].astype(float)
+            if maxTime is not None:
+                if max(time) < maxTime:
+                    continue
+                time = time[time<=maxTime]
+                self.time = time
+            new_files.append(f)
+            maxIdx = len(time)
+
             # second column is maximum edge which we don't really care about
             # for probDist=True
-            maxEdge = 2 * (data[:, 1] - self.center)
-            data = 2 * data[:, 2:]
+            maxEdge = 2 * (data[:maxIdx, 1] - self.center)
+            data = 2 * data[:maxIdx, 2:]
 
-            squared_sum += data ** 2
-            mean_sum += data
+            if squared_sum is None:
+                squared_sum = np.zeros(data.shape, dtype=np.quad)
+            if mean_sum is None:
+                mean_sum = np.zeros(data.shape, dtype=np.quad)
 
-            maxEdge_mean_sum += maxEdge
-            maxEdge_squared_sum += maxEdge ** 2
+            if maxEdge_mean_sum is None:
+                maxEdge_mean_sum = np.zeros(maxEdge.shape, dtype=np.quad)
+            if maxEdge_squared_sum is None:
+                maxEdge_squared_sum = np.zeros(maxEdge.shape, dtype=np.quad)
+
+            squared_sum[:maxIdx, :] += data ** 2
+            mean_sum[:maxIdx, :] += data
+
+            maxEdge_mean_sum[:maxIdx] += maxEdge
+            maxEdge_squared_sum[:maxIdx] += maxEdge ** 2
 
             if verbose:
                 print(f)
 
-        mean_sum = mean_sum.astype(np.float64)
-        squared_sum = squared_sum.astype(np.float64)
-        maxEdge_mean_sum = maxEdge_mean_sum.astype(np.float64)
-        maxEdge_squared_sum = maxEdge_squared_sum.astype(np.float64)
+        print(f"Dropping {len(self.files) - len(new_files)} files")
+        self.files = new_files
+        mean_sum = mean_sum[:maxIdx, :].astype(np.float64)
+        squared_sum = squared_sum[:maxIdx, :].astype(np.float64)
+        maxEdge_mean_sum = maxEdge_mean_sum[:maxIdx].astype(np.float64)
+        maxEdge_squared_sum = maxEdge_squared_sum[:maxIdx].astype(np.float64)
 
         self.mean = mean_sum / len(self)
         self.var = squared_sum / len(self) - self.mean ** 2
@@ -562,7 +575,7 @@ class QuartileDatabase(Database):
         diff = []
         for f in self.files:
             final_time = loadArrayQuad(
-                f, skiprows=len(self._example_file) - 1, shape=len(self.quantiles) + 2
+                f, skiprows=len(self._example_file) - 1,
             )
             final_time = final_time[2:]
             diff.append((final_time[idx - 1] - final_time[idx + 1]).astype(np.float64))
@@ -601,7 +614,7 @@ class VelocityDatabase(Database):
         mean_sum = np.zeros(shape, dtype=np.quad)
 
         for f in self.files:
-            data = loadArrayQuad(f, self.shape, delimiter=",", skiprows=1)
+            data = loadArrayQuad(f, delimiter=",", skiprows=1)
             time = data[:, 0]
             data = data[:, 1:]
             data = np.log(data)
@@ -691,7 +704,7 @@ class VelocityDatabase(Database):
         else:
             total_data = np.empty((len(self.files), self.shape[1] - 1))
             for row, f in enumerate(self.files):
-                data = loadArrayQuad(f, self.shape, delimiter=",", skiprows=1)
+                data = loadArrayQuad(f, delimiter=",", skiprows=1)
                 data = data[-1, 1:]
                 data = np.log(data).astype(np.float64)
                 total_data[row] = data
@@ -808,7 +821,7 @@ class CDFQuartileDatabase(QuartileDatabase):
 
         for f in self.files:
             data = loadArrayQuad(
-                f, self.shape, delimiter=self.delimiter, skiprows=self.skiprows
+                f, delimiter=self.delimiter, skiprows=self.skiprows
             )
             time = data[:, 0]
             # second column is maximum edge which we don't really care about

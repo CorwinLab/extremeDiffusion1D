@@ -301,7 +301,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         )
 
         occupancyLoadLength = vars["maxIdx"] - vars["minIdx"] + 1
-        loadOccupancy = fileIO.loadArrayQuad(occupancy_file, shape=occupancyLoadLength)
+        loadOccupancy = fileIO.loadArrayQuad(occupancy_file)
         occupancy = np.zeros(vars["occupancySize"], dtype=np.quad)
         occupancy[vars["minIdx"] : vars["maxIdx"] + 1] = loadOccupancy
 

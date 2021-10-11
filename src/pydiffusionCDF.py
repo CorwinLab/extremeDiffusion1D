@@ -308,7 +308,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         with open(scalars_file, "r") as file:
             vars = json.load(file)
 
-        load_cdf = fileIO.loadArrayQuad(cdf_file, shape=vars['time']+1)
+        load_cdf = fileIO.loadArrayQuad(cdf_file)
         cdf = np.zeros(vars['tMax']+1, dtype=np.quad)
         cdf[:vars['time']+1] = load_cdf
 

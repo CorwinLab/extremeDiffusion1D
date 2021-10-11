@@ -34,6 +34,9 @@ if not os.path.exists("./Mean.txt") or not os.path.exists("./Var.txt") or run_ag
     db.calculateMeanVar(verbose=True)
     np.savetxt("Mean.txt", db.mean)
     np.savetxt("Var.txt", db.var)
+    np.savetxt("MaxMean.txt", db.maxMean)
+    np.savetxt("MaxVar.txt", db.maxVar)
+    np.savetxt("Times.txt", db.time)
 else:
     db.loadMean("Mean.txt")
     db.loadVar("Var.txt")

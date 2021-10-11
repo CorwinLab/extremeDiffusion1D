@@ -7,6 +7,7 @@ import glob
 sys.path.append("../../src")
 from databases import QuartileDatabase
 from theory import theoreticalNthQuartVar, NthQuartVarStr, NthQuartVarStrLargeTimes
+from quadMath import prettifyQuad
 
 PDF_files = glob.glob("/home/jacob/Desktop/corwinLabMount/CleanData/QSweep/Q*.txt")
 PDFdb = QuartileDatabase(PDF_files)
@@ -40,6 +41,7 @@ ax.set_ylabel("Variance / log(N)^(2/3)")
 # Plot the PDF graphs
 cm = plt.get_cmap("gist_heat")
 colors = [cm(1.0 * i / len(PDFdb.quantiles) / 1.5) for i in range(len(PDFdb.quantiles))]
+print("PDF quantile range:", ["{:0e}".format(int(i)) for i in PDFdb.quantiles])
 for i, quantile in enumerate(PDFdb.quantiles):
     if i == 0:
         label = "PDF Variance"
@@ -52,48 +54,68 @@ for i, quantile in enumerate(PDFdb.quantiles):
 
 # Plot the theoretical quantile variance
 theory = theoreticalNthQuartVar(quantile, PDFdb.time)
-ax.plot(PDFdb.time / logN, theory / logN ** (2 / 3), label=NthQuartVarStr)
+ax.plot(PDFdb.time / logN, theory / logN ** (2 / 3), '--', label=NthQuartVarStr)
 ax.plot(
     PDFdb.time / logN,
     (PDFdb.time * np.pi) ** (1 / 2) / 2 / logN ** (2 / 3),
+    '--',
     label=NthQuartVarStrLargeTimes,
 )
+ax.plot(PDFdb.time / logN, PDFdb.time / logN / logN ** (2 / 3), '--', label="Linear " + prettifyQuad(quantile))
 
 # Plot the discrete variance
+print("Discrete Number of Particles", "{:e}".format(int(Discretedb.nParticles)))
 logN = np.log(Discretedb.nParticles).astype(float)
 ax.plot(
     Discretedb.time / logN,
     Discretedb.maxVar / logN ** (2 / 3),
-    label="Discrete",
+    label="Discrete" + prettifyQuad(Discretedb.nParticles),
     c="purple",
 )
-ax.plot(PDFdb.time / logN, PDFdb.time / logN / logN ** (2 / 3), label="Linear")
 
-# Plot the Gumbel Results
-gumbel_quantiles = PDFdb.quantiles[1:-1]
-cm = plt.get_cmap("winter")
-colors = [
-    cm(1.0 * i / len(gumbel_quantiles) / 1.5) for i in range(len(gumbel_quantiles))
-]
+# Get 1e100 Number of Particles
+maxVar = np.loadtxt("../MaxPart100/MaxVar.txt")
+times = np.loadtxt("../MaxPart100/Times.txt")
+nParticles = np.quad("1e100")
+print("Discrete Number of Particles: 1e100")
+logN = np.log(nParticles).astype(float)
+ax.plot(
+    times / logN,
+    maxVar / logN **(2/3),
+    label='Discrete 1e100',
+    c='g',
+    alpha=0.8,
+)
 
-for i, N in enumerate(gumbel_quantiles):
-    if i == 0:
-        label = r"$(10N - 0.1N)^{2}$"
-    else:
-        label = None
-    logN = np.log(N).astype(float)
-    diff = PDFdb.getGumbalDiff(N) ** 2
-    ax.plot(PDFdb.time / logN, diff / logN ** (2 / 3), c=colors[i], label=label)
+# Get 1e300 number of particles
+maxVar = np.loadtxt("../MaxPart300/MaxVar.txt")
+times = np.loadtxt("../MaxPart300/Times.txt")
+nParticles = np.quad("1e300")
+print("Discrete Number of Particles: 1e300")
+logN = np.log(nParticles).astype(float)
+ax.plot(
+    times / logN,
+    maxVar / logN **(2/3),
+    label='Discrete 1e300',
+    c='y',
+    alpha=0.8
+)
 
-times = np.loadtxt("../CDFVarFixed/Times.txt")
-discreteVar = np.loadtxt("../CDFVarFixed/DiscreteVariance.txt")
-quantileVar = np.loadtxt("../CDFVarFixed/QuantileVar.txt")
-N = 1000000
-
-ax.plot(times / np.log(N), (discreteVar+quantileVar) / (np.log(N)**(2/3)), label='Discrete from CDF')
+# Get theoretical quantile from CDF
+nParticles = np.quad("1e100")
+logN = np.log(nParticles).astype(float)
+DiscreteVar = np.loadtxt("../CDFVar100/DiscreteVariance.txt")
+QuantileVar = np.loadtxt("../CDFVar100/QuantileVar.txt")
+time = np.loadtxt("../CDFVar100/Times.txt")
+ax.plot(
+    time / logN,
+    (DiscreteVar + QuantileVar) / logN ** (2/3),
+    alpha=0.8,
+    label='CDF Discrete 1e100'
+)
 
 ax.set_ylim([10**-3, 10**4])
 ax.legend()
 ax.grid(True)
-
+print("Done!")
 fig.savefig("./figures/Variance.png")

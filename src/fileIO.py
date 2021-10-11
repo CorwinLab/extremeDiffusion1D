@@ -2,58 +2,49 @@ import numpy as np
 import npquad
 import csv
 
-
-def loadArrayQuad(file, shape, skiprows=0, delimiter=","):
+def loadArrayQuad(fileName, delimiter=',', dtype=np.quad, skiprows=0):
     """
-    Load a quad precision array from a file.
+    Load a quad array from a file.
 
     Parameters
-    ---------
-    file : str
-        Path to file
+    ----------
+    fileName : str
+        name of file to read
 
-    shape : tuple or int
-        Shape of the array to load
+    delimiter : str
+        Delimiter used to save the file
 
-    skiprows : int (0)
-        Number of rows to skip before reading the data
+    dtype : type
+        Type of the output. Constructor must accept strings
 
-    delimiter : str (",")
-        Character to split the rows on
+    skiprows : int
+        Number of rows to skip at the beginning of the file.
 
     Returns
     -------
-    arr : numpy array (dtype=np.quad)
-        Data as an array with quad precision
+    numpy array
+        File loaded as a numpy array
 
-    Throws
-    ------
-    ValueError
-        Throws if shape is larger than the size of the file. This is to avoid
-        silently returning values at the end of the array that are empty.
+    Note
+    ----
+    Takes about 20 seconds to save/load an array of size 1e7.
     """
+    with open(fileName, "r") as file:
+        for _ in range(skiprows):
+            file.readline()
+        line = file.__next__()
+        array = np.empty(
+            (1 + sum(1 for line in file), len(line.split(delimiter))),
+            dtype=dtype
+            )
 
-    arr = np.empty(shape, dtype=np.quad)
-    with open(file, "r") as f:
-        if skiprows > 0:
-            for _ in range(skiprows):
-                f.readline()
-        for row, line in enumerate(f):
-            # strip first to get rid of "/n"
-            line = line.strip().split(delimiter)
-            for col, elem in enumerate(line):
-                elem = np.quad(elem)
-                if arr.ndim == 1:
-                    arr[col] = elem
-                else:
-                    arr[row, col] = elem
-
-    if arr.ndim != 1:
-        if (row != shape[0] - 1) and (col != shape[1] - 1):
-            raise ValueError("Data is not the same size as the shape")
-
-    return arr
-
+    with open(fileName, "r") as file:
+        for _ in range(skiprows):
+            file.readline()
+        for i, line in enumerate(file):
+            for j, element in enumerate(line.split(delimiter)):
+                array[i, j] = dtype(element)
+    return array
 
 def saveArrayQuad(save_file, arr):
     """
