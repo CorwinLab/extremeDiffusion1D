@@ -74,18 +74,28 @@ def runExperiment(
     q_step = int(q_step)
     probDistFlag = bool(int(probDistFlag))
 
-    d = DiffusionPDF(
-        N, beta=beta, occupancySize=num_of_steps, ProbDistFlag=probDistFlag
-    )
-    d.save_dir = save_dir
-    d.id = sysID
     save_times = np.geomspace(1, num_of_steps, num_of_save_times, dtype=np.int64)
     save_times = np.unique(save_times)
 
     # Note: the quartiles will be sorted in descending order in evolveAndSaveQuartiles
     quartiles = quadMath.logarange(q_start, q_stop, q_step, endpoint=True)
 
-    d.evolveAndSaveQuantiles(save_times, quartiles, save_file)
+    occupancy_file = os.path.join(self.save_dir, f"Occupancy{self.id}.txt")
+    scalars_file = os.path.join(self.save_dir, f"Scalars{self.id}.json")
+
+    if os.path.exists(occupancy_file) and os.path.exists(scalars_file):
+        d = DiffusionPDF.fromFiles(scalars_file, occupancy_file)
+        save_times = save_times[save_times > d.currentTime]
+        append = True
+    else:
+        d = DiffusionPDF(
+            N, beta=beta, occupancySize=num_of_steps, ProbDistFlag=probDistFlag
+        )
+        d.save_dir = save_dir
+        d.id = sysID
+        append = False
+
+    d.evolveAndSaveQuantiles(save_times, quartiles, save_file, append=append)
 
     fileIO.saveArrayQuad(save_occ, d.occupancy)
 

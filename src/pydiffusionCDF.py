@@ -319,7 +319,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         d.CDF = cdf
         return d
 
-    def evolveAndGetVariance(self, times, nParticles, file):
+    def evolveAndGetVariance(self, times, nParticles, file, append=False):
         """
         Get the gumbel variance at specific times and save to file.
 
@@ -334,11 +334,15 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         file : str
             Destination to save the data to.
         """
-
-        f = open(file, "w")
+        # Need to make sure changing to "a" doesn't break when writing to an
+        # empty or non-existant file
+        f = open(file, "a")
         writer = csv.writer(f)
-        header = ["time", str(nParticles), "variance"]
-        writer.writerow(header)
+
+        if not append:
+            header = ["time", str(nParticles), "variance"]
+            writer.writerow(header)
+
         for t in times:
             self.evolveToTime(t)
             discrete = float(self.getGumbelVariance(nParticles))
@@ -347,7 +351,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             writer.writerow(row)
         f.close()
 
-    def evolveAndSaveQuantile(self, time, quantiles, file):
+    def evolveAndSaveQuantile(self, time, quantiles, file, append=False):
         """
         Evolve the system to specific times and save the quantiles at those times
         to a file.
@@ -369,10 +373,13 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         >>> r.evolveAndSaveQuantile([1, 5, 50], [5, 10], 'Data.txt')
         """
 
-        f = open(file, "w")
+        f = open(file, "a")
         writer = csv.writer(f)
-        header = ["time"] + [str(q) for q in quantiles]
-        writer.writerow(header)
+
+        if not append:
+            header = ["time"] + [str(q) for q in quantiles]
+            writer.writerow(header)
+
         for t in time:
             self.evolveToTime(t)
 
@@ -455,11 +462,3 @@ class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
 
         for _ in range(num_positions):
             self.stepPosition()
-
-if __name__ == '__main__':
-    from matplotlib import pyplot as plt
-    tMax = int(1e4)
-    times = np.geomspace(10, tMax, 1000)
-    times = np.unique(times.astype(int))
-    d = DiffusionTimeCDF(1, tMax)
-    d.evolveToTime(tMax)

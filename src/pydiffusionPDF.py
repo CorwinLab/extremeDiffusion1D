@@ -241,11 +241,11 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         is saved to Occupancy{id}.txt.
         """
 
-        occupnacy_file = os.path.join(self.save_dir, f"Occupancy{self.id}.txt")
+        occupancy_file = os.path.join(self.save_dir, f"Occupancy{self.id}.txt")
         scalars_file = os.path.join(self.save_dir, f"Scalars{self.id}.json")
 
         fileIO.saveArrayQuad(
-            occupnacy_file, self.getSaveOccupancy()
+            occupancy_file, self.getSaveOccupancy()
         )
         minEdge, maxEdge = self.getSaveEdges()
         minIdx, maxIdx = minEdge[-1], maxEdge[-1]
@@ -528,11 +528,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         stores everything to a numpy array and then saves it.
         """
 
-        if append:
-            f = open(file, "a")
-        else:
-            f = open(file, "w")
-
+        f = open(file, "a")
         writer = csv.writer(f)
 
         # Sort quantiles in descending order

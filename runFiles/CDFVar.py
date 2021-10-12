@@ -17,6 +17,8 @@ def runExperiment(
     save_file,
     num_of_save_times=5000,
     nParticles=300
+    id = None,
+    save_dir='.',
 ):
     """
     Run a simulation of the recurrsion relation from Ivan's model.
@@ -44,12 +46,23 @@ def runExperiment(
     num_of_save_times = int(num_of_save_times)
     nParticles = np.quad(f"1e{nParticles}")
 
-    rec = DiffusionTimeCDF(beta, tMax)
-
     save_times = np.geomspace(1, tMax, num_of_save_times, dtype=np.int64)
     save_times = np.unique(save_times)
 
-    rec.evolveAndGetVariance(save_times, nParticles, save_file)
+    scalars_file = os.path.join(save_dir, f"Scalars{rec.id}.json")
+    CDF_file = os.path.join(save_dir, f"CDF{self.id}.txt")
+
+    if os.path.exists(scalars_file) and os.path.exists(CDF_file):
+        rec = DiffusionTimeCDF.fromFiles(CDF_file, scalars_file)
+        save_times = savetimes[savetimes > rec.time]
+        append = True
+    else:
+        rec = DiffusionTimeCDF(beta, tMax)
+        rec.id = id
+        rec.save_dir = save_dir
+        append = False
+
+    rec.evolveAndGetVariance(save_times, nParticles, save_file, append=append)
 
 if __name__ == "__main__":
     (
@@ -73,6 +86,8 @@ if __name__ == "__main__":
         "save_file": save_file,
         "num_of_save_times": num_of_save_times,
         "nParticles": nParticles,
+        "id": sysID,
+        "save_dir": topDir,
     }
     vars_file = os.path.join(save_dir, "variables.json")
     today = date.today()

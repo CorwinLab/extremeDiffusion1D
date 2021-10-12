@@ -1,26 +1,26 @@
 import sys
 
 sys.path.append("../src/")
-sys.path.append("../recurrenceRelation")
 import numpy as np
 import npquad
 import quadMath
 import fileIO
 import os
 from experimentUtils import saveVars
-from pyrecurrence import Recurrence
 from datetime import date
-
+from pydiffusionCDF import DiffusionTimeCDF
+import quadMath
 
 def runExperiment(
     beta,
     tMax,
     save_file,
-    save_zB,
     num_of_save_times=5000,
     q_start=50,
     q_stop=4500,
     q_step=50,
+    id = None,
+    save_dir='.',
 ):
     """
     Run a simulation of the recurrsion relation from Ivan's model.
@@ -36,20 +36,8 @@ def runExperiment(
     save_file : str
         File to save the quartiles to.
 
-    save_zB : str
-        What file to save zB to.
-
     num_of_save_times : int, optional (5000)
         Number of times to save the quartiles.
-
-    q_start : int, optional (50)
-        Exponent of first quartile to measure. Quartile will be 10 ** q_start
-
-    q_stop : int, optional (4500)
-        Exponent of last quartile to measure. Quartile will be 10 ** q_stop
-
-    q_step : int, optional (50)
-        Exponent step size between quartiles.
     """
 
     beta = float(beta)
@@ -58,18 +46,25 @@ def runExperiment(
     q_start = int(q_start)
     q_stop = int(q_stop)
     q_step = int(q_step)
-
-    rec = Recurrence(beta, tMax)
+    quantiles = quadMath.logarange(q_start, q_stop, q_step, endpoint=True)
 
     save_times = np.geomspace(1, tMax, num_of_save_times, dtype=np.int64)
     save_times = np.unique(save_times)
 
-    quartiles = quadMath.logarange(q_start, q_stop, q_step, endpoint=True)
+    scalars_file = os.path.join(save_dir, f"Scalars{rec.id}.json")
+    CDF_file = os.path.join(save_dir, f"CDF{self.id}.txt")
 
-    rec.evolveAndSaveQuartile(save_times, quartiles, save_file)
+    if os.path.exists(scalars_file) and os.path.exists(CDF_file):
+        rec = DiffusionTimeCDF.fromFiles(CDF_file, scalars_file)
+        save_times = savetimes[savetimes > rec.time]
+        append = True
+    else:
+        rec = DiffusionTimeCDF(beta, tMax)
+        rec.id = id
+        rec.save_dir = save_dir
+        append = False
 
-    fileIO.saveArrayQuad(save_zB, rec.zB)
-
+    rec.evolveAndSaveQuantile(save_times, quantiles, save_file, append=append)
 
 if __name__ == "__main__":
     (
@@ -78,29 +73,27 @@ if __name__ == "__main__":
         beta,
         tMax,
         num_of_save_times,
-        quartile_start,
-        quartile_stop,
-        quartile_step,
+        q_start,
+        q_stop,
+        q_step,
     ) = sys.argv[1:]
 
     save_dir = f"{topDir}"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    save_file = save_dir + f"Quartiles{sysID}.txt"
+    save_file = os.path.join(save_dir, f"Quartiles{sysID}.txt")
     save_file = os.path.abspath(save_file)
-
-    save_zB = save_dir + f"zB{sysID}.txt"
-    save_zB = os.path.abspath(save_zB)
 
     vars = {
         "beta": beta,
         "tMax": tMax,
         "save_file": save_file,
-        "save_zB": save_zB,
         "num_of_save_times": num_of_save_times,
-        "q_start": quartile_start,
-        "q_stop": quartile_stop,
-        "q_step": quartile_step,
+        "q_start": q_start,
+        "q_stop": q_stop,
+        "q_step": q_step,
+        "id": sysID,
+        "save_dir": topDir,
     }
     vars_file = os.path.join(save_dir, "variables.json")
     today = date.today()
