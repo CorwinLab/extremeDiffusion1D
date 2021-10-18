@@ -165,6 +165,7 @@ class QuartileDatabase(Database):
                 print(f)
 
         print(f"Dropping {len(self.files) - len(new_files)} files")
+        print(f"Mean calculated over {len(new_files)} files")
         self.files = new_files
         mean_sum = mean_sum[:maxIdx, :].astype(np.float64)
         squared_sum = squared_sum[:maxIdx, :].astype(np.float64)
@@ -396,7 +397,7 @@ class QuartileDatabase(Database):
 
         ax.set_xscale("log")
         ax.set_yscale("log")
-        ax.legend(fontsize=12)
+        #ax.legend(fontsize=12)
         fig.savefig(
             os.path.join(os.path.abspath(save_dir), f"MaxVar{Nstr}.png"),
             bbox_inches="tight",

@@ -35,6 +35,7 @@ for f in files:
     discrete_var += data[:maxIdx, 2]
     number_of_files += 1
 
+print(f"Number of files taken: {number_of_files}")
 quartile_var = quartile_squared_sum / number_of_files - (quartile_sum / number_of_files) ** 2
 discrete_var = discrete_var / number_of_files
 

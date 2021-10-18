@@ -82,12 +82,12 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._last_saved_time = time.process_time()  # seconds
-        self._save_interval = 3600 * 2  # Set to save occupancy every 2 hours.
+        self._save_interval = 3600 * 12 # Set to save occupancy every XX hours.
         self.id = None  # Need to also get SLURM ID
         self.save_dir = '.'
 
     def __str__(self):
-        return f"DiffusionCDF(beta={self.beta}, time={self.time})"
+        return f"DiffusionTimeCDF(beta={self.beta}, time={self.time})"
 
     def __repr__(self):
         return self.__str__()

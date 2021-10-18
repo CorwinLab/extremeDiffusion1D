@@ -2,6 +2,9 @@ from matplotlib import pyplot as plt
 import numpy as np
 import npquad
 import glob
+import sys
+sys.path.append("../../src")
+from theory import theoreticalNthQuartVar, NthQuartVarStr
 
 files = glob.glob("/home/jacob/Desktop/corwinLabMount/Data/Einstein/1.00e_50/Edges*.txt")
 mean_sum = None
@@ -26,12 +29,16 @@ if run_again:
 
 time = np.loadtxt("Time.txt")
 var = np.loadtxt("Variance.txt")
-logN = np.log2(1e5)
+N = 1e50
+logN = np.log(N)
 
 fig, ax = plt.subplots()
-ax.set_xlabel("Time")
+ax.set_xlabel("Time / ln(N)")
 ax.set_ylabel("Variance")
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.plot(time / logN, var)
+ax.plot(time / logN, var, label='Data')
+ax.plot(time / logN, theoreticalNthQuartVar(N, time) + time / logN, label=NthQuartVarStr + '+t/lnN')
+ax.legend(fontsize=14)
+ax.grid(True)
 fig.savefig("Variance.png")

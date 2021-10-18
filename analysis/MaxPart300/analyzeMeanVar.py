@@ -15,23 +15,12 @@ import theory as th
 from fileIO import loadArrayQuad
 
 files = glob.glob("/home/jacob/Desktop/corwinLabMount/CleanData/MaxPart300/Q*.txt")
-max_files = []
 max_time = np.loadtxt(files[0], delimiter=",", skiprows=1, usecols=0)[-1]
 
-# Currently returns ~225 files!
-for f in files:
-    times = np.loadtxt(f, delimiter=",", skiprows=1, usecols=0)
-    if times[-1] != max_time:
-        continue
-    max_files.append(f)
-    print(f)
-files = max_files
-
 db = QuartileDatabase(files, nParticles=np.quad("1e300"))
-print(len(db))
 run_again = True
 if not os.path.exists("./Mean.txt") or not os.path.exists("./Var.txt") or run_again:
-    db.calculateMeanVar(verbose=True)
+    db.calculateMeanVar(verbose=True, maxTime=max_time)
     np.savetxt("Mean.txt", db.mean)
     np.savetxt("Var.txt", db.var)
     np.savetxt("MaxMean.txt", db.maxMean)
