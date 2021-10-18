@@ -1,14 +1,14 @@
 #!/bin/bash
-#SBATCH --job-name=E100
+#SBATCH --job-name=E300
 #SBATCH --time=10-00:00:00
-#SBATCH --error=/home/jhass2/CleanData/logs/Einstein100/%A-%a.err
+#SBATCH --error=/home/jhass2/CleanData/logs/Einstein300/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --array=0
-#SBATCH --output=/home/jhass2/CleanData/logs/Einstein100/%A-%a.out
+#SBATCH --output=/home/jhass2/CleanData/logs/Einstein300/%A-%a.out
 #SBATCH --nice=1100
 
-TOPDIR=/home/jhass2/CleanData/Einstein100
+TOPDIR=/home/jhass2/CleanData/Einstein300
 BETA=inf
 TMAX=13000000
 NUM_OF_SAVE_TIMES=7500

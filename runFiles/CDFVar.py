@@ -16,8 +16,8 @@ def runExperiment(
     tMax,
     save_file,
     num_of_save_times=5000,
-    nParticles=300
-    id = None,
+    nParticles=300,
+    sysID = None,
     save_dir='.',
 ):
     """
@@ -49,8 +49,8 @@ def runExperiment(
     save_times = np.geomspace(1, tMax, num_of_save_times, dtype=np.int64)
     save_times = np.unique(save_times)
 
-    scalars_file = os.path.join(save_dir, f"Scalars{rec.id}.json")
-    CDF_file = os.path.join(save_dir, f"CDF{self.id}.txt")
+    scalars_file = os.path.join(save_dir, f"Scalars{sysID}.json")
+    CDF_file = os.path.join(save_dir, f"CDF{sysID}.txt")
 
     if os.path.exists(scalars_file) and os.path.exists(CDF_file):
         rec = DiffusionTimeCDF.fromFiles(CDF_file, scalars_file)
@@ -58,7 +58,7 @@ def runExperiment(
         append = True
     else:
         rec = DiffusionTimeCDF(beta, tMax)
-        rec.id = id
+        rec.id = sysID
         rec.save_dir = save_dir
         append = False
 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
         "save_file": save_file,
         "num_of_save_times": num_of_save_times,
         "nParticles": nParticles,
-        "id": sysID,
+        "sysID": sysID,
         "save_dir": topDir,
     }
     vars_file = os.path.join(save_dir, "variables.json")
