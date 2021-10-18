@@ -11,6 +11,7 @@ from datetime import date
 from pydiffusionCDF import DiffusionTimeCDF
 import quadMath
 
+
 def runExperiment(
     beta,
     tMax,
@@ -19,8 +20,8 @@ def runExperiment(
     q_start=50,
     q_stop=4500,
     q_step=50,
-    id = None,
-    save_dir='.',
+    id=None,
+    save_dir=".",
 ):
     """
     Run a simulation of the recurrsion relation from Ivan's model.
@@ -65,6 +66,7 @@ def runExperiment(
         append = False
 
     rec.evolveAndSaveQuantile(save_times, quantiles, save_file, append=append)
+
 
 if __name__ == "__main__":
     (

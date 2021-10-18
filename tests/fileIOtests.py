@@ -18,6 +18,7 @@ def test_saveArrayQuad_oneDim():
     arr = np.array([np.quad("1e4500"), np.quad("1e-4500"), np.quad("5")], dtype=np.quad)
     fileIO.saveArrayQuad("OneDimData.txt", arr)
 
+
 def test_saveArrayQuad_multiDim():
     """
     Test that the array saves properly with a multi-Dimensional array.
@@ -49,6 +50,7 @@ def test_loadArrayQuad_oneDim():
 
     assert np.all(arr == loaded_array)
 
+
 def test_loadArrayQuad_multiDim():
     """
     Test that we can properly load a multi-dimensional array.
@@ -58,27 +60,29 @@ def test_loadArrayQuad_multiDim():
     loaded_array = fileIO.loadArrayQuad("MultiDimData.txt")
     assert np.all(arr == loaded_array)
 
+
 def test_skiprows():
     """
     Make sure we can properly skip rows for a header.
     """
-    
-    f = open('SkiprowsTest.txt', "w")
+
+    f = open("SkiprowsTest.txt", "w")
     writer = csv.writer(f)
-    header = ["time", 'Quantile', 'Variance']
+    header = ["time", "Quantile", "Variance"]
     writer.writerow(header)
     row = [np.quad("1e4500"), np.quad("1e-4500"), np.quad("1")]
     writer.writerow(row)
     f.close()
 
-    loaded_arr = fileIO.loadArrayQuad('SkiprowsTest.txt', skiprows=1)
+    loaded_arr = fileIO.loadArrayQuad("SkiprowsTest.txt", skiprows=1)
     assert np.all(loaded_arr == row)
+
 
 def test_teardown():
     """
     Just delete all the files that were created. It's a test b/c I'm lazy.
     """
 
-    files = ["OneDimData.txt", "Occ.txt", "MultiDimData.txt", 'SkiprowsTest.txt']
+    files = ["OneDimData.txt", "Occ.txt", "MultiDimData.txt", "SkiprowsTest.txt"]
     for f in files:
         os.remove(f)

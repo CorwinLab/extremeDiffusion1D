@@ -18,7 +18,7 @@ def test_einsteinbias_CDF():
 
     # Need to do some np magic to make sure Eric's code matches what
     # we're generating. His columns are our rows but reversed.
-    CDF = makeRec(5, 'einstein')
+    CDF = makeRec(5, "einstein")
     CDF = CDF.T
     for row in range(CDF.shape[0]):
         CDF[row, :] = np.flip(CDF[row, :], axis=0)
@@ -42,7 +42,7 @@ def test_einsteinbias_CDF_large():
     """
 
     N = 50
-    CDF = makeRec(N, 'einstein')
+    CDF = makeRec(N, "einstein")
     CDF = CDF.T
     for row in range(CDF.shape[0]):
         CDF[row, :] = np.flip(CDF[row, :], axis=0)
@@ -64,7 +64,7 @@ def test_einsteinbias_quartile():
 
     tMax = 5
     quintile = 10
-    CDF = makeRec(tMax, 'einstein')
+    CDF = makeRec(tMax, "einstein")
     qs = findQuintile(CDF, quintile).astype(int)
     rec = DiffusionTimeCDF(beta=np.inf, tMax=tMax - 1)
     qs_c = [rec.findQuantile(quintile)]
@@ -81,7 +81,7 @@ def test_einsteinbias_quartile_large():
 
     tMax = 1000
     quintile = 100
-    CDF = makeRec(tMax, 'einstein')
+    CDF = makeRec(tMax, "einstein")
     qs = findQuintile(CDF, quintile).astype(int)
     rec = DiffusionTimeCDF(beta=np.inf, tMax=tMax - 1)
     qs_c = [rec.findQuantile(quintile)]
@@ -89,6 +89,7 @@ def test_einsteinbias_quartile_large():
         rec.iterateTimeStep()
         qs_c.append(rec.findQuantile(quintile))
     assert (qs == qs_c).all()
+
 
 def test_eq():
     """
@@ -100,6 +101,7 @@ def test_eq():
     rec.evolveToTime(tMax)
 
     assert rec == rec
+
 
 def test_saveState():
     """
@@ -116,29 +118,32 @@ def test_saveState():
 
     assert rec_loaded == rec
 
+
 def test_pyDiffusion_savedStateIterate():
     """
     Check that the variables save and that we can iterate after loading the
     occupancy.
     """
     tMax = 500
-    rec = DiffusionTimeCDF(beta=np.inf, tMax=tMax+5)
+    rec = DiffusionTimeCDF(beta=np.inf, tMax=tMax + 5)
     rec.id = 0
     rec.evolveToTime(tMax)
     rec.saveState()
 
     rec_loaded = DiffusionTimeCDF.fromFiles("CDF0.txt", "Scalars0.json")
-    rec_loaded.evolveToTime(tMax+5)
+    rec_loaded.evolveToTime(tMax + 5)
 
-    rec3 = DiffusionTimeCDF(beta=np.inf, tMax=tMax+5)
+    rec3 = DiffusionTimeCDF(beta=np.inf, tMax=tMax + 5)
     rec3.id = 0
-    rec3.evolveToTime(tMax+5)
+    rec3.evolveToTime(tMax + 5)
 
     assert rec_loaded == rec3
+
 
 def remove(file):
     if os.path.exists(file):
         os.remove(file)
+
 
 def test_cleanup():
     """

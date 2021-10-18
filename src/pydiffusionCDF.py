@@ -82,9 +82,9 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._last_saved_time = time.process_time()  # seconds
-        self._save_interval = 3600 * 12 # Set to save occupancy every XX hours.
+        self._save_interval = 3600 * 12  # Set to save occupancy every XX hours.
         self.id = None  # Need to also get SLURM ID
-        self.save_dir = '.'
+        self.save_dir = "."
 
     def __str__(self):
         return f"DiffusionTimeCDF(beta={self.beta}, time={self.time})"
@@ -142,14 +142,14 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         self.settMax(tMax)
 
     def setBetaSeed(self, seed):
-        '''
+        """
         Set the random seed of the beta distribution.
 
         Parameters
         ----------
         seed : int(?)
             Random seed to use.
-        '''
+        """
 
         super().setBetaSeed(seed)
 
@@ -277,11 +277,13 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
 
         fileIO.saveArrayQuad(cdf_file, self.getSaveCDF())
 
-        vars = {"time": self.time,
-                "beta": self.beta,
-                "tMax": self.tMax,
-                "id": self.id,
-                "save_dir": self.save_dir}
+        vars = {
+            "time": self.time,
+            "beta": self.beta,
+            "tMax": self.tMax,
+            "id": self.id,
+            "save_dir": self.save_dir,
+        }
 
         with open(scalars_file, "w+") as f:
             json.dump(vars, f)
@@ -309,13 +311,13 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             vars = json.load(file)
 
         load_cdf = fileIO.loadArrayQuad(cdf_file)
-        cdf = np.zeros(vars['tMax']+1, dtype=np.quad)
-        cdf[:vars['time']+1] = load_cdf
+        cdf = np.zeros(vars["tMax"] + 1, dtype=np.quad)
+        cdf[: vars["time"] + 1] = load_cdf
 
-        d = DiffusionTimeCDF(beta=vars['beta'], tMax=vars['tMax'])
-        d.time = vars['time']
-        d.id = vars['id']
-        d.save_dir = vars['save_dir']
+        d = DiffusionTimeCDF(beta=vars["beta"], tMax=vars["tMax"])
+        d.time = vars["time"]
+        d.id = vars["id"]
+        d.save_dir = vars["save_dir"]
         d.CDF = cdf
         return d
 

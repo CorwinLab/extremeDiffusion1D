@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 import os
 
 files = glob.glob("/home/jacob/Desktop/corwinLabMount/CleanData/VelocitySweep/*.txt")
-files=files[:5000] # I'm not sure if all the datasets go out to the final time
+files = files[:5000]  # I'm not sure if all the datasets go out to the final time
 db = VelocityDatabase(files)
 
 run_again = True

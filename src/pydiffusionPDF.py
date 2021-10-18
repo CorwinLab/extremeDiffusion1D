@@ -95,7 +95,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         self._last_saved_time = time.process_time()  # seconds
         self._save_interval = 3600 * 2  # Set to save occupancy every 2 hours.
         self.id = None  # Need to also get SLURM ID
-        self.save_dir = '.'
+        self.save_dir = "."
 
     def __str__(self):
         return f"DiffusionPDF(N={self.getNParticles()}, beta={self.getBeta()}, size={len(self.getEdges()[0])}, time={self.getTime()})"
@@ -111,7 +111,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             )
 
         if (
-            np.all(self.occupancy == other.occupancy) # occupancy same
+            np.all(self.occupancy == other.occupancy)  # occupancy same
             and self.currentTime == other.currentTime
             and self.nParticles == other.nParticles
             and self.beta == other.beta
@@ -204,8 +204,8 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         ensure that self.catch is run before terminating.
         """
 
-        signal.signal(signal.SIGTERM, self.catch) # SLURM cancel
-        signal.signal(signal.SIGINT, self.catch) # Ctrl+C
+        signal.signal(signal.SIGTERM, self.catch)  # SLURM cancel
+        signal.signal(signal.SIGINT, self.catch)  # Ctrl+C
 
     def catch(self, sig, frame):
         """
@@ -244,9 +244,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         occupancy_file = os.path.join(self.save_dir, f"Occupancy{self.id}.txt")
         scalars_file = os.path.join(self.save_dir, f"Scalars{self.id}.json")
 
-        fileIO.saveArrayQuad(
-            occupancy_file, self.getSaveOccupancy()
-        )
+        fileIO.saveArrayQuad(occupancy_file, self.getSaveOccupancy())
         minEdge, maxEdge = self.getSaveEdges()
         minIdx, maxIdx = minEdge[-1], maxEdge[-1]
 

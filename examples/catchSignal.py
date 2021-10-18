@@ -3,6 +3,7 @@ import signal
 import sys
 import numpy as np
 
+
 class myClass:
     """
     Example class to test if python class can save an attribute when given the
@@ -22,6 +23,7 @@ class myClass:
         np.savetxt("data.txt", self.var)
         sys.exit(0)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     mine = myClass()
     time.sleep(50)

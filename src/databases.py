@@ -128,14 +128,12 @@ class QuartileDatabase(Database):
 
         new_files = []
         for f in self.files:
-            data = loadArrayQuad(
-                f, delimiter=self.delimiter, skiprows=self.skiprows
-            )
+            data = loadArrayQuad(f, delimiter=self.delimiter, skiprows=self.skiprows)
             time = data[:, 0].astype(float)
             if maxTime is not None:
                 if max(time) < maxTime:
                     continue
-                time = time[time<=maxTime]
+                time = time[time <= maxTime]
                 self.time = time
             new_files.append(f)
             maxIdx = len(time)
@@ -397,7 +395,7 @@ class QuartileDatabase(Database):
 
         ax.set_xscale("log")
         ax.set_yscale("log")
-        #ax.legend(fontsize=12)
+        # ax.legend(fontsize=12)
         fig.savefig(
             os.path.join(os.path.abspath(save_dir), f"MaxVar{Nstr}.png"),
             bbox_inches="tight",
@@ -497,12 +495,14 @@ class QuartileDatabase(Database):
             fig, ax = plt.subplots()
             logN = np.log(quant).astype(np.float64)
             xaxis = 4 * logN ** 2 / self.time
-            yaxis = 2 * logN / self.time * self.var[:, i] / xaxis**(2/3)
+            yaxis = 2 * logN / self.time * self.var[:, i] / xaxis ** (2 / 3)
 
             t_theory = xaxis[xaxis < 100]
-            theory = np.sqrt(np.pi/2) * (t_theory / 2)**(-1/6) + (1 + 5*np.pi/4 - 8 * np.pi / (3*3**(1/2))) * (t_theory/2)**(1/3)
+            theory = np.sqrt(np.pi / 2) * (t_theory / 2) ** (-1 / 6) + (
+                1 + 5 * np.pi / 4 - 8 * np.pi / (3 * 3 ** (1 / 2))
+            ) * (t_theory / 2) ** (1 / 3)
 
-            ax.plot(xaxis, yaxis * 2**(1/2))
+            ax.plot(xaxis, yaxis * 2 ** (1 / 2))
             ax.plot(t_theory, theory)
             ax.set_xlabel("4lnN^2 / t")
             ax.set_ylabel("2lnN / t * Var(Qb(N,t)) / (4lnN^2 / t)^(2/3)")
@@ -576,7 +576,8 @@ class QuartileDatabase(Database):
         diff = []
         for f in self.files:
             final_time = loadArrayQuad(
-                f, skiprows=len(self._example_file) - 1,
+                f,
+                skiprows=len(self._example_file) - 1,
             )
             final_time = final_time[2:]
             diff.append((final_time[idx - 1] - final_time[idx + 1]).astype(np.float64))
@@ -821,9 +822,7 @@ class CDFQuartileDatabase(QuartileDatabase):
         mean_sum = np.zeros(shape, dtype=np.quad)
 
         for f in self.files:
-            data = loadArrayQuad(
-                f, delimiter=self.delimiter, skiprows=self.skiprows
-            )
+            data = loadArrayQuad(f, delimiter=self.delimiter, skiprows=self.skiprows)
             time = data[:, 0]
             # second column is maximum edge which we don't really care about
             # for probDist=True

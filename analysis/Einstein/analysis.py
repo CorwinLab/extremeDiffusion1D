@@ -3,17 +3,20 @@ import numpy as np
 import npquad
 import glob
 import sys
+
 sys.path.append("../../src")
 from theory import theoreticalNthQuartVar, NthQuartVarStr
 
-files = glob.glob("/home/jacob/Desktop/corwinLabMount/Data/Einstein/1.00e_50/Edges*.txt")
+files = glob.glob(
+    "/home/jacob/Desktop/corwinLabMount/Data/Einstein/1.00e_50/Edges*.txt"
+)
 mean_sum = None
 squared_sum = None
 run_again = False
 if run_again:
     for f in files:
         data = np.loadtxt(f)
-        time = np.arange(1, len(data[:,0])+1)
+        time = np.arange(1, len(data[:, 0]) + 1)
         center = time * 0.5
         max_disp = 2 * (data[:, 1] - center)
         if mean_sum is None:
@@ -37,8 +40,12 @@ ax.set_xlabel("Time / ln(N)")
 ax.set_ylabel("Variance")
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.plot(time / logN, var, label='Data')
-ax.plot(time / logN, theoreticalNthQuartVar(N, time) + time / logN, label=NthQuartVarStr + '+t/lnN')
+ax.plot(time / logN, var, label="Data")
+ax.plot(
+    time / logN,
+    theoreticalNthQuartVar(N, time) + time / logN,
+    label=NthQuartVarStr + "+t/lnN",
+)
 ax.legend(fontsize=14)
 ax.grid(True)
 fig.savefig("Variance.png")

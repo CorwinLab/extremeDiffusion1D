@@ -24,7 +24,7 @@ def runExperiment(
     q_stop=4500,
     q_step=50,
     probDistFlag=1,
-    save_dir='.',
+    save_dir=".",
     sysID=None,
 ):
     """

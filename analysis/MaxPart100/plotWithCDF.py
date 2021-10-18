@@ -2,6 +2,7 @@ import numpy as np
 import npquad
 from matplotlib import pyplot as plt
 import sys
+
 sys.path.append("../../src")
 import theory as th
 from quadMath import prettifyQuad
@@ -18,19 +19,36 @@ cdf_discrete_var = np.loadtxt("../CDFVar100/DiscreteVariance.txt")
 short_time = th.theoreticalNthQuartVar(N, discrete_time)
 long_time = th.theoreticalNthQuartVarLargeTimes(N, discrete_time)
 
+exclude_times = np.where(cdf_time / logN <= 2)[0][-1]
+cdf_discrete_var[0:exclude_times] = 0
+
 fig, ax = plt.subplots()
-ax.plot(discrete_time / logN, discrete_var)
-ax.plot(cdf_time / logN, cdf_quantile_var)
-ax.plot(cdf_time / logN, cdf_discrete_var)
-ax.plot(discrete_time / logN, short_time)
-ax.plot(discrete_time / logN, long_time)
-ax.plot(discrete_time / logN, discrete_time / logN)
+ax.plot(discrete_time / logN, discrete_var, "tab:orange", alpha=0.8)
+ax.plot(cdf_time / logN, cdf_quantile_var + cdf_discrete_var, "tab:red")
+ax.plot(discrete_time / logN, short_time, "tab:green")
+ax.plot(discrete_time / logN, long_time, "tab:orange")
+ax.plot(discrete_time / logN, discrete_time / logN, "tab:purple")
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.set_ylim([10**-4, 10**5])
-ax.set_xlim([10**-2, 10**5])
+ax.set_ylim([10 ** -4, 10 ** 5])
+ax.set_xlim([10 ** -2, 10 ** 5])
 ax.set_xlabel("Time / lnN")
 ax.set_ylabel("Variance")
 ax.set_title(f"N={prettifyQuad(N)}")
 ax.grid(True)
-fig.savefig("DiscreteWithCDF.png")
+fig.savefig("FinalPlotCDF.png")
+
+fig, ax = plt.subplots()
+ax.plot(discrete_time / logN, discrete_var, "tab:orange")
+ax.plot(cdf_time / logN, cdf_discrete_var, "tab:blue")
+ax.plot(discrete_time / logN, short_time + discrete_time / logN, "tab:green")
+ax.plot(discrete_time / logN, discrete_time / logN, "tab:purple")
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_ylim([10 ** -4, 10 ** 5])
+ax.set_xlim([10 ** -2, 10 ** 5])
+ax.set_xlabel("Time / lnN")
+ax.set_ylabel("Variance")
+ax.set_title(f"N={prettifyQuad(N)}")
+ax.grid(True)
+fig.savefig("DiscreteCDF.png")

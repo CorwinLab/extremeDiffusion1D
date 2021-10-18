@@ -18,6 +18,7 @@ def test_equals():
     d.evolveToTime(100)
     assert d == d
 
+
 def test_iteratePastOccupancySize():
     """
     Make sure that we can't iterate past the size of the edges (or max time).
@@ -28,6 +29,7 @@ def test_iteratePastOccupancySize():
     with pytest.raises(RuntimeError) as exinfo:
         d.evolveToTime(101)
     assert "Cannot iterate past the size of the edges" in str(exinfo.value)
+
 
 def test_pyDiffusion_findQuantiles():
     """
@@ -105,6 +107,7 @@ def test_pyDiffusion_evolveAndSaveQuantiles():
     assert np.all(evolved_quantiles == iterated_quantiles)
     assert np.all([1, 2, 3, 4, 5] == data[:, 0])  # times should be the same
 
+
 def test_pyDiffusion_ProbDistFlagFalse():
     """
     Check that the ProbDistFlag keeps the same number of particles. Note that
@@ -135,6 +138,7 @@ def test_pyDiffusion_ProbDistFlagFalse_LargeParticles():
         percent_difference = (np.sum(diff.occupancy) - nParticles) / nParticles
         assert percent_difference < percent_tolerance
 
+
 def test_pyDiffusion_savedState():
     """
     Check that the variables and occupancy are being properly saved. And that we
@@ -149,6 +153,7 @@ def test_pyDiffusion_savedState():
     d2 = DiffusionPDF.fromFiles("Scalars1.json", "Occupancy1.txt")
 
     assert d == d2
+
 
 def test_pyDiffusion_savedStateIterate():
     """
@@ -169,14 +174,18 @@ def test_pyDiffusion_savedStateIterate():
     diff2.evolveToTime(diff2.currentTime + 5)
 
     # Check if it's the same as if we just evolved regularly
-    diff3 = DiffusionPDF(nParticles, beta=np.inf, occupancySize=tMax+5, ProbDistFlag=True)
+    diff3 = DiffusionPDF(
+        nParticles, beta=np.inf, occupancySize=tMax + 5, ProbDistFlag=True
+    )
     diff3.id = 1
-    diff3.evolveToTime(1000+5)
+    diff3.evolveToTime(1000 + 5)
     assert diff2 == diff3
+
 
 def remove(file):
     if os.path.exists(file):
         os.remove(file)
+
 
 def test_cleanup():
     """

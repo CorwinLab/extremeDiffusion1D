@@ -38,7 +38,7 @@ ax.set_yscale("log")
 ax.set_xlabel("Time / log(N)")
 ax.set_ylabel("Variance / log(N)^(2/3)")
 
-fig2, ax2 = plt.subplots(ncols=3, sharey=True, figsize=(12,3))
+fig2, ax2 = plt.subplots(ncols=3, sharey=True, figsize=(12, 3))
 for elem in ax2:
     elem.set_xscale("log")
     elem.set_yscale("log")
@@ -72,27 +72,32 @@ for i, quantile in enumerate(PDFdb.quantiles):
 
 # Plot the theoretical quantile variance
 theory = theoreticalNthQuartVar(quantile, PDFdb.time)
-ax.plot(PDFdb.time / logN, theory / logN ** (2 / 3), '--', label=NthQuartVarStr)
+ax.plot(PDFdb.time / logN, theory / logN ** (2 / 3), "--", label=NthQuartVarStr)
 ax.plot(
     PDFdb.time / logN,
     (PDFdb.time * np.pi) ** (1 / 2) / 2 / logN ** (2 / 3),
-    '--',
+    "--",
     label=NthQuartVarStrLargeTimes,
 )
-ax.plot(PDFdb.time / logN, PDFdb.time / logN / logN ** (2 / 3), '--', label="Linear " + prettifyQuad(quantile))
+ax.plot(
+    PDFdb.time / logN,
+    PDFdb.time / logN / logN ** (2 / 3),
+    "--",
+    label="Linear " + prettifyQuad(quantile),
+)
 
-ax2[0].plot(PDFdb.time / logN, theory / logN ** (2 / 3), '--', label=NthQuartVarStr)
+ax2[0].plot(PDFdb.time / logN, theory / logN ** (2 / 3), "--", label=NthQuartVarStr)
 ax2[0].plot(
     PDFdb.time / logN,
     (PDFdb.time * np.pi) ** (1 / 2) / 2 / logN ** (2 / 3),
-    '--',
+    "--",
     label=NthQuartVarStrLargeTimes,
 )
-ax2[2].plot(PDFdb.time / logN, theory / logN ** (2 / 3), '--', label=NthQuartVarStr)
+ax2[2].plot(PDFdb.time / logN, theory / logN ** (2 / 3), "--", label=NthQuartVarStr)
 ax2[2].plot(
     PDFdb.time / logN,
     (PDFdb.time * np.pi) ** (1 / 2) / 2 / logN ** (2 / 3),
-    '--',
+    "--",
     label=NthQuartVarStrLargeTimes,
 )
 
@@ -128,24 +133,24 @@ print("Discrete Number of Particles: 1e100")
 logN = np.log(nParticles).astype(float)
 ax.plot(
     times / logN,
-    maxVar / logN **(2/3),
-    label='Discrete 1e100',
-    c='g',
+    maxVar / logN ** (2 / 3),
+    label="Discrete 1e100",
+    c="g",
     alpha=0.8,
 )
 
 ax2[1].plot(
     times / logN,
-    maxVar / logN **(2/3),
-    label='Discrete 1e100',
-    c='g',
+    maxVar / logN ** (2 / 3),
+    label="Discrete 1e100",
+    c="g",
     alpha=0.8,
 )
 ax2[2].plot(
     times / logN,
-    maxVar / logN **(2/3),
-    label='Discrete 1e100',
-    c='g',
+    maxVar / logN ** (2 / 3),
+    label="Discrete 1e100",
+    c="g",
     alpha=0.8,
 )
 
@@ -156,25 +161,13 @@ nParticles = np.quad("1e300")
 print("Discrete Number of Particles: 1e300")
 logN = np.log(nParticles).astype(float)
 ax.plot(
-    times / logN,
-    maxVar / logN **(2/3),
-    label='Discrete 1e300',
-    c='y',
-    alpha=0.8
+    times / logN, maxVar / logN ** (2 / 3), label="Discrete 1e300", c="y", alpha=0.8
 )
 ax2[1].plot(
-    times / logN,
-    maxVar / logN **(2/3),
-    label='Discrete 1e300',
-    c='y',
-    alpha=0.8
+    times / logN, maxVar / logN ** (2 / 3), label="Discrete 1e300", c="y", alpha=0.8
 )
 ax2[2].plot(
-    times / logN,
-    maxVar / logN **(2/3),
-    label='Discrete 1e300',
-    c='y',
-    alpha=0.8
+    times / logN, maxVar / logN ** (2 / 3), label="Discrete 1e300", c="y", alpha=0.8
 )
 
 # Get theoretical quantile from CDF
@@ -185,32 +178,32 @@ QuantileVar = np.loadtxt("../CDFVar100/QuantileVar.txt")
 time = np.loadtxt("../CDFVar100/Times.txt")
 ax.plot(
     time / logN,
-    (DiscreteVar + QuantileVar) / logN ** (2/3),
+    (DiscreteVar + QuantileVar) / logN ** (2 / 3),
     alpha=0.8,
-    c='b',
-    label='CDF Discrete 1e100'
+    c="b",
+    label="CDF Discrete 1e100",
 )
 ax2[1].plot(
     time / logN,
-    (DiscreteVar + QuantileVar) / logN ** (2/3),
+    (DiscreteVar + QuantileVar) / logN ** (2 / 3),
     alpha=0.8,
-    c='b',
-    label='CDF Discrete 1e100'
+    c="b",
+    label="CDF Discrete 1e100",
 )
 ax2[2].plot(
     time / logN,
-    (DiscreteVar + QuantileVar) / logN ** (2/3),
+    (DiscreteVar + QuantileVar) / logN ** (2 / 3),
     alpha=0.8,
-    c='b',
-    label='CDF Discrete 1e100'
+    c="b",
+    label="CDF Discrete 1e100",
 )
 
-ax.set_ylim([10**-3, 10**4])
+ax.set_ylim([10 ** -3, 10 ** 4])
 ax.legend()
 ax.grid(True)
 print("Done!")
 fig.savefig("./figures/Variance.png")
-ax2[0].set_ylim([10**-3, 10**4])
+ax2[0].set_ylim([10 ** -3, 10 ** 4])
 ax2[0].legend(fontsize=8)
 ax2[1].legend(fontsize=8)
-fig2.savefig("./figures/VarianceSplit.png", bbox_inches='tight')
+fig2.savefig("./figures/VarianceSplit.png", bbox_inches="tight")

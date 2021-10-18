@@ -17,8 +17,8 @@ def runExperiment(
     save_file,
     num_of_save_times=5000,
     nParticles=300,
-    sysID = None,
-    save_dir='.',
+    sysID=None,
+    save_dir=".",
 ):
     """
     Run a simulation of the recurrsion relation from Ivan's model.
@@ -63,6 +63,7 @@ def runExperiment(
         append = False
 
     rec.evolveAndGetVariance(save_times, nParticles, save_file, append=append)
+
 
 if __name__ == "__main__":
     (

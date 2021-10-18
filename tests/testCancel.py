@@ -6,6 +6,7 @@ sys.path.append(src_path)
 
 from pydiffusionPDF import DiffusionPDF
 
+
 def runExperiment(save_dir, id):
     d = DiffusionPDF(int(1e7), 1, int(1e7))
     d.id = id
@@ -14,6 +15,6 @@ def runExperiment(save_dir, id):
     d._save_interval = 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     (topDir, sysID) = sys.argv[1:]
     runExperiment(topDir, sysID)

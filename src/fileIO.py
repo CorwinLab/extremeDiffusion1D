@@ -2,7 +2,8 @@ import numpy as np
 import npquad
 import csv
 
-def loadArrayQuad(fileName, delimiter=',', dtype=np.quad, skiprows=0):
+
+def loadArrayQuad(fileName, delimiter=",", dtype=np.quad, skiprows=0):
     """
     Load a quad array from a file.
 
@@ -34,9 +35,8 @@ def loadArrayQuad(fileName, delimiter=',', dtype=np.quad, skiprows=0):
             file.readline()
         line = file.__next__()
         array = np.empty(
-            (1 + sum(1 for line in file), len(line.split(delimiter))),
-            dtype=dtype
-            )
+            (1 + sum(1 for line in file), len(line.split(delimiter))), dtype=dtype
+        )
 
     with open(fileName, "r") as file:
         for _ in range(skiprows):
@@ -45,6 +45,7 @@ def loadArrayQuad(fileName, delimiter=',', dtype=np.quad, skiprows=0):
             for j, element in enumerate(line.split(delimiter)):
                 array[i, j] = dtype(element)
     return array
+
 
 def saveArrayQuad(save_file, arr):
     """
