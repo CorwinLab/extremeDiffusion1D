@@ -377,5 +377,4 @@ PYBIND11_MODULE(diffusionPDF, m)
       .def("VsAndPb", &DiffusionPDF::VsAndPb, py::arg("v"));
   m.def("getEinsteinPDF", &getEinsteinPDF);
   m.def("getWholeEinsteinPDF", &getWholeEinsteinPDF);
-  m.def("testNthPower", &testNthPower);
 }
