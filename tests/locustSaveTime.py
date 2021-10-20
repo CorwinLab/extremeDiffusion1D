@@ -1,5 +1,5 @@
 import sys
-sys.path.append("./src/")
+sys.path.append("../src/")
 from pydiffusionCDF import DiffusionTimeCDF
 import numpy as np
 import npquad

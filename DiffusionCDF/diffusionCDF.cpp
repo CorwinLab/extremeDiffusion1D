@@ -204,7 +204,6 @@ std::pair<std::vector<long int>, std::vector<RealType> > DiffusionTimeCDF::getDi
     CDF_n[n] = exp(-CDF[n] * nParticles);
   }
   return std::make_pair(xvals, CDF_n);
-
 }
 
 RealType DiffusionTimeCDF::getGumbelVariance(RealType nParticles)

@@ -117,6 +117,8 @@ public:
     std::vector<unsigned long int> positions,
     std::vector<RealType> quantiles);
 
+  RealType getGumbelVariance(RealType maxParticle); 
+
 };
 
 #endif /* DIFFUSIONPDF_HPP_ */

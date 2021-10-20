@@ -306,6 +306,34 @@ DiffusionPDF::VsAndPb(const double v)
   return returnTuple;
 }
 
+RealType DiffusionPDF::getGumbelVariance(RealType maxParticle){
+  RealType sum = 0;
+  unsigned long int minIdx = edges.first[time];
+  unsigned long int maxIdx = edges.second[time];
+  RealType occupancy_cdf, occupancy_cdf_prev, particle_cdf_n, particle_cdf_prev, particle_pdf;
+  long int x_position;
+  RealType x_squared_sum = 0;
+  RealType x_sum = 0;
+  // First calculate the CDF for the first element so we can take a difference
+  occupancy_cdf_prev = 0;
+  for (unsigned long int i=minIdx; i <= maxIdx; i++){
+    // Now calculate CDF for the current element
+    sum += occupancy[i];
+    occupancy_cdf = sum / nParticles;
+    // Calculate the CDF for the maximally displaced particle
+    particle_cdf_n = exp(-(1-occupancy_cdf) * maxParticle);
+    particle_cdf_prev = exp(-(1-occupancy_cdf_prev) * maxParticle);
+
+    particle_pdf = particle_cdf_n - particle_cdf_prev ;
+    x_position = 2*i - time;
+    x_squared_sum += pow(x_position, 2.0) * particle_pdf;
+    x_sum += x_position * particle_pdf;
+    occupancy_cdf_prev = occupancy_cdf;
+  }
+  RealType var = x_squared_sum - pow(x_sum, 2.0);
+  return var;
+}
+
 /*
 Trying to hackily get the PDF for the Einstein random walk. Doesn't look like
 it works very well b/c there are a lot of zeros in the PDF and it only sums
@@ -374,7 +402,8 @@ PYBIND11_MODULE(diffusionPDF, m)
       .def("findQuantiles", &DiffusionPDF::findQuantiles, py::arg("quantiles"))
       .def("pGreaterThanX", &DiffusionPDF::pGreaterThanX, py::arg("idx"))
       .def("calcVsAndPb", &DiffusionPDF::calcVsAndPb, py::arg("num"))
-      .def("VsAndPb", &DiffusionPDF::VsAndPb, py::arg("v"));
+      .def("VsAndPb", &DiffusionPDF::VsAndPb, py::arg("v"))
+      .def("getGumbelVariance", &DiffusionPDF::getGumbelVariance, py::arg("nParticles"));
   m.def("getEinsteinPDF", &getEinsteinPDF);
   m.def("getWholeEinsteinPDF", &getWholeEinsteinPDF);
 }
