@@ -14,7 +14,6 @@ void checkVectorLengths(std::vector<T> vec1, std::vector<N> vec2){
 
 template <class RealType, class x_numeric>
 RealType calculateMeanFromPDF(std::vector<x_numeric> xvals, std::vector<RealType> PDF){
-  checkVectorLengths(xvals, PDF);
   RealType mean = 0;
   for (unsigned long int i=0; i < PDF.size(); i++){
     mean += xvals[i] * PDF[i];
@@ -24,7 +23,6 @@ RealType calculateMeanFromPDF(std::vector<x_numeric> xvals, std::vector<RealType
 
 template <class RealType, class x_numeric>
 RealType calculateVarianceFromPDF(std::vector<x_numeric> xvals, std::vector<RealType> PDF){
-  checkVectorLengths(xvals, PDF);
   RealType mean = calculateMeanFromPDF(xvals, PDF);
   RealType var = 0;
   for (unsigned long int i=0; i < PDF.size(); i++){
