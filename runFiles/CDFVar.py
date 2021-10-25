@@ -15,8 +15,8 @@ def runExperiment(
     beta,
     tMax,
     save_file,
+    nParticles,
     num_of_save_times=5000,
-    nParticles=300,
     sysID=None,
     save_dir=".",
 ):
@@ -34,17 +34,16 @@ def runExperiment(
     save_file : str
         File to save the quartiles to.
 
+    nParticles: list of np.quads
+        Number of particles to measure the variance of.
+
     num_of_save_times : int, optional (5000)
         Number of times to save the quartiles.
-
-    nParticles: str
-        Number of particles to measure the variance of.
     """
 
     beta = float(beta)
     tMax = int(tMax)
     num_of_save_times = int(num_of_save_times)
-    nParticles = np.quad(f"1e{nParticles}")
 
     save_times = np.geomspace(1, tMax, num_of_save_times, dtype=np.int64)
     save_times = np.unique(save_times)
@@ -72,7 +71,9 @@ if __name__ == "__main__":
         beta,
         tMax,
         num_of_save_times,
-        nParticles,
+        nStart,
+        nStop,
+        nStep,
     ) = sys.argv[1:]
 
     save_dir = f"{topDir}"
@@ -80,6 +81,11 @@ if __name__ == "__main__":
         os.makedirs(save_dir)
     save_file = os.path.join(save_dir, f"Quartiles{sysID}.txt")
     save_file = os.path.abspath(save_file)
+
+    nStart = float(nStart)
+    nStop = float(nStop)
+    nStep = float(nStep)
+    nParticles = quadMath.logarange(nStart, nStop, nStep, endpoint=True)
 
     vars = {
         "beta": beta,

@@ -1,12 +1,20 @@
-// #include <math.h> I think this might be deprecated
 #include <cmath>
 #include <vector>
 #include <iostream>
 #include <utility>
 #include <string>
 
+template<class T, class N>
+void checkVectorLengths(std::vector<T> vec1, std::vector<N> vec2){
+  if (vec1.size() != vec2.size()){
+    std::string error = "Vectors must have same length but sizes: " + std::to_string(vec1.size()) + ", " + std::to_string(vec2.size());
+    throw std::runtime_error(error);
+  }
+}
+
 template <class RealType, class x_numeric>
 RealType calculateMeanFromPDF(std::vector<x_numeric> xvals, std::vector<RealType> PDF){
+  checkVectorLengths(xvals, PDF);
   RealType mean = 0;
   for (unsigned long int i=0; i < PDF.size(); i++){
     mean += xvals[i] * PDF[i];
@@ -16,6 +24,7 @@ RealType calculateMeanFromPDF(std::vector<x_numeric> xvals, std::vector<RealType
 
 template <class RealType, class x_numeric>
 RealType calculateVarianceFromPDF(std::vector<x_numeric> xvals, std::vector<RealType> PDF){
+  checkVectorLengths(xvals, PDF);
   RealType mean = calculateMeanFromPDF(xvals, PDF);
   RealType var = 0;
   for (unsigned long int i=0; i < PDF.size(); i++){
@@ -83,11 +92,7 @@ std::vector<RealType> pdf_to_comp_cdf(std::vector<RealType> pdf, RealType norm){
 
 template <class RealType, class x_numeric>
 RealType getGumbelVarianceCDF(std::vector<x_numeric> xvals, std::vector<RealType> comp_cdf, RealType nParticles){
-  if (xvals.size() != comp_cdf.size()){
-    std::string error = "Vectors must have same length but sizes: " + std::to_string(xvals.size()) + ", " + std::to_string(comp_cdf.size());
-    throw std::runtime_error(error);
-  }
-
+  checkVectorLengths(xvals, comp_cdf);
   std::vector<RealType> discrete_pdf = getDiscretePDF(comp_cdf, nParticles);
   return calculateVarianceFromPDF(xvals, discrete_pdf);
 }
