@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <utility>
+#include <string>
 
 template <class RealType, class x_numeric>
 RealType calculateMeanFromPDF(std::vector<x_numeric> xvals, std::vector<RealType> PDF){
@@ -44,12 +45,26 @@ template <class RealType>
 std::vector<RealType> getDiscretePDF(std::vector<RealType> comp_cdf, RealType nParticles){
   std::vector<RealType> pdf(comp_cdf.size()-1);
   RealType cdf_current, cdf_prev;
-  RealType sum=0;
   for (unsigned long int i=1; i < comp_cdf.size(); i++){
     cdf_current = exp(-comp_cdf[i] * nParticles);
     cdf_prev = exp(-comp_cdf[i-1] * nParticles);
     pdf[i-1] = cdf_current - cdf_prev;
-    sum += pdf[i-1];
+  }
+  return pdf;
+}
+
+template <class RealType>
+std::vector<std::vector<RealType> > getDiscretePDF(std::vector<RealType> comp_cdf, std::vector<RealType> nParticles){
+  // Need to construct a 2D array where each element is a PDF for a different particle.
+  std::vector<std::vector<RealType> > pdf(nParticles.size(), std::vector<RealType>(comp_cdf.size()-1));
+
+  RealType cdf_current, cdf_prev;
+  for (unsigned long int i=1; i < comp_cdf.size(); i++){
+    for (auto j=0; j < nParticles.size(); j++){
+      cdf_current = exp(-comp_cdf[i] * nParticles[j]);
+      cdf_prev = exp(-comp_cdf[i-1] * nParticles[j]);
+      pdf[j][i-1] = cdf_current - cdf_prev;
+    }
   }
   return pdf;
 }
@@ -68,8 +83,24 @@ std::vector<RealType> pdf_to_comp_cdf(std::vector<RealType> pdf, RealType norm){
 
 template <class RealType, class x_numeric>
 RealType getGumbelVarianceCDF(std::vector<x_numeric> xvals, std::vector<RealType> comp_cdf, RealType nParticles){
+  if (xvals.size() != comp_cdf.size()){
+    std::string error = "Vectors must have same length but sizes: " + std::to_string(xvals.size()) + ", " + std::to_string(comp_cdf.size());
+    throw std::runtime_error(error);
+  }
+
   std::vector<RealType> discrete_pdf = getDiscretePDF(comp_cdf, nParticles);
   return calculateVarianceFromPDF(xvals, discrete_pdf);
+}
+
+template <class RealType, class x_numeric>
+std::vector<RealType> getGumbelVarianceCDF(std::vector<x_numeric> xvals, std::vector<RealType> comp_cdf, std::vector<RealType> nParticles){
+  std::vector<std::vector<RealType> > discrete_pdf = getDiscretePDF(comp_cdf, nParticles);
+  std::vector<RealType> gumbelVariance(nParticles.size());
+
+  for (auto i=0; i < nParticles.size(); i++){
+    gumbelVariance[i] = calculateVarianceFromPDF(xvals, discrete_pdf[i]);
+  }
+  return gumbelVariance;
 }
 
 template<class RealType, class x_numeric>

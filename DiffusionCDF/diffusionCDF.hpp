@@ -69,6 +69,7 @@ public:
   std::vector<unsigned long int> findQuantiles(std::vector<RealType> quantiles);
 
   RealType getGumbelVariance(RealType nParticles);
+  std::vector<RealType> getGumbelVariance(std::vector<RealType> nParticles);
   std::vector<long int> getxvals();
   std::vector<RealType> getSaveCDF();
 };

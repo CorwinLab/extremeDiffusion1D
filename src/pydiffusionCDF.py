@@ -13,7 +13,6 @@ import fileIO
 import json
 import time
 
-
 class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
     """
     Create a class that iterates through the time of the CDF. Can also be used to
@@ -249,7 +248,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
 
         Parameters
         ----------
-        nParticles : float or np.quad
+        nParticles : float, np.quad or list
             Number of particles to get the gumbel variance for.
 
         Returns
@@ -330,7 +329,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         times : numpy array or list
             Times to evolve the system to and save quantiles at.
 
-        nParticles : np.quad
+        nParticles : list
             Number of particles to record quantile and variance for.
 
         file : str
@@ -342,14 +341,14 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         writer = csv.writer(f)
 
         if not append:
-            header = ["time", str(nParticles), "variance"]
+            header = ["time"] + [str(N) for N in nParticles] + ['var' + str(N) for N in nParticles]
             writer.writerow(header)
 
         for t in times:
             self.evolveToTime(t)
-            discrete = float(self.getGumbelVariance(nParticles))
-            quantile = self.findQuantile(nParticles)
-            row = [self.time, quantile, discrete]
+            discrete = self.getGumbelVariance(nParticles)
+            quantiles = self.findQuantiles(nParticles)
+            row = [self.time] + list(quantiles) + discrete
             writer.writerow(row)
         f.close()
 

@@ -152,8 +152,8 @@ std::vector<unsigned long int> DiffusionTimeCDF::findQuantiles(
 }
 
 std::vector<long int> DiffusionTimeCDF::getxvals(){
-  std::vector<long int> xvals(t+1);
-  for (auto n = 0; n <= t; n++){
+  std::vector<long int> xvals(t+2);
+  for (auto n = 0; n <= t+1; n++){
     xvals[n] = 2 * n + 2 - t;
   }
   return xvals;
@@ -165,9 +165,15 @@ RealType DiffusionTimeCDF::getGumbelVariance(RealType nParticles)
   cdf.push_back(0); // Need to add 0 to CDF to make it complete.
 
   std::vector<long int> xvals = getxvals();
-  std::vector<RealType> pdf = getDiscretePDF(cdf, nParticles);
-  RealType var = calculateVarianceFromPDF(xvals, pdf);
+  RealType var = getGumbelVarianceCDF(xvals, cdf, nParticles);
   return var;
+}
+
+std::vector<RealType> DiffusionTimeCDF::getGumbelVariance(std::vector<RealType> nParticles){
+  std::vector<RealType> cdf = slice(CDF, 0, t);
+  cdf.push_back(0); // Need to add 0 to CDF to make it complete.
+  std::vector<long int> xvals = getxvals();
+  return getGumbelVarianceCDF(xvals, cdf, nParticles);
 }
 
 std::vector<RealType> DiffusionTimeCDF::getSaveCDF(){
@@ -232,7 +238,8 @@ PYBIND11_MODULE(diffusionCDF, m)
 
   py::class_<DiffusionTimeCDF, DiffusionCDF>(m, "DiffusionTimeCDF")
       .def(py::init<const double, const unsigned long int>(), py::arg("beta"), py::arg("tMax"))
-      .def("getGumbelVariance", &DiffusionTimeCDF::getGumbelVariance, py::arg("nParticles"))
+      .def("getGumbelVariance", static_cast<RealType (DiffusionTimeCDF::*)(RealType)>(&DiffusionTimeCDF::getGumbelVariance), py::arg("nParticles"))
+      .def("getGumbelVariance", static_cast<std::vector<RealType> (DiffusionTimeCDF::*)(std::vector<RealType>)>(&DiffusionTimeCDF::getGumbelVariance), py::arg("nParticles"))
       .def("getTime", &DiffusionTimeCDF::getTime)
       .def("setTime", &DiffusionTimeCDF::setTime)
       .def("iterateTimeStep", &DiffusionTimeCDF::iterateTimeStep)
