@@ -11,6 +11,7 @@
 
 #include "pybind11_numpy_scalar.h"
 #include "diffusionCDF.hpp"
+#include "../Stats/stat.h"
 
 namespace py = pybind11;
 
@@ -48,39 +49,6 @@ std::vector<T> slice(std::vector<T> &v, const unsigned long int m, const unsigne
   std::vector<T> vec(n - m + 1);
   std::copy(v.begin() + m, v.begin() + n + 1, vec.begin());
   return vec;
-}
-
-RealType calculateMeanFromCDF(std::vector<long int> xvals, std::vector<RealType> cdf)
-{
-  RealType mean = 0;
-  int H;
-  for (unsigned long int i=0; i < cdf.size(); i++){
-    if (xvals.at(i) <= 0){
-      H = 0;
-    }
-    else{
-      H = 1;
-    }
-    mean += H - cdf[i];
-  }
-  return mean;
-}
-
-RealType calculateMeanFromPDF(std::vector<long int> xvals, std::vector<RealType> PDF){
-  RealType mean = 0;
-  for (unsigned long int i=0; i < PDF.size(); i++){
-    mean += xvals[i] * PDF[i];
-  }
-  return mean;
-}
-
-RealType calculateVarianceFromPDF(std::vector<long int> xvals, std::vector<RealType> PDF){
-  RealType mean = calculateMeanFromPDF(xvals, PDF);
-  RealType var = 0;
-  for (unsigned long int i=1; i < PDF.size(); i++){
-    var += PDF[i] * pow(xvals[i] - mean, 2);
-  }
-  return var;
 }
 
 DiffusionCDF::DiffusionCDF(const double _beta, const unsigned long int _tMax)
@@ -183,35 +151,22 @@ std::vector<unsigned long int> DiffusionTimeCDF::findQuantiles(
   return quantilePositions;
 }
 
-std::pair<std::vector<long int>, std::vector<RealType> > DiffusionTimeCDF::getDiscretePDF(RealType nParticles){
-  std::vector<long int> xvals(t);
-  std::vector<RealType> PDF(t);
-  RealType CDF_n, CDF_prev;
-  for (unsigned long int n=1; n<=t; n++){
-    xvals[n-1] = 2*n + 2 - t;
-    CDF_n = exp(-CDF[n] * nParticles);
-    CDF_prev = exp(-CDF[n-1] * nParticles);
-    PDF[n-1] = CDF_n - CDF_prev;
-  }
-  return std::make_pair(xvals, PDF);
-}
-
-std::pair<std::vector<long int>, std::vector<RealType> > DiffusionTimeCDF::getDiscreteCDF(RealType nParticles){
+std::vector<long int> DiffusionTimeCDF::getxvals(){
   std::vector<long int> xvals(t+1);
-  std::vector<RealType> CDF_n(t+1);
-  for (unsigned long int n=0; n<=t; n++){
-    xvals[n] = 2*n + 2 - t;
-    CDF_n[n] = exp(-CDF[n] * nParticles);
+  for (auto n = 0; n <= t; n++){
+    xvals[n] = 2 * n + 2 - t;
   }
-  return std::make_pair(xvals, CDF_n);
+  return xvals;
 }
 
 RealType DiffusionTimeCDF::getGumbelVariance(RealType nParticles)
 {
-  std::pair<std::vector<long int>, std::vector<RealType> > pair = getDiscretePDF(nParticles);
-  std::vector<long int> xvals = pair.first;
-  std::vector<RealType> PDF = pair.second;
-  RealType var = calculateVarianceFromPDF(xvals, PDF);
+  std::vector<RealType> cdf = slice(CDF, 0, t);
+  cdf.push_back(0); // Need to add 0 to CDF to make it complete.
+
+  std::vector<long int> xvals = getxvals();
+  std::vector<RealType> pdf = getDiscretePDF(cdf, nParticles);
+  RealType var = calculateVarianceFromPDF(xvals, pdf);
   return var;
 }
 
@@ -283,8 +238,6 @@ PYBIND11_MODULE(diffusionCDF, m)
       .def("iterateTimeStep", &DiffusionTimeCDF::iterateTimeStep)
       .def("findQuantile", &DiffusionTimeCDF::findQuantile, py::arg("quantile"))
       .def("findQuantiles", &DiffusionTimeCDF::findQuantiles, py::arg("quantiles"))
-      .def("getDiscretePDF", &DiffusionTimeCDF::getDiscretePDF)
-      .def("getDiscreteCDF", &DiffusionTimeCDF::getDiscreteCDF)
       .def("getSaveCDF", &DiffusionTimeCDF::getSaveCDF);
 
   py::class_<DiffusionPositionCDF, DiffusionCDF>(m, "DiffusionPositionCDF")
@@ -293,8 +246,4 @@ PYBIND11_MODULE(diffusionCDF, m)
       .def("getQuantilePositions", &DiffusionPositionCDF::getQuantilePositions)
       .def("getQuantiles", &DiffusionPositionCDF::getQuantiles)
       .def("stepPosition", &DiffusionPositionCDF::stepPosition);
-
-  m.def("calculateMeanFromCDF", &calculateMeanFromCDF, py::arg("xvals"), py::arg("cdf"));
-  m.def("calculateMeanFromPDF", &calculateMeanFromPDF, py::arg("xvals"), py::arg("pdf"));
-  m.def("calculateVarianceFromPDF", &calculateVarianceFromPDF, py::arg("xvals"), py::arg("pdf"));
 }

@@ -7,11 +7,12 @@
 
 #include <boost/multiprecision/float128.hpp>
 #include <cmath>
-#include <math.h>
 #include <limits>
 #include <algorithm>
+#include <math.h>
 
 #include "pybind11_numpy_scalar.h"
+#include "../Stats/stat.h"
 
 namespace py = pybind11;
 
@@ -307,37 +308,40 @@ DiffusionPDF::VsAndPb(const double v)
   return returnTuple;
 }
 
-RealType DiffusionPDF::getGumbelVariance(RealType maxParticle){
-  RealType sum = 0;
+std::pair<std::vector<long int>, std::vector<RealType> > DiffusionPDF::getxvals_and_pdf(){
   unsigned long int minIdx = edges.first[time];
   unsigned long int maxIdx = edges.second[time];
-  RealType occupancy_cdf, occupancy_cdf_prev, particle_cdf_n, particle_cdf_prev, particle_pdf;
-  double x_position;
-  RealType x_squared_sum = 0;
-  RealType x_sum = 0;
-  // First calculate the CDF for the first element so we can take a difference
-  occupancy_cdf_prev = 0;
-  for (unsigned long int i=minIdx; i < maxIdx; i++){
-    // Now calculate CDF for the current element
-    sum += occupancy[i];
-    occupancy_cdf = sum / nParticles;
-    std::cout << sum << "    ";
-    std::cout << occupancy_cdf << "    ";
-    // Calculate the CDF for the maximally displaced particle
-    particle_cdf_n = exp(-(1-occupancy_cdf) * maxParticle);
-    particle_cdf_prev = exp(-(1-occupancy_cdf_prev) * maxParticle);
-    std:: cout << particle_cdf_n << "   ";
-    particle_pdf = particle_cdf_n - particle_cdf_prev;
-    x_position = 2*double(i) - time;
-    x_sum += x_position * particle_pdf;
-    x_squared_sum += pow(x_position, 2.0) * particle_pdf;
-    std::cout << x_position << "    ";
-    std::cout << x_sum << "    ";
-    std::cout << x_squared_sum << std::endl;
-    occupancy_cdf_prev = occupancy_cdf;
+
+  if (minIdx == 0){
+    minIdx += 1;
   }
-  RealType var = x_squared_sum - pow(x_sum, 2.0);
-  return var;
+
+  if (maxIdx == occupancy.size()-1){
+    maxIdx -= 1;
+  }
+
+  std::vector<long int> xvals(maxIdx - minIdx + 2);
+  std::vector<RealType> pdf(maxIdx - minIdx + 2);
+
+  for (unsigned long int i=minIdx-1; i <= maxIdx; i++){
+    xvals.at(i-minIdx+1) = 2 * i - time;
+    pdf.at(i-minIdx+1) = occupancy.at(i);
+  }
+  return std::make_pair(xvals, pdf);
+}
+
+std::vector<RealType> DiffusionPDF::getCDF(){
+  std::pair<std::vector<long int>, std::vector<RealType> > pair = getxvals_and_pdf();
+  std::vector<RealType> pdf = pair.second;
+  return pdf_to_comp_cdf(pdf, nParticles);
+}
+
+RealType DiffusionPDF::getGumbelVariance(RealType maxParticle)
+{
+  std::pair<std::vector<long int>, std::vector<RealType> > pair = getxvals_and_pdf();
+  std::vector<long int> xvals = pair.first;
+  std::vector<RealType> pdf = pair.second;
+  return getGumbelVariancePDF(xvals, pdf, maxParticle, nParticles);
 }
 
 /*
@@ -409,7 +413,8 @@ PYBIND11_MODULE(diffusionPDF, m)
       .def("pGreaterThanX", &DiffusionPDF::pGreaterThanX, py::arg("idx"))
       .def("calcVsAndPb", &DiffusionPDF::calcVsAndPb, py::arg("num"))
       .def("VsAndPb", &DiffusionPDF::VsAndPb, py::arg("v"))
-      .def("getGumbelVariance", &DiffusionPDF::getGumbelVariance, py::arg("nParticles"));
+      .def("getGumbelVariance", &DiffusionPDF::getGumbelVariance, py::arg("nParticles"))
+      .def("getCDF", &DiffusionPDF::getCDF);
   m.def("getEinsteinPDF", &getEinsteinPDF);
   m.def("getWholeEinsteinPDF", &getWholeEinsteinPDF);
 }

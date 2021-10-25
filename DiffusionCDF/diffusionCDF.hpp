@@ -1,5 +1,3 @@
-// This is just a possible template for the recurance Relation object but I
-// think that it might be overkill at this point
 #include <assert.h>
 #include <boost/math/distributions.hpp>
 #include <boost/multiprecision/float128.hpp>
@@ -71,8 +69,7 @@ public:
   std::vector<unsigned long int> findQuantiles(std::vector<RealType> quantiles);
 
   RealType getGumbelVariance(RealType nParticles);
-  std::pair<std::vector<long int>, std::vector<RealType> > getDiscretePDF(RealType nParticles);
-  std::pair<std::vector<long int>, std::vector<RealType> > getDiscreteCDF(RealType nParticles);
+  std::vector<long int> getxvals();
   std::vector<RealType> getSaveCDF();
 };
 
