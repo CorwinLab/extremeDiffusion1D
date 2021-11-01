@@ -839,3 +839,112 @@ class CDFQuartileDatabase(QuartileDatabase):
 
         self.mean = mean_sum / len(self)
         self.var = squared_sum / len(self) - self.mean ** 2
+
+class CDFVarianceDatabase(Database):
+
+    @property
+    def header(self):
+        with open(self.files[0], 'r') as f:
+            return f.readline().split(self.delimiter)
+
+    @property
+    def quantiles(self):
+        # Exclude the first column that is time
+        header = self.header[1:]
+        for i, val in enumerate(header):
+            if 'var' in val:
+                continue
+            else:
+                yield i+1, val
+
+    @property
+    def variances(self):
+        header = self.header[1:]
+        for i, val in enumerate(header):
+            if 'var' in val:
+                yield i+1, val.replace('var', '')
+
+    @property
+    def quantile_list(self):
+        quantile = []
+        for i, val in self.quantiles:
+            quantile.append(val)
+        return quantile
+
+    @property
+    def quantile_columns(self):
+        columns = []
+        for i, val in self.quantiles:
+            columns.append(i)
+        return columns
+
+    @property
+    def variances_columns(self):
+        columns = []
+        for i, val in self.variances:
+            columns.append(i)
+        return columns
+
+    def calculateMeanVar(self, verbose=False, maxTime=None):
+        """
+        Calculate the mean of the selected data along the columns or rows.
+        Assumes that the first column is the time.
+
+        Parameters
+        ----------
+        verbose : bool
+            Whether to print the file names out when each is finished or not.
+            Really only used if you want to see progress over time.
+        """
+        squared_sum = None
+        mean_sum = None
+
+        gumbel_sum = None
+
+        new_files = []
+        for f in self.files:
+            data = loadArrayQuad(f, delimiter=self.delimiter, skiprows=self.skiprows)
+
+            # Make sure the file goes up to the maxTime entered.
+            time = data[:, 0].astype(float)
+            if maxTime is not None:
+                if max(time) < maxTime:
+                    continue
+                time = time[time <= maxTime]
+                self.time = time
+            new_files.append(f)
+            maxIdx = len(time)
+            data = data[:maxIdx, :]
+
+            quantiles = data[:, self.quantile_columns]
+            variances = data[:, self.variances_columns]
+
+            # Initialize sums to zeros if not already made
+            if squared_sum is None:
+                squared_sum = np.zeros(quantiles.shape, dtype=np.quad)
+            if mean_sum is None:
+                mean_sum = np.zeros(quantiles.shape, dtype=np.quad)
+
+            if gumbel_sum is None:
+                gumbel_sum = np.zeros(variances.shape, dtype=np.quad)
+
+            squared_sum[:maxIdx, :] += quantiles ** 2
+            mean_sum[:maxIdx, :] += quantiles
+
+            gumbel_sum[:maxIdx] += variances
+
+            if verbose:
+                print(f)
+
+        print(f"Dropping {len(self.files) - len(new_files)} files")
+        print(f"Mean calculated over {len(new_files)} files")
+        self.files = new_files
+
+        mean_sum = mean_sum[:maxIdx, :].astype(np.float64)
+        squared_sum = squared_sum[:maxIdx, :].astype(np.float64)
+        gumbel_sum = gumbel_sum[:maxIdx].astype(np.float64)
+
+        self.mean = mean_sum / len(self)
+        self.var = squared_sum / len(self) - self.mean ** 2
+
+        self.gumbelMean = gumbel_sum / len(self)

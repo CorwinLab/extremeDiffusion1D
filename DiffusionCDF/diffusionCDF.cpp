@@ -44,13 +44,6 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 } // namespace detail
 } // namespace pybind11
 
-template<typename T>
-std::vector<T> slice(std::vector<T> &v, const unsigned long int m, const unsigned long int n){
-  std::vector<T> vec(n - m + 1);
-  std::copy(v.begin() + m, v.begin() + n + 1, vec.begin());
-  return vec;
-}
-
 DiffusionCDF::DiffusionCDF(const double _beta, const unsigned long int _tMax)
 {
   beta = _beta;
@@ -103,6 +96,11 @@ void DiffusionTimeCDF::iterateTimeStep()
       CDF_next[n] = beta * CDF[n-1];
     }
     else{
+      /* Maybe add this in
+      if (CDF[n-1] == CDF[n]){
+        continue // or could even break?
+      }
+      */
       RealType beta = RealType(generateBeta());
       CDF_next[n] = beta * CDF[n-1] + (1 - beta) * CDF[n];
     }
@@ -152,7 +150,7 @@ std::vector<unsigned long int> DiffusionTimeCDF::findQuantiles(
 }
 
 std::vector<long int> DiffusionTimeCDF::getxvals(){
-  std::vector<long int> xvals(t+2);
+  std::vector<long int> xvals(t+1);
   for (auto n = 0; n <= t+1; n++){
     xvals[n] = 2 * n + 2 - t;
   }

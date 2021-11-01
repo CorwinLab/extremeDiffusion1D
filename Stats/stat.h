@@ -4,6 +4,13 @@
 #include <utility>
 #include <string>
 
+template<typename T>
+std::vector<T> slice(std::vector<T> &v, const unsigned long int m, const unsigned long int n){
+  std::vector<T> vec(n - m + 1);
+  std::copy(v.begin() + m, v.begin() + n + 1, vec.begin());
+  return vec;
+}
+
 template<class T, class N>
 void checkVectorLengths(std::vector<T> vec1, std::vector<N> vec2){
   if (vec1.size() != vec2.size()){
@@ -23,6 +30,7 @@ RealType calculateMeanFromPDF(std::vector<x_numeric> xvals, std::vector<RealType
 
 template <class RealType, class x_numeric>
 RealType calculateVarianceFromPDF(std::vector<x_numeric> xvals, std::vector<RealType> PDF){
+  checkVectorLengths(xvals, PDF);
   RealType mean = calculateMeanFromPDF(xvals, PDF);
   RealType var = 0;
   for (unsigned long int i=0; i < PDF.size(); i++){
@@ -88,9 +96,10 @@ std::vector<RealType> pdf_to_comp_cdf(std::vector<RealType> pdf, RealType norm){
   return comp_cdf;
 }
 
+// Note: comp_cdf should have size xvals.size()+1 since running getDiscretePDF returns
+// a vector of size comp_cdf.size() - 1
 template <class RealType, class x_numeric>
 RealType getGumbelVarianceCDF(std::vector<x_numeric> xvals, std::vector<RealType> comp_cdf, RealType nParticles){
-  checkVectorLengths(xvals, comp_cdf);
   std::vector<RealType> discrete_pdf = getDiscretePDF(comp_cdf, nParticles);
   return calculateVarianceFromPDF(xvals, discrete_pdf);
 }
@@ -99,7 +108,6 @@ template <class RealType, class x_numeric>
 std::vector<RealType> getGumbelVarianceCDF(std::vector<x_numeric> xvals, std::vector<RealType> comp_cdf, std::vector<RealType> nParticles){
   std::vector<std::vector<RealType> > discrete_pdf = getDiscretePDF(comp_cdf, nParticles);
   std::vector<RealType> gumbelVariance(nParticles.size());
-
   for (auto i=0; i < nParticles.size(); i++){
     gumbelVariance[i] = calculateVarianceFromPDF(xvals, discrete_pdf[i]);
   }

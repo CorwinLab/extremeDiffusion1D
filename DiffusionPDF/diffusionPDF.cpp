@@ -45,13 +45,6 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 } // namespace detail
 } // namespace pybind11
 
-template<typename T>
-std::vector<T> slice(std::vector<T> &v, const unsigned long int m, const unsigned long int n){
-  std::vector<T> vec(n - m + 1);
-  std::copy(v.begin() + m, v.begin() + n + 1, vec.begin());
-  return vec;
-}
-
 // Constuctor
 DiffusionPDF::DiffusionPDF(const RealType _nParticles,
                      const double _beta,

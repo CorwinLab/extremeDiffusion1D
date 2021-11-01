@@ -53,7 +53,7 @@ def runExperiment(
 
     if os.path.exists(scalars_file) and os.path.exists(CDF_file):
         rec = DiffusionTimeCDF.fromFiles(CDF_file, scalars_file)
-        save_times = savetimes[savetimes > rec.time]
+        save_times = save_times[save_times > rec.time]
         append = True
     else:
         rec = DiffusionTimeCDF(beta, tMax)
