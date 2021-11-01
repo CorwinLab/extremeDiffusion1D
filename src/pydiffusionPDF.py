@@ -546,6 +546,23 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             writer.writerow(row)
         f.close()
 
+    def evolveAndSaveMax(self, time, file, append=False):
+        f = open(file, "a")
+        writer = csv.writer(f)
+
+        # Sort quantiles in descending order
+        if not append:
+            header = ["time", "MaxEdge"]
+            writer.writerow(header)
+
+        for t in time:
+            self.evolveToTime(t)
+
+            maxEdge = self.getMaxIdx() - self.currentTime / 2
+            row = [self.getTime(), maxEdge]
+            writer.writerow(row)
+        f.close()
+
     def evolveAndSaveV(self, time, vs, file):
         """
         Incrementally evolves the system forward to the specified times and saves
@@ -605,7 +622,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
     def evolveAndSave(self, time, quantiles, file):
         """
         Incrementally evolves the system forward to the specified times and saves
-        the specified quantiles a2fter each increment. The data is stored as a
+        the specified quantiles after each increment. The data is stored as a
         numpy array which may make it slower than the evolveAndSaveQuantile method.
 
         Parameters
