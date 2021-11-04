@@ -63,7 +63,7 @@ class Database:
 
     def loadMean(self, file, quad=False):
         """
-        Load the mean of the dataset from a file.
+        Load the mean of the dataset from a file.2 = glob.glob(data_dir + 'MaxPartSmall/2
 
         Parameters
         ----------
