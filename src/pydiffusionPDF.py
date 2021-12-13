@@ -33,7 +33,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         Size of the edges and occupancy arrays to initialize to. This needs to
         be at least the size of the number of timesteps that are planned to run.
 
-    probDistFlag : bool (true)
+    ProbDistFlag : bool (true)
         Whether or not to include fractional particles or not. If True doesn't
         round the particles shifting and if False then rounds the particles so
         there is always a whole number of particles.

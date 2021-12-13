@@ -21,12 +21,14 @@ class Database:
         ----------
         files : list
             Files to create database from
+
+        delimiter : str
+            Delimiter of files to read in
+
+        skiprows : int
+            Number of rows to skip in files. Usually for the header
         """
         self.files = files
-
-        # Need to first parse the shape of the arrays we'll be loading
-        temp = np.loadtxt(files[0], delimiter=delimiter, skiprows=skiprows)
-        self.shape = temp.shape
 
         # Load the first array so we can get simple stuff like len of the files
         # and max/min times
@@ -34,6 +36,7 @@ class Database:
             files[0], delimiter=delimiter, skiprows=skiprows
         )
         self.time = self._example_file[:, 0].astype(np.float64)
+        self.shape = self._example_file.shape
 
         # Set some easy properties
         self.delimiter = delimiter
@@ -63,7 +66,7 @@ class Database:
 
     def loadMean(self, file, quad=False):
         """
-        Load the mean of the dataset from a file.2 = glob.glob(data_dir + 'MaxPartSmall/2
+        Load the mean of the dataset from a file.
 
         Parameters
         ----------
