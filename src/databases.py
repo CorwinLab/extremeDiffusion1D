@@ -110,7 +110,7 @@ class QuartileDatabase(Database):
 
         self.nParticles = nParticles
 
-    def calculateMeanVar(self, verbose=False, maxTime=None):
+    def calculateMeanVar(self, verbose=False, maxTime=None, doubleMax=False):
         """
         Calculate the mean of the selected data along the columns or rows.
         Assumes that the first column is the time.
@@ -140,7 +140,10 @@ class QuartileDatabase(Database):
 
             # second column is maximum edge which we don't really care about
             # for probDist=True
-            maxEdge = 2 * (data[:maxIdx, 1] - self.center)
+            if doubleMax:
+                maxEdge = 2 * data[:maxIdx, 1]
+            else:
+                maxEdge = 2 * (data[:maxIdx, 1] - self.center)
             data = 2 * data[:maxIdx, 2:]
 
             if squared_sum is None:
@@ -839,6 +842,22 @@ class CDFQuartileDatabase(QuartileDatabase):
 
         self.mean = mean_sum / len(self)
         self.var = squared_sum / len(self) - self.mean ** 2
+
+    def getQuantiles(self):
+        """
+        Returns the measured N quartile values from the file.
+
+        Returns
+        -------
+        quantiles : list
+            The 1/Nth quantiles recorded as quads
+        """
+
+        with open(self.files[0]) as f:
+            quantiles = f.readline().split(",")[1:]
+            quantiles = [np.quad(N) for N in quantiles]
+
+        return quantiles
 
 class CDFVarianceDatabase(Database):
 

@@ -2,16 +2,19 @@ import sys
 
 sys.path.append("../src/")
 from pydiffusionPDF import DiffusionPDF
+from theory import theoreticalNthQuart, theoreticalVar
 import matplotlib
 
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
+from matplotlib import colors
 import numpy as np
+import copy
 
-N = 10000
-numSteps = np.log(N) ** (5 / 2)
+N = 100000/2
+numSteps = 300
 numSteps = int(numSteps)
-d = DiffusionPDF(N, 1, numSteps)
+d = DiffusionPDF(N, 1, numSteps, ProbDistFlag=False)
 allOcc = np.zeros(shape=(numSteps + 1, numSteps + 1))
 
 for i in range(numSteps):
@@ -20,15 +23,11 @@ for i in range(numSteps):
     occ = np.array(occ, dtype=np.float64)
     allOcc[i, :] = occ
 
-NthQuart = N
-times = d.time
-theory = np.piecewise(
-    times,
-    [times < np.log(NthQuart), times >= np.log(NthQuart)],
-    [lambda x: x, lambda x: x * np.sqrt(1 - (1 - np.log(NthQuart) / x) ** 2)],
-)
-theory = theory / 2
-vmax = N / 10
+
+theory = theoreticalNthQuart(N, d.time)
+var = theoreticalVar(N, d.time)
+std_below = theory - var
+std_above = theory + var
 
 for i in range(allOcc.shape[0]):
     occ = allOcc[i, :]
@@ -36,42 +35,42 @@ for i in range(allOcc.shape[0]):
     occ = np.roll(occ, idx_shift)
     allOcc[i, :] = occ
 
-v05dist = (0.05 * times) / 2 + max(d.center)
-v01dist = (0.1 * times) / 2 + max(d.center)
-v02dist = (0.15 * times) / 2 + max(d.center)
 # Plot the raw Occupancy
-fig, ax = plt.subplots()
-cax = ax.imshow(allOcc, cmap="gist_heat_r", vmin=0, vmax=vmax)
-# ax.plot([max(d.center), max(d.center)], [0, allOcc.shape[0]], c='g', ls='--', label='Center')
-# ax.plot(theory+max(d.center), times, c='b', ls='--', label='Theoretical\nMaximum Particle')
-# ax.plot(max(d.center) - theory, times, c='b', ls='--')
-ax.plot(v01dist, times, c="b", ls="--")
-ax.plot(v05dist, times, c="b", ls="--")
-ax.plot(v02dist, times, c="b", ls="--")
-ax.set_ylabel("Time")
-ax.set_xlabel("Distance")
-ax.set_title("Partition Function vs Time")
-ax.set_ylim([0, allOcc.shape[0]])
-ax.get_xaxis().set_ticks([])
-fig.colorbar(cax, ax=ax, label="Number of Particles")
-fig.savefig("Occupation_No_Threshold.png")
-
-"""
-# Plot the Occupancy with a threshold to highlight outliers
-threshold = 2
-greater = (allOcc * (allOcc > threshold))
-less = (allOcc * (allOcc <= threshold))
-
-alpha = (less > 0).astype(float)
+color = 'tab:red'
+cmap = copy.copy(matplotlib.cm.get_cmap('viridis'))
+cmap.set_under(color='white')
+cmap.set_bad(color='white')
 vmax = N / 10
+vmin = 0.00001
 
-fig, ax = plt.subplots()
-cax = ax.imshow(greater, cmap='gist_heat_r', vmin=0, vmax=vmax)
-ax.imshow(less>0, cmap='Blues', alpha=alpha, label='Positions w/ <2 Particles')
-ax.plot(d.center, range(allOcc.shape[0]), 'g--', label='Center')
-ax.set_ylabel('Time')
-ax.set_xlabel('Distance')
-ax.legend()
-fig.colorbar(cax, ax=ax, label='Number of Particles')
-fig.savefig('Occupation.png')
-"""
+fig, (ax, ax2) = plt.subplots(2, 1, sharex=True, constrained_layout=True)
+cax = ax.imshow(allOcc.T, norm=colors.LogNorm(vmin=1, vmax=vmax), cmap=cmap, aspect='auto', interpolation='none')
+ax.plot(d.time, theory / 2 + max(d.time) / 2, c=color)
+ax.plot(d.time, max(d.time)/2 - theory / 2, c=color)
+ax.set_ylabel("Distance")
+ax.set_title("Partition Function vs Time")
+ax.set_yticks(np.linspace(0, allOcc.shape[1], 13))
+ticks = ax.get_yticks()
+new_ticks = np.linspace(0, allOcc.shape[1], len(ticks)) - (allOcc.shape[1]) / 2
+new_ticks = list(new_ticks.astype(int))
+ax.set_yticklabels(new_ticks)
+ax.set_ylim([90, 60+150+1])
+ax2.plot(d.time, d.maxDistance, label='system', c='k')
+ax2.plot(d.time, theory / 2, c=color)
+ax2.fill_between(d.time, std_below/2, std_above/2, alpha=0.2, color=color)
+print(np.all(np.abs(np.diff(2*d.maxDistance))))
+print(np.all(np.abs(np.diff(2*d.minDistance))))
+
+n_plots = 5
+for _ in range(n_plots):
+    d = DiffusionPDF(N, 1, numSteps, ProbDistFlag=False)
+    d.evolveToTime(numSteps)
+    ax2.plot(d.time, d.maxDistance, label='system', c='k', alpha=0.4)
+    print(np.all(np.abs(np.diff(2*d.maxDistance))))
+    print(np.all(np.abs(np.diff(2*d.minDistance))))
+
+ax2.set_xlabel("t")
+ax2.set_ylabel("Distance")
+ax2.set_ylim([0, 55])
+fig.colorbar(cax, ax=ax, label="Particles")
+fig.savefig("Occupation.png", bbox_inches='tight')

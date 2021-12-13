@@ -10,7 +10,7 @@ sys.path.append("../../src")
 
 from databases import QuartileDatabase, CDFVarianceDatabase
 from quadMath import prettifyQuad
-from theory import theoreticalNthQuartVar, theoreticalNthQuartVarLargeTimes
+from theory import theoreticalVar, theoreticalNthQuartVarLargeTimes, theoreticalNthQuartVar, theoreticalNthQuart
 from matplotlib.colors import LinearSegmentedColormap
 
 def calculateVariance(files, verbose=True):
@@ -26,8 +26,9 @@ def calculateVariance(files, verbose=True):
         if verbose:
             print(f)
 
-    var = squared_sum / len(files) - (sum / len(files))**2
-    return time, var
+    mean = sum / len(files)
+    var = squared_sum / len(files) - (mean)**2
+    return time, var, mean
 
 def getTurnOnTime(time, var, var_thresh, N, yscale=2/3):
     logN = np.log(N).astype(float)
@@ -35,6 +36,10 @@ def getTurnOnTime(time, var, var_thresh, N, yscale=2/3):
     idx = np.where(turn_ons == 1)[0][0]
     return time[idx], var[idx]
 
+def getLessThanT(time, mean):
+    greater = mean >= time-1
+    nonzero = np.nonzero(greater)[0][-1]
+    return time[nonzero]
 
 data_dir = '/home/jacob/Desktop/corwinLabMount/CleanData/'
 save_data_dir = './Data/'
@@ -49,6 +54,7 @@ discrete_100_files = glob.glob(data_dir + 'MaxPart100/Quartile*.txt')[:nFiles]
 max_time_100 = np.loadtxt(discrete_100_files[0], delimiter=",", skiprows=1, usecols=0)[-1]
 
 db_300 = QuartileDatabase(discrete_300_files, nParticles=np.quad("1e300"))
+
 db_100 = QuartileDatabase(discrete_100_files, nParticles=np.quad("1e100"))
 
 # Get the CDF and Gumbel datasets for N=1e100/300, beta=1
@@ -70,22 +76,27 @@ if run_again:
     db_100.calculateMeanVar(verbose=True, maxTime=max_time_100)
     db_gumbel.calculateMeanVar(verbose=True, maxTime=max_time)
 
-    time2, var2 = calculateVariance(gumbel_2, verbose=True)
+    time2, var2, mean2 = calculateVariance(gumbel_2, verbose=True)
     np.savetxt(save_data_dir + "DiscreteTime2.txt", time2)
     np.savetxt(save_data_dir + "DiscreteVar2.txt", var2)
+    np.savetxt(save_data_dir + "DiscreteMean2.txt", mean2)
 
-    time20, var20 = calculateVariance(gumbel_20, verbose=True)
+    time20, var20, mean20 = calculateVariance(gumbel_20, verbose=True)
     np.savetxt(save_data_dir + "DiscreteTime20.txt", time20)
     np.savetxt(save_data_dir + "DiscreteVar20.txt", var20)
+    np.savetxt(save_data_dir + "DiscreteMean20.txt", mean20)
 
-    time11, var11 = calculateVariance(gumbel_11, verbose=True)
+    time11, var11, mean11 = calculateVariance(gumbel_11, verbose=True)
     np.savetxt(save_data_dir + "DiscreteTime11.txt", time11)
     np.savetxt(save_data_dir + "DiscreteVar11.txt", var11)
+    np.savetxt(save_data_dir + "DiscreteMean11.txt", mean11)
 
     np.savetxt(save_data_dir + "DiscreteTime300.txt", db_300.time)
     np.savetxt(save_data_dir + "DiscreteTime100.txt", db_100.time)
     np.savetxt(save_data_dir + "Discrete300Var.txt", db_300.maxVar)
     np.savetxt(save_data_dir + "Discrete100Var.txt", db_100.maxVar)
+    np.savetxt(save_data_dir + "DiscreteMean300.txt", db_300.maxMean)
+    np.savetxt(save_data_dir + "DiscreteMean100.txt", db_100.maxMean)
 
     np.savetxt(save_data_dir + "GumbelVar.txt", db_gumbel.gumbelMean)
     np.savetxt(save_data_dir + "QuantileVar.txt", db_gumbel.var)
@@ -93,8 +104,11 @@ if run_again:
 else:
     db_300.time = np.loadtxt(save_data_dir + "DiscreteTime300.txt")
     db_300.maxVar = np.loadtxt(save_data_dir + "Discrete300Var.txt")
+    db_300.maxMean = np.loadtxt(save_data_dir + "DiscreteMean300.txt")
+
     db_100.time = np.loadtxt(save_data_dir + "DiscreteTime100.txt")
     db_100.maxVar = np.loadtxt(save_data_dir + "Discrete100Var.txt")
+    db_100.maxMean = np.loadtxt(save_data_dir + "DiscreteMean100.txt")
 
     db_gumbel.gumbelMean = np.loadtxt(save_data_dir + "GumbelVar.txt")
     db_gumbel.var = np.loadtxt(save_data_dir + "QuantileVar.txt")
@@ -102,12 +116,15 @@ else:
 
     time20 = np.loadtxt(save_data_dir + "DiscreteTime20.txt")
     var20 = np.loadtxt(save_data_dir + "DiscreteVar20.txt")
+    mean20 = np.loadtxt(save_data_dir + "DiscreteMean20.txt")
 
     time11 = np.loadtxt(save_data_dir + "DiscreteTime11.txt")
     var11 = np.loadtxt(save_data_dir + "DiscreteVar11.txt")
+    mean11 = np.loadtxt(save_data_dir + "DiscreteMean11.txt")
 
     time2 = np.loadtxt(save_data_dir + "DiscreteTime2.txt")
     var2 = np.loadtxt(save_data_dir + "DiscreteVar2.txt")
+    mean2 = np.loadtxt(save_data_dir + "DiscreteMean2.txt")
 
 # Make plot of Variance as a function of time for discrete
 # Look at golden ratio thing
@@ -142,11 +159,11 @@ ax.plot(time2 / logN2, var2 / logN2 ** (y_power), ms=s, alpha=alpha, label='2', 
 ax.plot(time20 / logN20, var20 / logN20 ** (y_power), ms=s, alpha=alpha, label='20', c=colors[2])
 ax.plot(time11 / logN11, var11/ logN11 ** (y_power), ms=s, alpha=alpha, label='10', c=colors[3])
 
-theory300 = theoreticalNthQuartVar(np.quad("1e300"), db_300.time) + db_300.time / logN300
-theory100 = theoreticalNthQuartVar(np.quad("1e100"), db_100.time) + db_100.time / logN100
-theory20 = theoreticalNthQuartVar(np.quad("1e20"), time20) + time20 / logN20
-theory2 = theoreticalNthQuartVar(np.quad("1e2"), time2) + time2 / logN2
-theory11= theoreticalNthQuartVar(np.quad("1e7"), time11) + time11 / logN11
+theory300 = theoreticalVar(np.quad("1e300"), db_300.time) + db_300.time / logN300
+theory100 = theoreticalVar(np.quad("1e100"), db_100.time) + db_100.time / logN100
+theory20 = theoreticalVar(np.quad("1e20"), time20) + time20 / logN20
+theory2 = theoreticalVar(np.quad("1e2"), time2) + time2 / logN2
+theory11= theoreticalVar(np.quad("1e7"), time11) + time11 / logN11
 
 ax2 = fig.add_axes([0.55, 0.25, 0.3, 0.3])
 ax2.set_xlabel(r"$\log_{10}N$", fontsize=8, labelpad=0)
@@ -156,22 +173,16 @@ ax2.tick_params(axis='both', which='major', labelsize=6)
 c = number_of_plots-1
 for times, vars, Nexp in zip([time2, time11, time20, db_100.time, db_300.time], [var2, var11, var20, db_100.maxVar, db_300.maxVar], [2, 7, 20, 100, 300]):
     N = np.quad(f"1e{Nexp}")
-    t, v = getTurnOnTime(times, vars, 10**-8, N)
+    t, v = getTurnOnTime(times, vars, 0, N)
     logN = np.log(N).astype(float)
     ax2.scatter(Nexp, t/logN, color=colors[c])
     c+=-1
-
-theory300longtime = theoreticalNthQuartVarLargeTimes(np.quad("1e300"), db_300.time) + db_300.time / logN300
-theory100longtime = theoreticalNthQuartVarLargeTimes(np.quad("1e100"), db_100.time) + db_100.time / logN100
 
 ax.plot(db_300.time / logN300, theory300 / logN300 ** (y_power), '--', zorder=20, c=colors[0])
 ax.plot(db_100.time / logN100, theory100 / logN100 **(y_power), '--', zorder=20, c=colors[1])
 ax.plot(time20 / logN20, theory20 / logN20 **(y_power), '--', zorder=20, label='theory20', c=colors[2])
 ax.plot(time2 / logN2, theory2 / logN2 **(y_power), '--', zorder=20, label='theory2', c=colors[4])
 ax.plot(time11 / logN11, theory11 / logN11 **(y_power), '--', zorder=20, label='theory11', c=colors[3])
-
-ax.plot(db_300.time / logN300, theory300longtime / logN300 ** (y_power), '-.', zorder=20, c=colors[0])
-ax.plot(db_100.time / logN100, theory100longtime / logN100 **(y_power), '-.', zorder=20, c=colors[1])
 
 for i in range(db_gumbel.gumbelMean.shape[1]):
     N = np.quad(db_gumbel.quantile_list[i])
@@ -184,3 +195,40 @@ for i in range(db_gumbel.gumbelMean.shape[1]):
 #ax.legend()
 
 fig.savefig("DiscreteVariance.png", bbox_inches='tight')
+
+fig2, ax = plt.subplots()
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_xlabel("t / ln(N)")
+ax.set_ylabel("Mean Maximum Particle")
+ax.set_xlim([10**-2, 10**4])
+
+means = [mean2, mean11, mean20, db_100.maxMean, db_300.maxMean]
+times = [time2, time11, time20, db_100.time, db_300.time]
+Ns = [2, 7, 20, 100, 300]
+ts = []
+logNs = []
+c = number_of_plots-1
+for Nexp, time, mean in zip(Ns, times, means):
+    N = np.quad(f"1e{Nexp}")
+    logN = np.log(N).astype(float)
+    logNs.append(logN)
+    theory = theoreticalNthQuart(N, time)
+    ax.plot(time / logN, mean, color=colors[c])
+    ax.plot(time / logN, theory, '--', color=colors[c])
+    t_less = getLessThanT(time, mean)
+    ts.append(t_less)
+    ax.scatter(t_less / logN, t_less, color=colors[c])
+    c+=-1
+
+ax3 = fig2.add_axes([0.2, 0.65, 0.2, 0.2])
+
+ax3.plot(logNs, logNs, '--k', alpha=0.7)
+ax3.scatter(logNs, ts, c=colors[::-1])
+ax3.set_xscale("log")
+ax3.set_yscale("log")
+ax3.set_xlabel(r"$\ln(N)$", fontsize=8, labelpad=0)
+ax3.set_ylabel(r"$\tau$", fontsize=8, labelpad=0)
+ax3.tick_params(axis='both', which='major', labelsize=6)
+
+fig2.savefig("DiscreteMean.png", bbox_inches='tight')
