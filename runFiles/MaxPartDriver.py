@@ -62,8 +62,8 @@ def runExperiment(
     save_times = np.geomspace(1, num_of_steps, num_of_save_times, dtype=np.int64)
     save_times = np.unique(save_times)
 
-    occupancy_file = os.path.join(self.save_dir, f"Occupancy{self.id}.txt")
-    scalars_file = os.path.join(self.save_dir, f"Scalars{self.id}.json")
+    occupancy_file = os.path.join(save_dir, f"Occupancy{sysID}.txt")
+    scalars_file = os.path.join(save_dir, f"Scalars{sysID}.json")
 
     if os.path.exists(occupancy_file) and os.path.exists(scalars_file):
         d = DiffusionPDF.fromFiles(scalars_file, occupancy_file)
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         probDistFlag,
     ) = sys.argv[1:]
 
-    save_dir = f"{topDir}/{N_exp}/"
+    save_dir = f"{topDir}/{beta}/"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     save_file = save_dir + f"Quartiles{sysID}.txt"
