@@ -3,8 +3,6 @@ from numba import jit
 from matplotlib import pyplot as plt
 import time
 
-
-@jit(nopython=True)
 def numbaDirichlet(numSites, shape):
     a = np.ones((shape[0], shape[1], numSites + 1))
     for i in range(shape[0]):

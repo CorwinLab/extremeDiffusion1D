@@ -131,7 +131,10 @@ class QuartileDatabase(Database):
 
         new_files = []
         for f in self.files:
-            data = loadArrayQuad(f, delimiter=self.delimiter, skiprows=self.skiprows)
+            try:
+                data = loadArrayQuad(f, delimiter=self.delimiter, skiprows=self.skiprows)
+            except:
+                continue
             time = data[:, 0].astype(float)
             if maxTime is not None:
                 if max(time) < maxTime:

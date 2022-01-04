@@ -26,7 +26,7 @@ for i, dir in enumerate(data_dirs):
     files = glob.glob(os.path.join(dir, "Q*.txt"))
     beta = dir.split("/")[-1]
     db = QuartileDatabase(files)
-    db.calculateMeanVar(verbose=True, maxTime=100_000, doubleMax=True)
+    db.calculateMeanVar(verbose=True, maxTime=300_000, doubleMax=True)
     N = np.quad("1e20")
     logN = np.log(N).astype(float)
     ax.plot(db.time, db.maxVar, label=beta, c=colors[i+1])

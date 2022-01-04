@@ -2,7 +2,7 @@ import sys
 
 sys.path.append("../src/")
 from pydiffusionPDF import DiffusionPDF
-from theory import theoreticalNthQuart, theoreticalVar
+from theory import quantileMean, quantileVar
 import matplotlib
 
 matplotlib.use("Agg")
@@ -11,7 +11,7 @@ from matplotlib import colors
 import numpy as np
 import copy
 
-N = 100000/2
+N = 100_000
 numSteps = 300
 numSteps = int(numSteps)
 d = DiffusionPDF(N, 1, numSteps, ProbDistFlag=False)
@@ -24,8 +24,8 @@ for i in range(numSteps):
     allOcc[i, :] = occ
 
 
-theory = theoreticalNthQuart(N, d.time)
-var = theoreticalVar(N, d.time)
+theory = quantileMean(N, d.time)
+var = quantileVar(N, d.time)
 std_below = theory - var
 std_above = theory + var
 
@@ -40,7 +40,7 @@ color = 'tab:red'
 cmap = copy.copy(matplotlib.cm.get_cmap('viridis'))
 cmap.set_under(color='white')
 cmap.set_bad(color='white')
-vmax = N / 10
+vmax = N
 vmin = 0.00001
 
 fig, (ax, ax2) = plt.subplots(2, 1, sharex=True, constrained_layout=True)
@@ -48,7 +48,6 @@ cax = ax.imshow(allOcc.T, norm=colors.LogNorm(vmin=1, vmax=vmax), cmap=cmap, asp
 ax.plot(d.time, theory / 2 + max(d.time) / 2, c=color)
 ax.plot(d.time, max(d.time)/2 - theory / 2, c=color)
 ax.set_ylabel("Distance")
-ax.set_title("Partition Function vs Time")
 ax.set_yticks(np.linspace(0, allOcc.shape[1], 13))
 ticks = ax.get_yticks()
 new_ticks = np.linspace(0, allOcc.shape[1], len(ticks)) - (allOcc.shape[1]) / 2
@@ -58,19 +57,17 @@ ax.set_ylim([90, 60+150+1])
 ax2.plot(d.time, d.maxDistance, label='system', c='k')
 ax2.plot(d.time, theory / 2, c=color)
 ax2.fill_between(d.time, std_below/2, std_above/2, alpha=0.2, color=color)
-print(np.all(np.abs(np.diff(2*d.maxDistance))))
-print(np.all(np.abs(np.diff(2*d.minDistance))))
 
 n_plots = 5
 for _ in range(n_plots):
     d = DiffusionPDF(N, 1, numSteps, ProbDistFlag=False)
     d.evolveToTime(numSteps)
     ax2.plot(d.time, d.maxDistance, label='system', c='k', alpha=0.4)
-    print(np.all(np.abs(np.diff(2*d.maxDistance))))
-    print(np.all(np.abs(np.diff(2*d.minDistance))))
+    assert np.all(np.abs(np.diff(2*d.maxDistance)))
+    assert np.all(np.abs(np.diff(2*d.minDistance)))
 
-ax2.set_xlabel("t")
+ax2.set_xlabel(r"$t$")
 ax2.set_ylabel("Distance")
 ax2.set_ylim([0, 55])
-fig.colorbar(cax, ax=ax, label="Particles")
+#fig.colorbar(cax, ax=ax, label="Particles")
 fig.savefig("Occupation.png", bbox_inches='tight')
