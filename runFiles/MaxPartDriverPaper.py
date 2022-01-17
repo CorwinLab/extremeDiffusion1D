@@ -93,13 +93,13 @@ if __name__ == "__main__":
     ) = sys.argv[1:]
 
     save_dir = f"{topDir}"
-    save_file = save_dir + f"Quartiles{sysID}.txt"
+    save_file = os.path.join(save_dir, f"Quartiles{sysID}.txt")
     save_file = os.path.abspath(save_file)
 
-    save_occ = save_dir + f"FinalOccupancy{sysID}.txt"
+    save_occ = os.path.join(f"FinalOccupancy{sysID}.txt")
     save_occ = os.path.abspath(save_occ)
 
-    num_of_steps = np.log(np.quad(f"1e{N_exp}")) * 5 * 10**3
+    num_of_steps = np.log(np.quad(f"1e{N_exp}")).astype(float) * 5 * 10**3
 
     vars = {
         "beta": beta,

@@ -8,7 +8,6 @@
 #SBATCH --output=/home/jhass2/CleanData/logs/Paper/Max/%A-%a.out
 #SBATCH --nice=1000
 
-NUM_OF_STEPS=300000
 NUM_OF_SAVE_TIMES=7500
 PROBDISTFLAG=0
 BETA=1
