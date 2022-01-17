@@ -463,3 +463,10 @@ class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
 
         for _ in range(num_positions):
             self.stepPosition()
+
+if __name__ == '__main__':
+    r = DiffusionTimeCDF(np.inf, tMax=10)
+    print(r.CDF)
+    for _ in range(9):
+        r.iterateTimeStep()
+        print(r.CDF)
