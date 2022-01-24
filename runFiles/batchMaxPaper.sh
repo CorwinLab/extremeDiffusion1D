@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=PaperMax
-#SBATCH --time=30-00:00:00
+#SBATCH --time=10-00:00:00
 #SBATCH --error=/home/jhass2/CleanData/logs/Paper/Max/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --array=0-250
+#SBATCH --array=251-500
 #SBATCH --output=/home/jhass2/CleanData/logs/Paper/Max/%A-%a.out
 #SBATCH --nice=1000
 
