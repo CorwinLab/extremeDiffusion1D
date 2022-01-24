@@ -17,6 +17,8 @@ TW_var = 0.813
 TW_x2 = TW_var + TW_mean**2
 TW_mean_sq = TW_var + TW_mean ** 2
 
+EM_constant = 0.577
+
 def v0(N, time):
     logN = np.log(N).astype(float)
     return np.sqrt(1 - (1 - logN / time)**2)
@@ -219,3 +221,24 @@ def probVariance(v, t):
     sigma = ((2 * I ** 2) / (1 - I)) ** (1 / 3)
     theory = (t ** (2 / 3)) * sigma ** 2 * V
     return theory
+
+def nu(x):
+    return 1/2 * ((1+x) * np.log(1+x) + (1-x) * np.log(1-x))
+
+def nu_prime(x):
+    return 1/2 * (np.log(1+x) - np.log(1-x))
+
+def beta(x):
+    return 1 / nu_prime(x)
+
+def mu(n, c1):
+    return n * c1 - np.log(n) / (2 * nu_prime(c1)) + 1 / (2 * nu_prime(c1)) * np.log((1 + c1)/(2 * np.pi * (1-c1)))
+
+def einstein_mean(N, t, c1):
+    c = np.log(N) / t
+    b = beta(c1)
+    m = mu(t, c1)
+    return m + b * EM_constant
+
+def einstein_var(N, c1):
+    return beta(c1)**2 * np.pi**2 / 6
