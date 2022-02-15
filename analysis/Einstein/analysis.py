@@ -59,7 +59,7 @@ ax.set_xscale("log")
 ax.set_yscale("log")
 ax.plot(time / logN, var, c='k', alpha=0.5)
 ax.plot(time / logN, var_theory, c='r')
-ax.plot(new_time / logN, better_var_theory*2, c='g')
+ax.plot(new_time / logN, better_var_theory, c='g')
 ax.set_xlim([0.5, max(time / logN)])
 fig.savefig("Variance.png", bbox_inches='tight')
 

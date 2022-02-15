@@ -151,8 +151,8 @@ std::vector<unsigned long int> DiffusionTimeCDF::findQuantiles(
 
 std::vector<long int> DiffusionTimeCDF::getxvals(){
   std::vector<long int> xvals(t+1);
-  for (auto n = 0; n <= t+1; n++){
-    xvals[n] = 2 * n + 2 - t;
+  for (auto n = 0; n < xvals.size(); n++){
+    xvals[n] = 2 * n - t;
   }
   return xvals;
 }
@@ -243,7 +243,8 @@ PYBIND11_MODULE(diffusionCDF, m)
       .def("iterateTimeStep", &DiffusionTimeCDF::iterateTimeStep)
       .def("findQuantile", &DiffusionTimeCDF::findQuantile, py::arg("quantile"))
       .def("findQuantiles", &DiffusionTimeCDF::findQuantiles, py::arg("quantiles"))
-      .def("getSaveCDF", &DiffusionTimeCDF::getSaveCDF);
+      .def("getSaveCDF", &DiffusionTimeCDF::getSaveCDF)
+      .def("getxvals", &DiffusionTimeCDF::getxvals);
 
   py::class_<DiffusionPositionCDF, DiffusionCDF>(m, "DiffusionPositionCDF")
       .def(py::init<const double, const unsigned long int, std::vector<RealType> >(), py::arg("beta"), py::arg("tMax"), py::arg("quantiles"))

@@ -1,6 +1,7 @@
 import numpy as np
 import npquad
 from scipy.special import erf
+from scipy.interpolate import interp1d
 from matplotlib import pyplot as plt
 
 # Going to define latex strings of each equation here to render in matplotlib labels
@@ -14,48 +15,106 @@ PbVarStr = r"$t^{2/3}\sigma^{2} V$"
 
 TW_mean = -1.77
 TW_var = 0.813
-TW_x2 = TW_var + TW_mean**2
+TW_x2 = TW_var + TW_mean ** 2
 TW_mean_sq = TW_var + TW_mean ** 2
 
 EM_constant = 0.577
+KPZ_time = np.array([
+    25 / 100,
+    35 / 100,
+    50 / 100,
+    75 / 100,
+    12 / 10,
+    2,
+    35 / 10,
+    65 / 10,
+    13,
+    25,
+    50,
+    100,
+    250,
+    500,
+    1000,
+    2500,
+    5000,
+    10000,
+    20000,
+])
+
+KPZ_var = np.array([
+    1.75713,
+    1.70908,
+    1.62923,
+    1.53633,
+    1.4361,
+    1.33806,
+    1.24323,
+    1.15268,
+    1.06801,
+    1.00314,
+    0.948845,
+    0.907622,
+    0.869637,
+    0.850573,
+    0.837569,
+    0.82681,
+    0.821864,
+    0.818774,
+    0.815189,
+])
+
 
 def v0(N, time):
     logN = np.log(N).astype(float)
-    return np.sqrt(1 - (1 - logN / time)**2)
+    return np.sqrt(1 - (1 - logN / time) ** 2)
+
 
 def I(v):
-    return 1 - np.sqrt(1 - v**2)
+    return 1 - np.sqrt(1 - v ** 2)
+
 
 def I_prime(v):
-    return v / np.sqrt(1-v**2)
+    return v / np.sqrt(1 - v ** 2)
+
 
 def I_double_prime(v):
-    return 1 / (1 - v**2) **(3/2)
+    return 1 / (1 - v ** 2) ** (3 / 2)
+
 
 def sigma(v):
-    return (2 * I(v) ** 2 / (1 - I(v))) ** (1/3)
+    return (2 * I(v) ** 2 / (1 - I(v))) ** (1 / 3)
+
 
 def sigma_prime(v):
     I_val = I(v)
-    return 2 **(1/3) / 3 * v / (I_val)**(2/3) / np.sqrt(1 - v**2)
+    return 2 ** (1 / 3) / 3 * v / (I_val) ** (2 / 3) / np.sqrt(1 - v ** 2)
+
 
 def lambda_0(v):
     return sigma(v) / I_prime(v)
 
+
 def lambda_1(v):
-    return lambda_0(v) * (sigma_prime(v) / I_prime(v) - I_double_prime(v) * sigma(v) / (2 * I_prime(v)**2))
+    return lambda_0(v) * (
+        sigma_prime(v) / I_prime(v)
+        - I_double_prime(v) * sigma(v) / (2 * I_prime(v) ** 2)
+    )
+
 
 def first_order_mean(N, time):
     v0_val = v0(N, time)
     return v0_val * time
 
+
 def second_order_mean(N, time):
     v0_val = v0(N, time)
-    return time ** (1/3) * TW_mean * lambda_0(v0_val)
+    return time ** (1 / 3) * TW_mean * lambda_0(v0_val)
+
 
 def third_order_mean(N, time):
     v0_val = v0(N, time)
-    return time ** (-1/3) * lambda_1(v0_val) * TW_mean_sq
+    return time ** (-1 / 3) * lambda_1(v0_val) * TW_mean_sq
+
 
 def quantileMean(N, time):
     """
@@ -84,12 +143,14 @@ def quantileMean(N, time):
     )
     return theory
 
+
 def erf_crossover(N, time, crossover, width):
     theory_short = quantileVarShortTime(N, time)
     theory_long = quantileVarLongTime(N, time)
     error_func = (erf((time - crossover) / width) + 1) / 2
     theory = theory_short * (1 - error_func) + theory_long * (error_func)
     return theory
+
 
 def quantileVar(N, time, crossover=None, width=None):
     """
@@ -149,9 +210,10 @@ def quantileVarShortTime(N, time):
         Quantile variance
     """
     v0_val = v0(N, time)
-    first_order = time ** (2/3) * TW_var * lambda_0(v0_val) ** 2
-    second_order = time ** (-2/3) * TW_x2 * lambda_1(v0_val) ** 2
+    first_order = time ** (2 / 3) * TW_var * lambda_0(v0_val) ** 2
+    second_order = time ** (-2 / 3) * TW_x2 * lambda_1(v0_val) ** 2
     return first_order
+
 
 def quantileVarLongTime(N, time):
     """
@@ -171,7 +233,9 @@ def quantileVarLongTime(N, time):
         Quantile variance
     """
 
-    return time ** (1 / 2) * np.pi ** (1 / 2) / 2
+    logN = np.log(N).astype(float)
+    that = time / logN**2
+    return logN * that / 2 * KPZ_var_fit(4/that)
 
 def probMean(vs, t):
     """
@@ -222,17 +286,25 @@ def probVariance(v, t):
     theory = (t ** (2 / 3)) * sigma ** 2 * V
     return theory
 
+
 def nu(x):
-    return 1/2 * ((1+x) * np.log(1+x) + (1-x) * np.log(1-x))
+    return 1 / 2 * ((1 + x) * np.log(1 + x) + (1 - x) * np.log(1 - x))
+
 
 def nu_prime(x):
-    return 1/2 * (np.log(1+x) - np.log(1-x))
+    return 1 / 2 * (np.log(1 + x) - np.log(1 - x))
+
 
 def beta(x):
     return 1 / nu_prime(x)
 
+
 def mu(n, c1):
-    return n * c1 - np.log(n) / (2 * nu_prime(c1)) + 1 / (2 * nu_prime(c1)) * np.log((1 + c1)/(2 * np.pi * (1-c1)))
+    return (
+        n * c1
+        - np.log(n) / (2 * nu_prime(c1))
+        + 1 / (2 * nu_prime(c1)) * np.log((1 + c1) / (2 * np.pi * (1 - c1)))
+    )
 
 def einstein_mean(N, t, c1):
     c = np.log(N) / t
@@ -240,5 +312,23 @@ def einstein_mean(N, t, c1):
     m = mu(t, c1)
     return m + b * EM_constant
 
+
 def einstein_var(N, c1):
-    return beta(c1)**2 * np.pi**2 / 6
+    return beta(c1) ** 2 * np.pi ** 2 / 6
+
+def KPZ_var_theory(t):
+    return np.sqrt(np.pi/2) * (t/2)**(-1/6) + (1 + 5/4 * np.pi - 8*np.pi/3/np.sqrt(3))*(t/2)**(1/3)
+
+def KPZ_var_fit(t):
+    f = interp1d(KPZ_time, KPZ_var, fill_value = KPZ_var[-1], bounds_error=False)
+    y = np.piecewise(t,
+                    [t <= 0.33, t > 0.33],
+                    [lambda time: KPZ_var_theory(time), lambda time: f(time)])
+    y = y * 2 **(-2/3) * t ** (2/3)
+    return y
+
+def gumbel_var(t, N):
+    logN = np.log(N).astype(float)
+    return np.piecewise(t,
+                        [t <= logN, t > logN],
+                        [lambda time: 0, lambda time: np.pi**2 / 6 * (time/logN-1)**2 / (2*time/logN-1)])

@@ -31,25 +31,34 @@ fig, ax = plt.subplots()
 ax.set_xscale("log")
 ax.set_yscale("log")
 ax.set_xlabel(r"$t / \ln(N)$")
-ax.set_ylabel(r"$\sigma^{2}_{Q} / \ln(N)^{2/3}$")
+ax.set_ylabel(r"$\mathrm{Var}(Env_{t}^{(N)})$")
 
 quantiles = [2, 6, 20, 100, 300]
 cm = LinearSegmentedColormap.from_list('rg', ['tab:orange', 'tab:red', "tab:purple", 'tab:blue'], N=256)
 colors = [
     cm(1.0 * i / len(quantiles) / 1) for i in range(len(quantiles))
 ]
-ypower = 2/3
-for i, N in enumerate(quantiles):
+ypower = 0
+for i, N in enumerate(quantiles[-2:]):
     cdf_df, max_df = db.getMeanVarN(N)
 
     Nquad = np.quad(f"1e{N}")
     logN = np.log(Nquad).astype(float)
-    crossover=logN**2
-    predicted = theory.quantileVar(Nquad, cdf_df['time'].values, crossover=crossover, width=crossover/10)
+    short_time = np.piecewise(cdf_df['time'].values,
+                                [cdf_df['time'].values <= logN, cdf_df['time'].values > logN],
+                                [lambda t: np.nan, lambda t: theory.quantileVarShortTime(Nquad, t)])
+    long_time = theory.quantileVarLongTime(Nquad, cdf_df['time'].values)
+    var = theory.quantileVar(Nquad, cdf_df['time'].values, crossover=logN**(1.5), width=logN**(4/3))
+
     ax.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'] / logN**ypower, alpha=0.5, c=colors[i])
-    ax.plot(cdf_df['time'] / logN, predicted / logN**ypower, ls='--', c=colors[i])
+    #ax.plot(cdf_df['time'] / logN, predicted / logN**ypower, ls='--', c=colors[i])
+    ax.plot(cdf_df['time'] / logN, long_time / logN**ypower, ls=':', c=colors[i])
+    ax.plot(cdf_df['time'] / logN, short_time / logN**ypower, ls='--', c=colors[i])
+    ax.plot(cdf_df['time'] / logN, var / logN**ypower, ls='-.', c='k', zorder=0)
 
 ax.set_xlim([0.5, 5*10**3])
+ax.set_ylim([10**-1, 3*10**3])
+ax.grid(True)
 fig.savefig("QuantileVar.png")
 
 fig, ax = plt.subplots()
@@ -182,3 +191,40 @@ ax2.plot(logNs, logNs, c='k', ls='--')
 ax.set_xlim([10**-3, 5*10**3])
 ax.set_ylim([1, 10**5])
 fig.savefig("Mean.png")
+
+def einstein_var(t, N):
+    logN = np.log(N).astype(float)
+    return np.piecewise(t,
+                        [t <= logN, t > logN],
+                        [lambda time: 0, lambda time: np.pi**2 / 6 * (time/logN-1)**2 / (2*time/logN-1)])
+
+fig, ax = plt.subplots()
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_xlabel(r"$t/\ln N$")
+ax.set_ylabel(r"Variance")
+N = 300
+cdf_df, max_df = db.getMeanVarN(N)
+N = np.quad(f"1e{N}")
+logN = np.log(N).astype(float)
+einstein_theory = einstein_var(cdf_df['time'].values, N)
+max_df['Var Max'] = max_df['Var Max'] * 4
+w = 50
+env_recovered = max_df['Var Max'] - einstein_var(max_df['time'].values, N)
+env_recovered = np.convolve(env_recovered, np.ones(w), mode='valid') / w
+env_time = np.convolve(max_df['time'].values, np.ones(w), mode='valid') / w
+alpha=0.7
+theory_var = theory.quantileVar(N, max_df['time'].values, crossover=logN**(3/2), width=logN**(4/3))
+ax.plot(max_df['time'] / logN, max_df['Var Max'], c='r', label=r'$Var(Max_t^{(N)})$', alpha=alpha)
+ax.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'], c='g', label=r'$Var(Env_t^{(N)})$', alpha=alpha)
+ax.plot(cdf_df['time'] / logN, cdf_df['Gumbel Mean Variance'], c='m', label='$Var(Sam_t^{(N)})$', alpha=alpha)
+ax.plot(env_time / logN, env_recovered, zorder=2, label=r'$Var(Max_t^{N}) - Var(Sam_t^{(N)})$', c='tab:orange', alpha=alpha)
+ax.plot(cdf_df['time'] / logN, einstein_var(cdf_df['time'].values, N), ls='--', c='m')
+ax.plot(max_df['time'] / logN, theory_var, 'g--')
+ax.plot(max_df['time'] / logN, theory_var + einstein_var(max_df['time'].values, N), ls='--', c='r')
+ax.set_xlim([0.5, 10**4])
+ax.set_ylim([0.5, 10**4])
+
+ax.set_title(r"$N=10^{300}$")
+ax.legend()
+fig.savefig("IvanPicture.png")
