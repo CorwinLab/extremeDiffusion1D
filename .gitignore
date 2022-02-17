@@ -20,6 +20,7 @@ test_one_liner.cpp
 *.txt
 *.png
 *.json
+*.dat
 
 # Keep example files
 !/examples/*
