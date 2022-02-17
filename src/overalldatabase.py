@@ -23,7 +23,7 @@ def getQuantilesGumbelFile(file):
                 quantiles.append(q_exp)
     return quantiles
 
-def calculateMeanVar(files, skiprows=1, delimiter=',', verbose=False, nFiles=-1, maxTime=None):
+def calculateMeanVarHelper(files, skiprows=1, delimiter=',', verbose=False, nFiles=-1, maxTime=None):
     '''
     Calculate mean and variance of arrays in files.
     '''
@@ -33,19 +33,31 @@ def calculateMeanVar(files, skiprows=1, delimiter=',', verbose=False, nFiles=-1,
     number_of_files = 0
     for f in files[:nFiles]:
         data = fileIO.loadArrayQuad(f, delimiter=delimiter, skiprows=skiprows)
+        df = pd.DataFrame(data.astype(float))
+        df = df.drop_duplicates(subset=[0], keep='last')
+
+        data = df.to_numpy()
         time = data[:, 0].astype(np.float64)
         data = data[:, 1:]
 
+        ''' This implementation didn't work b/c flip is kind of weird with a 2D array
+        # We need to remove the artifacts of stopping and then restarting at
+        # an earlier time.  We want to retain the *last* valid element
+        time, index = np.unique(np.flip(rawtime), return_index=True)
+        data = np.flip(data)[index]
+        data = np.flip(data)
+        '''
         if maxTime is not None:
             if max(time) < maxTime:
                 continue
-            else:
+            elif max(time) == maxTime:
                 time = time[time <= maxTime]
                 return_time = time
                 number_of_files += 1
         else:
             maxTime = max(time)
             number_of_files += 1
+
         maxIdx = len(time)
         data = data[:maxIdx, :]
 
@@ -58,10 +70,11 @@ def calculateMeanVar(files, skiprows=1, delimiter=',', verbose=False, nFiles=-1,
         sum += data
 
         if verbose:
-            print(f)
+            print(f, time.shape)
 
     if return_time is None:
         return_time = time
+
     mean = (sum / number_of_files).astype(np.float64)
     var = (squared_sum / number_of_files).astype(np.float64) - mean ** 2
 
@@ -171,7 +184,7 @@ class Database:
 
         search_path = os.path.join(directory, 'Q*.txt')
         files = glob.glob(search_path)
-        time, mean, var, maxTime, number_of_files = calculateMeanVar(files, verbose=verbose, nFiles=nFiles, maxTime=maxTime)
+        time, mean, var, maxTime, number_of_files = calculateMeanVarHelper(files, verbose=verbose, nFiles=nFiles, maxTime=maxTime)
         time = time.reshape((mean.shape[0], 1))
 
         mean = np.hstack([time, mean])
@@ -193,6 +206,7 @@ class Database:
         analysis_file = os.path.join(directory, 'analysis.json')
         with open(analysis_file, 'w') as f:
             json.dump(self.dirs[directory], f)
+        print('Done Calculating Mean')
 
     def getMeanVarN(self, N, delimiter=','):
         db = self.getN(N)

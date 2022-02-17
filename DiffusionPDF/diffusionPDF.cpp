@@ -50,8 +50,8 @@ DiffusionPDF::DiffusionPDF(const RealType _nParticles,
                      const double _beta,
                      const unsigned long int _occupancySize,
                      const bool _ProbDistFlag)
-    : nParticles(_nParticles), ProbDistFlag(_ProbDistFlag),
-      beta(_beta), occupancySize(_occupancySize)
+    : nParticles(_nParticles), beta(_beta),
+    occupancySize(_occupancySize), ProbDistFlag(_ProbDistFlag)
 {
   if (isnan(nParticles) || isinf(nParticles)){
     throw std::runtime_error("Number of particles initialized to NaN");

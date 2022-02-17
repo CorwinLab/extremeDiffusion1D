@@ -187,7 +187,7 @@ def quantileVar(N, time, crossover=None, width=None):
     theory = np.piecewise(
         time,
         [time < logN, time >= logN],
-        [lambda t: np.nan, lambda t: erf_crossover(N, t, crossover, width)],
+        [lambda t: 0, lambda t: erf_crossover(N, t, crossover, width)],
     )
     return theory
 

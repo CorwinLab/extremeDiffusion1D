@@ -151,7 +151,7 @@ std::vector<unsigned long int> DiffusionTimeCDF::findQuantiles(
 
 std::vector<long int> DiffusionTimeCDF::getxvals(){
   std::vector<long int> xvals(t+1);
-  for (auto n = 0; n < xvals.size(); n++){
+  for (unsigned int n = 0; n < xvals.size(); n++){
     xvals[n] = 2 * n - t;
   }
   return xvals;

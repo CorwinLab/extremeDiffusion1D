@@ -18,10 +18,10 @@ typedef boost::multiprecision::float128 RealType;
 class DiffusionPDF {
 private:
   std::vector<RealType> occupancy;
-  unsigned long int occupancySize;
   RealType nParticles;
-  bool ProbDistFlag;
   double beta;
+  unsigned long int occupancySize;
+  bool ProbDistFlag;
   double smallCutoff = pow(2, 31) - 2;
   double largeCutoff = 1e64;
 
