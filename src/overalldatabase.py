@@ -23,7 +23,7 @@ def getQuantilesGumbelFile(file):
                 quantiles.append(q_exp)
     return quantiles
 
-def calculateMeanVarHelper(files, skiprows=1, delimiter=',', verbose=False, nFiles=-1, maxTime=None):
+def calculateMeanVarHelper(files, skiprows=1, delimiter=',', verbose=False, maxTime=None):
     '''
     Calculate mean and variance of arrays in files.
     '''
@@ -31,8 +31,12 @@ def calculateMeanVarHelper(files, skiprows=1, delimiter=',', verbose=False, nFil
     sum = None
     return_time = None
     number_of_files = 0
-    for f in files[:nFiles]:
-        data = fileIO.loadArrayQuad(f, delimiter=delimiter, skiprows=skiprows)
+    for f in files:
+        try:
+            data = np.loadtxt(f, delimiter=delimiter, skiprows=skiprows)
+        except StopIteration:
+            continue
+        #data = fileIO.loadArrayQuad(f, delimiter=delimiter, skiprows=skiprows)
         df = pd.DataFrame(data.astype(float))
         df = df.drop_duplicates(subset=[0], keep='last')
 
@@ -52,11 +56,13 @@ def calculateMeanVarHelper(files, skiprows=1, delimiter=',', verbose=False, nFil
                 continue
             elif max(time) == maxTime:
                 time = time[time <= maxTime]
+                if return_time is not None:
+                    if len(time) < len(return_time):
+                        print("Missing times:", np.setdiff1d(return_time, time))
+                        continue
                 return_time = time
-                number_of_files += 1
         else:
             maxTime = max(time)
-            number_of_files += 1
 
         maxIdx = len(time)
         data = data[:maxIdx, :]
@@ -68,9 +74,11 @@ def calculateMeanVarHelper(files, skiprows=1, delimiter=',', verbose=False, nFil
 
         squared_sum += data ** 2
         sum += data
+        number_of_files += 1
 
         if verbose:
             print(f, time.shape)
+
 
     if return_time is None:
         return_time = time
@@ -87,11 +95,11 @@ class Database:
     def __len__(self):
         return len(self.dirs.keys())
 
-    def add_directory(self, directory, dir_type):
+    def add_directory(self, directory, dir_type, var_file='variables.json'):
         '''
         Load a directory into the database.
         '''
-        vars_file = os.path.join(directory, 'variables.json')
+        vars_file = os.path.join(directory, var_file)
         with open(vars_file, "r") as file:
             try:
                 vars = json.load(file)
@@ -176,36 +184,67 @@ class Database:
 
         return self.fromDirs(N_dirs, dir_types)
 
-    def calculateMeanVar(self, directory, verbose=False, nFiles=-1, maxTime=None):
+    def calculateMeanVar(self, directories, verbose=False, maxTime=None):
         '''
         Calculate the mean and variance over a directory.
         '''
-        assert directory in self.dirs.keys()
+        files = []
+        if isinstance(directories, list):
+            for d in directories:
+                assert d in self.dirs.keys()
 
-        search_path = os.path.join(directory, 'Q*.txt')
-        files = glob.glob(search_path)
-        time, mean, var, maxTime, number_of_files = calculateMeanVarHelper(files, verbose=verbose, nFiles=nFiles, maxTime=maxTime)
+            for d in directories:
+                search_path = os.path.join(d, 'Q*.txt')
+                files += glob.glob(search_path)
+
+        elif isinstance(directories, str):
+            assert directories in self.dirs.keys()
+            search_path = os.path.join(directories, 'Q*.txt')
+            files += glob.glob(search_path)
+
+        time, mean, var, maxTime, number_of_files = calculateMeanVarHelper(files, verbose=verbose, maxTime=maxTime)
         time = time.reshape((mean.shape[0], 1))
 
         mean = np.hstack([time, mean])
         var = np.hstack([time, var])
 
-        with open(files[0]) as f:
-            header = f.readline().replace('\n', '')
+        if isinstance(directories, list):
+            for directory in directories:
+                with open(os.path.join(directory, 'Quartiles0.txt')) as f:
+                    header = f.readline().replace('\n', '')
 
-        mean_file = os.path.join(directory, 'Mean.txt')
-        var_file = os.path.join(directory, 'Var.txt')
-        np.savetxt(mean_file, mean, header=header, comments='', delimiter=',')
-        np.savetxt(var_file, var, header=header, comments='', delimiter=',')
+                mean_file = os.path.join(directory, 'Mean.txt')
+                var_file = os.path.join(directory, 'Var.txt')
+                np.savetxt(mean_file, mean, header=header, comments='', delimiter=',')
+                np.savetxt(var_file, var, header=header, comments='', delimiter=',')
 
-        self.dirs[directory]['mean'] = mean_file
-        self.dirs[directory]['var'] = var_file
-        self.dirs[directory]['number_of_systems'] = number_of_files
-        self.dirs[directory]['maxTime'] = maxTime
+                self.dirs[directory]['mean'] = mean_file
+                self.dirs[directory]['var'] = var_file
+                self.dirs[directory]['number_of_systems'] = number_of_files
+                self.dirs[directory]['maxTime'] = maxTime
 
-        analysis_file = os.path.join(directory, 'analysis.json')
-        with open(analysis_file, 'w') as f:
-            json.dump(self.dirs[directory], f)
+                analysis_file = os.path.join(directory, 'analysis.json')
+                with open(analysis_file, 'w') as f:
+                    json.dump(self.dirs[directory], f)
+
+        elif isinstance(directories, str):
+            with open(os.path.join(directories, 'Quartiles0.txt')) as f:
+                header = f.readline().replace('\n', '')
+
+            mean_file = os.path.join(directories, 'Mean.txt')
+            var_file = os.path.join(directories, 'Var.txt')
+            np.savetxt(mean_file, mean, header=header, comments='', delimiter=',')
+            np.savetxt(var_file, var, header=header, comments='', delimiter=',')
+
+            self.dirs[directories]['mean'] = mean_file
+            self.dirs[directories]['var'] = var_file
+            self.dirs[directories]['number_of_systems'] = number_of_files
+            self.dirs[directories]['maxTime'] = maxTime
+
+            analysis_file = os.path.join(directories, 'analysis.json')
+            with open(analysis_file, 'w') as f:
+                json.dump(self.dirs[directories], f)
+
         print('Done Calculating Mean')
 
     def getMeanVarN(self, N, delimiter=','):
