@@ -6,6 +6,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --array=0-500
 #SBATCH --output=/home/jhass2/CleanData/logs/Recurrence/%A-%a.err
+#SBATCH --account=jamming
+#SBATCH --partition=preempt
 
 TOPDIR=/home/jhass2/CleanData/Recurrence/
 BETA=1.0

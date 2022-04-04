@@ -62,9 +62,8 @@ def runExperiment(
         rec.id = sysID
         rec.save_dir = save_dir
         append = False
-
+     
     rec.evolveAndGetVariance(save_times, nParticles, save_file, append=append)
-
 
 if __name__ == "__main__":
     (
