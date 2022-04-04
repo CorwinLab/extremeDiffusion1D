@@ -47,13 +47,13 @@ def runExperiment(
     q_start = int(q_start)
     q_stop = int(q_stop)
     q_step = int(q_step)
-    quantiles = quadMath.logarange(q_start, q_stop, q_step, endpoint=True)
+    quantiles = np.arange(q_start, q_stop+q_step, q_step)
 
     save_times = np.geomspace(1, tMax, num_of_save_times, dtype=np.int64)
     save_times = np.unique(save_times)
 
-    scalars_file = os.path.join(save_dir, f"Scalars{rec.id}.json")
-    CDF_file = os.path.join(save_dir, f"CDF{self.id}.txt")
+    scalars_file = os.path.join(save_dir, f"Scalars{id}.json")
+    CDF_file = os.path.join(save_dir, f"CDF{id}.txt")
 
     if os.path.exists(scalars_file) and os.path.exists(CDF_file):
         rec = DiffusionTimeCDF.fromFiles(CDF_file, scalars_file)
@@ -81,8 +81,6 @@ if __name__ == "__main__":
     ) = sys.argv[1:]
 
     save_dir = f"{topDir}"
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
     save_file = os.path.join(save_dir, f"Quartiles{sysID}.txt")
     save_file = os.path.abspath(save_file)
 
@@ -101,6 +99,9 @@ if __name__ == "__main__":
     today = date.today()
     text_date = today.strftime("%b-%d-%Y")
 
+    if int(sysID) == 0:
+        vars.update({"Date": text_date})
+        saveVars(vars, vars_file)
+        vars.pop("Date")
+
     runExperiment(**vars)
-    vars.update({"Date": text_date})
-    saveVars(vars, vars_file)
