@@ -81,7 +81,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._last_saved_time = time.process_time()  # seconds
-        self._save_interval = 3600 * 12  # Set to save occupancy every XX hours.
+        self._save_interval = 3600 * 6  # Set to save occupancy every XX hours.
         self.id = None  # Need to also get SLURM ID
         self.save_dir = "."
 
@@ -360,17 +360,19 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         # empty or non-existant file
         f = open(file, "a")
         writer = csv.writer(f)
-
+        
         if not append:
             header = ["time"] + [str(N) for N in nParticles] + ['var' + str(N) for N in nParticles]
             writer.writerow(header)
-
+            f.flush()
+        
         for t in times:
             self.evolveToTime(t)
             discrete = self.getGumbelVariance(nParticles)
             quantiles = self.findQuantiles(nParticles)
             row = [self.time] + list(quantiles) + discrete
             writer.writerow(row)
+            f.flush()
         f.close()
 
     def evolveAndSaveQuantile(self, time, quantiles, file, append=False):

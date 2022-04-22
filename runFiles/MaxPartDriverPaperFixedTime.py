@@ -101,7 +101,7 @@ if __name__ == "__main__":
     if os.path.exists(save_occ):
         exit()
 
-    num_of_steps = np.log(np.quad(f"1e{N_exp}")).astype(float) * 5 * 10**3
+    num_of_steps = 100_000
 
     vars = {
         "beta": beta,

@@ -544,6 +544,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             # need to unpack NthQuantiles since it's returned as a np array
             row = [self.getTime(), maxEdge, *NthQuantiles]
             writer.writerow(row)
+            f.flush()
         f.close()
 
     def evolveAndSaveMax(self, time, file, append=False):
@@ -561,6 +562,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             maxEdge = self.getMaxIdx() - self.currentTime / 2
             row = [self.getTime(), maxEdge]
             writer.writerow(row)
+            f.flush()
         f.close()
 
     def evolveAndSaveV(self, time, vs, file):
