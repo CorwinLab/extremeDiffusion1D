@@ -174,6 +174,21 @@ std::vector<RealType> DiffusionTimeCDF::getGumbelVariance(std::vector<RealType> 
   return getGumbelVarianceCDF(xvals, cdf, nParticles);
 }
 
+std::pair<RealType, float> DiffusionTimeCDF::getProbandV(RealType quantile){
+  unsigned long int quantilePosition;
+  RealType prob;
+  for (unsigned long int n = t; n >= 0; n--){
+    if (CDF[n] > 1 / quantile){
+      quantilePosition = 2 * n - t;
+      prob = CDF[n];
+      break;
+    }
+  }
+  float v = (float)quantilePosition / (float)t;
+  return std::make_pair(prob, v);
+}
+
+
 std::vector<RealType> DiffusionTimeCDF::getSaveCDF(){
   return slice(CDF, 0, t);
 }
@@ -222,6 +237,7 @@ void DiffusionPositionCDF::stepPosition()
   position += 1;
 }
 
+
 PYBIND11_MODULE(diffusionCDF, m)
 {
   m.doc() = "Diffusion recurrance relation";
@@ -244,7 +260,8 @@ PYBIND11_MODULE(diffusionCDF, m)
       .def("findQuantile", &DiffusionTimeCDF::findQuantile, py::arg("quantile"))
       .def("findQuantiles", &DiffusionTimeCDF::findQuantiles, py::arg("quantiles"))
       .def("getSaveCDF", &DiffusionTimeCDF::getSaveCDF)
-      .def("getxvals", &DiffusionTimeCDF::getxvals);
+      .def("getxvals", &DiffusionTimeCDF::getxvals)
+      .def("getProbandV", &DiffusionTimeCDF::getProbandV, py::arg("quantile"));
 
   py::class_<DiffusionPositionCDF, DiffusionCDF>(m, "DiffusionPositionCDF")
       .def(py::init<const double, const unsigned long int, std::vector<RealType> >(), py::arg("beta"), py::arg("tMax"), py::arg("quantiles"))

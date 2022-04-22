@@ -259,6 +259,27 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
 
         return super().getGumbelVariance(nParticles)
 
+    def getProbandV(self, quantile):
+        """
+        Get the probability and velocity of a quantile.
+
+        Parameters
+        ----------
+        quantile : float or np.quad
+            Quantile to measure the velocity and probability for. The algorithm
+            looks for the position where the probability is greater than 1/quantile.
+
+        Returns
+        -------
+        prob : np.quad
+            Probability at the position
+
+        v : float
+            Velocity at the position. Should be between 0 and 1
+        """
+
+        return super().getProbandV(quantile)
+
     def saveState(self):
         """
         Save all the simulation constants to a scalars file and the occupancy
@@ -393,6 +414,39 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             writer.writerow(row)
         f.close()
 
+    def evolveAndGetProbAndV(self, quantile, time, file):
+        """
+        Measure the probability of a quantile at different times.
+
+        Parameters
+        ----------
+        quantile : float or np.quad
+            Quantile to measure the velocity and probability for. The algorithm
+            looks for the position where the probability is greater than 1/quantile.
+
+        time : list
+            Times to measure the quantile at
+
+        file : str
+            File to save the data to
+        """
+
+        assert quantile >= 1
+
+        f = open(file, 'a')
+        writer = csv.writer(f)
+
+        header = ["time", "prob", "v"]
+        writer.writerow(header)
+
+        for t in time:
+            self.evolveToTime(t)
+
+            prob, v = self.getProbandV(quantile)
+            row = [self.time, prob, v]
+            writer.writerow(row)
+            f.flush()
+        f.close()
 
 class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
     """
@@ -465,8 +519,5 @@ class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
             self.stepPosition()
 
 if __name__ == '__main__':
-    r = DiffusionTimeCDF(np.inf, tMax=10)
-    print(r.CDF)
-    for _ in range(9):
-        r.iterateTimeStep()
-        print(r.CDF)
+    r = DiffusionTimeCDF(1, tMax=10000)
+    r.evolveAndGetProbAndV(100, [10, 100, 1000], 'data.txt')

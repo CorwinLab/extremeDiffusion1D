@@ -11,10 +11,10 @@ import json
 import os
 
 db = Database()
-einstein_dir = '/home/jacob/Desktop/talapasMount/JacobData/EinsteinPaper/'
+einstein_dir = '/home/jacob/Desktop/corwinLabMount/CleanData/JacobData/EinsteinPaper/'
 directory = "/home/jacob/Desktop/corwinLabMount/CleanData/Paper/Max/"
 cdf_path = "/home/jacob/Desktop/corwinLabMount/CleanData/Paper/CDF/"
-cdf_path_talapas = "/home/jacob/Desktop/talapasMount/JacobData/Paper/"
+cdf_path_talapas = "/home/jacob/Desktop/corwinLabMount/CleanData/JacobData/Paper/"
 dirs = os.listdir(directory)
 for dir in dirs:
     path = os.path.join(directory, dir)
@@ -33,7 +33,7 @@ for dir in e_dirs:
 
 db.add_directory(cdf_path, dir_type='Gumbel')
 db.add_directory(cdf_path_talapas, dir_type='Gumbel')
-#db.calculateMeanVar([cdf_path, cdf_path_talapas], verbose=True, maxTime=3453876)
+#db.calculateMeanVar([cdf_path, cdf_path_talapas], verbose=True, maxTime=3453876, nFiles=500)
 
 db1 = db.getBetas(1)
 for dir in db.dirs.keys():
@@ -50,15 +50,15 @@ fontsize = 12
 fig, ax = plt.subplots()
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.set_xlabel(r"$t / \logN$", labelpad=0, fontsize=fontsize)
-ax.set_ylabel(r"$\mathrm{Var}(\mathrm{max}_t^{(N)})$", fontsize=fontsize, labelpad=0)
+ax.set_xlabel(r"$t / \log(N)$", labelpad=0, fontsize=fontsize)
+ax.set_ylabel(r"$\mathrm{Var}(\mathrm{Max}_t^{N})$", fontsize=fontsize, labelpad=0)
 ax.tick_params(axis='both', labelsize=fontsize)
 
 ax2 = fig.add_axes([0.53, 0.21, 0.35, 0.35])
 ax2.set_xscale("log")
 ax2.set_yscale("log")
-ax2.set_xlabel(r"$t / \logN$", labelpad=0, fontsize=fontsize)
-ax2.set_ylabel(r"$\mathrm{Mean}(\mathrm{Max}_t^{(N)})$", labelpad=0, fontsize=fontsize)
+ax2.set_xlabel(r"$t / \log(N)$", labelpad=0, fontsize=fontsize)
+ax2.set_ylabel(r"$\mathrm{Mean}(\mathrm{Max}_t^{N})$", labelpad=0, fontsize=fontsize)
 ax2.tick_params(axis='both', which='major', labelsize=fontsize)
 ax2.set_xlim([10**-3, 5*10**3])
 ax2.set_ylim([1, 10**5])
@@ -100,6 +100,7 @@ ax.set_xlim([0.3, 5*10**3])
 ax.set_ylim([10**-1, 10**4])
 ax2.remove()
 fig.savefig("MaxVar.png", bbox_inches='tight')
+fig.savefig("MaxVar.pdf", bbox_inches='tight')
 fig.savefig("./TalkPictures/MaxVar.png", bbox_inches='tight')
 
 '''
@@ -110,8 +111,8 @@ alpha=0.6
 fig, ax = plt.subplots()
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.set_xlabel(r"$t / \logN$", labelpad=0, fontsize=fontsize)
-ax.set_ylabel(r"$\mathrm{Variance}$", fontsize=fontsize)
+ax.set_xlabel(r"$t / \log(N)$", labelpad=0, fontsize=fontsize)
+ax.set_ylabel(r"$\mathrm{Var}$", fontsize=fontsize)
 ax.tick_params(axis='both', labelsize=fontsize)
 
 N = 7
@@ -159,13 +160,16 @@ ax.annotate(r"$Var(Sam_t^N)$", xy=(3, 1.3*10**-1), c=gumbel_color, fontsize=font
 ax.annotate(r"$SSRW$", xy=(3, 3*10**-1), c=einsten_color, fontsize=fontsize)
 '''
 #leg = ax.legend(fontsize=fontsize, loc='upper left', framealpha=0, labelcolor=[max_color, quantile_color, gumbel_color, 'tab:orange', einsten_color], handlelength=0, handletextpad=0)
+'''
 leg = ax.legend(fontsize=fontsize, loc='upper left', framealpha=0, labelcolor=[max_color, quantile_color, gumbel_color,  einsten_color], handlelength=0, handletextpad=0)
 
 for item in leg.legendHandles:
     item.set_visible(False)
+'''
+
 ax.set_xlim([0.3, 5*10**3])
 ax.set_ylim([10**-1, 10**4])
-fig.savefig("MaxQuantComp.png", bbox_inches='tight')
+fig.savefig("MaxQuantComp.pdf", bbox_inches='tight')
 
 '''
 Make plot showing quantile variance
@@ -232,6 +236,52 @@ ax2.remove()
 fig.savefig("QuantileVar.png", bbox_inches='tight')
 fig.savefig("./TalkPictures/QuantileVar.png", bbox_inches='tight')
 
+'''
+Make plot showing max mean
+'''
+fontsize = 12
+fig, ax = plt.subplots()
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_xlabel(r"$t / \log(N)$", labelpad=0, fontsize=fontsize)
+ax.set_ylabel(r"$\mathrm{Mean}(\mathrm{Max}_t^{N})$", fontsize=fontsize, labelpad=0)
+ax.tick_params(axis='both', labelsize=fontsize)
+
+cm = LinearSegmentedColormap.from_list('rg', ['tab:orange', 'tab:red', "tab:purple", 'tab:blue'], N=256)
+colors = [
+    cm(1.0 * i / len(quantiles) / 1) for i in range(len(quantiles))
+]
+ypower = 0
+for i, N in enumerate(quantiles):
+    cdf_df, max_df = db1.getMeanVarN(N)
+    max_df['Var Max'] = max_df['Var Max'] * 4
+    max_df['Mean Max'] = max_df['Mean Max'] * 2
+
+    Nquad = np.quad(f"1e{N}")
+    logN = np.log(Nquad).astype(float)
+
+    mean_theory = theory.quantileMean(Nquad, max_df['time'].values)
+
+    ax.plot(max_df['time'] / logN, mean_theory / logN**(ypower), '--', c=colors[i])
+    ax.plot(max_df['time'] / logN, max_df['Mean Max'] / logN**(ypower), label=N, c=colors[i], alpha=0.5)
+
+#x, y
+start_coord = (250, 25)
+end_coord = (8, 3*10**4)
+dx = np.log(start_coord[0]) - np.log(end_coord[0])
+dy = np.log(start_coord[1]) - np.log(end_coord[1])
+theta = np.rad2deg(np.arctan2(dy, dx))
+ax.annotate("", xy=end_coord, xytext=start_coord,
+        arrowprops=dict(shrink=0., facecolor='gray', edgecolor='white', width=50, headwidth=85, headlength=40, alpha=0.3), zorder=0)
+ax.annotate(r"$N=10^{2}$", xy=(140, 10), c=colors[0], rotation=90-abs(theta), rotation_mode='anchor', fontsize=fontsize)
+ax.annotate(r"$N=10^{300}$", xy=(3, 2*10**4), c=colors[-1], rotation=90-abs(theta), rotation_mode='anchor', fontsize=fontsize)
+
+ax.set_ylim([1, 10**5])
+ax.set_xlim([10**-3, 5*10**3])
+fig.savefig("MaxMean.pdf", bbox_inches='tight')
+fig.savefig("./TalkPictures/QuantileVar.png", bbox_inches='tight')
+
+
 """
 Make a couple of figures for the talk
 """
@@ -270,8 +320,8 @@ fontsize = 12
 fig, ax = plt.subplots()
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.set_xlabel(r"$t / \logN$", labelpad=0, fontsize=fontsize)
-ax.set_ylabel(r"$\mathrm{Var}(\mathrm{Env}_t^{(N)})$", fontsize=fontsize, labelpad=0)
+ax.set_xlabel(r"$t / \log(N)$", labelpad=0, fontsize=fontsize)
+ax.set_ylabel(r"$\mathrm{Var}(\mathrm{Env}_t^{N})$", fontsize=fontsize, labelpad=0)
 ax.tick_params(axis='both', labelsize=fontsize)
 
 N = 85
@@ -283,14 +333,33 @@ logN = np.log(Nquad).astype(float)
 time = cdf_df['time'].values
 var_theory = np.piecewise(time, [time < logN, time >= logN], [lambda t: 0, lambda t: theory.quantileVarShortTime(Nquad, t)])
 var_long = np.piecewise(time, [time < logN, time >= logN], [lambda t: np.nan, lambda t: theory.quantileVarLongTime(Nquad, t)])
+var = theory.quantileVar(Nquad, cdf_df['time'].values, crossover=logN**(1.5), width=logN**(4/3))
+
+center = logN**(1/2)
+width = 1.3*logN**(4/3) / logN
+
+ax2 = fig.add_axes([0.53, 0.13, 0.35, 0.35])
+ax2.set_xscale("log")
+ax2.set_yscale("log")
+ax2.set_xlim([center - width, center + width])
+ax2.set_ylim([3*10**1, 9*10**1])
 
 ax.plot(cdf_df['time'] / logN, var_theory / logN**(ypower), '--', c='r')
 ax.plot(cdf_df['time'] / logN, var_long / logN **ypower, '--', c='b')
-ax.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'] / logN**(ypower), label=N, c=colors[i], alpha=0.5)
+ax.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'] / logN**(ypower), label=N, c=colors[i], alpha=0.5, zorder=0)
+ax.plot(cdf_df['time'] / logN, var / logN **(ypower), '--', c='k', alpha=0.5, zorder=1)
+
+ax2.plot(cdf_df['time'] / logN, var_theory / logN**(ypower), '--', c='r')
+ax2.plot(cdf_df['time'] / logN, var_long / logN **ypower, '--', c='b')
+ax2.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'] / logN**(ypower), label=N, c=colors[i], alpha=0.5, zorder=0)
+ax2.plot(cdf_df['time'] / logN, var / logN **(ypower), '--', c='k', alpha=0.7, zorder=1)
 
 ax.set_xlim([0.3, 10**4])
 ax.set_ylim([10**-1, 10**4])
+ax.indicate_inset_zoom(ax2, edgecolor='black')
+
 fig.savefig("./TalkPictures/LongVar.png", bbox_inches='tight')
+fig.savefig("Interpolation.pdf", bbox_inches='tight')
 
 '''
 Data plot
@@ -319,6 +388,41 @@ ax.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'] / logN**(ypower), label=N,
 ax.set_xlim([0.3, 10**4])
 ax.set_ylim([10**-1, 10**4])
 fig.savefig("./TalkPictures/ShortLongVar.png", bbox_inches='tight')
+
+'''
+SSRW vs. RWRE
+'''
+fontsize=12
+N = 7
+cdf_df, max_df = dbe.getMeanVarN(N)
+N = float(f"1e{N}")
+logN = np.log(N)
+
+max_df['Var Max'] *= 4
+c1 = np.loadtxt("7_c1.dat")
+einstein_theory = theory.einstein_var(Nquad, c1)
+
+fig, ax = plt.subplots()
+
+ax.set_xlabel(r"$t/ \log(N)$", fontsize=fontsize)
+ax.set_ylabel(r"$\mathrm{Var}(\mathrm{Max}_t^N)$", fontsize=fontsize)
+
+ax.plot(max_df['time'] / logN, max_df['Var Max'], label='SSRW')
+
+N = 7
+cdf_df, max_df = db1.getMeanVarN(N)
+N = float(f"1e{N}")
+logN = np.log(N)
+max_df['Var Max'] *= 4
+ax.plot(max_df['time'] / logN, max_df['Var Max'], label='RWRE', c='r')
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_xlim([0.3, 5*10**3])
+ax.set_ylim([10**-1, 10**4])
+ax.tick_params(axis='both', labelsize=fontsize)
+ax.legend(fontsize=fontsize)
+
+fig.savefig("SSRWvsRWRE.png", bbox_inches='tight')
 
 '''
 Make a plot of SSRW
@@ -639,8 +743,8 @@ fontsize = 12
 fig, ax = plt.subplots()
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.set_xlabel(r"$t / \logN$", labelpad=0, fontsize=fontsize)
-ax.set_ylabel(r"$\mathrm{Var}(\mathrm{Env}_t^{(N)})$", fontsize=fontsize, labelpad=0)
+ax.set_xlabel(r"$t / \log(N)$", labelpad=0, fontsize=fontsize)
+ax.set_ylabel(r"$\mathrm{Var}(\mathrm{Env}_t^{N})$", fontsize=fontsize, labelpad=0)
 ax.tick_params(axis='both', labelsize=fontsize)
 
 cm = LinearSegmentedColormap.from_list('rg', ['tab:orange', 'tab:red', "tab:purple", 'tab:blue'], N=256)
@@ -648,14 +752,12 @@ colors = [
     cm(1.0 * i / len(quantiles) / 1) for i in range(len(quantiles))
 ]
 ypower = 0
-ws = [10, 50, 50]
 
-for i, N in enumerate([2, 24, 300]):
+for i, N in enumerate(quantiles):
     cdf_df, max_df = db1.getMeanVarN(N)
     max_df['Var Max'] = max_df['Var Max'] * 4
     max_df['Mean Max'] = max_df['Mean Max'] * 2
-    w = ws[i]
-    i*=2
+    w = 50
     Nquad = np.quad(f"1e{N}")
     logN = np.log(Nquad).astype(float)
 
@@ -666,22 +768,35 @@ for i, N in enumerate([2, 24, 300]):
     env_recovered = np.convolve(env_recovered, np.ones(w), mode='valid') / w
     env_time = np.convolve(max_df['time'].values, np.ones(w), mode='valid') / w
 
-    #ax.plot(cdf_df['time'] / logN, var_theory / logN**(ypower), '--', c=colors[i])
+    ax.plot(cdf_df['time'] / logN, var_theory / logN**(ypower), '--', c=colors[i])
     ax.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'] / logN**(ypower), label=N, c=colors[i], alpha=0.5)
     ax.plot(env_time / logN, env_recovered, c=colors[i])
 
 #x, y
-start_coord = (250, 6)
-end_coord = (75, 3*10**3)
+x_shift = 12
+y_shift = 3.5
+start_coord = (250/x_shift, 6 / y_shift)
+end_coord = (75/x_shift, 3*10**3 / y_shift)
 dx = np.log(start_coord[0]) - np.log(end_coord[0])
 dy = np.log(start_coord[1]) - np.log(end_coord[1])
 theta = np.rad2deg(np.arctan2(dy, dx))+5
-#ax.annotate("", xy=end_coord, xytext=start_coord,
-#        arrowprops=dict(shrink=0., facecolor='gray', edgecolor='white', width=50, headwidth=85, headlength=40, alpha=0.3), zorder=0)
-#ax.annotate(r"$N=10^{2}$", xy=(155, 2.6), c=colors[0], rotation=90-abs(theta), rotation_mode='anchor', fontsize=fontsize)
-#ax.annotate(r"$N=10^{300}$", xy=(40, 2.5*10**3), c=colors[-1], rotation=90-abs(theta), rotation_mode='anchor', fontsize=fontsize)
+ax.annotate("", xy=end_coord, xytext=start_coord,
+        arrowprops=dict(shrink=0., facecolor='gray', edgecolor='white', width=50, headwidth=85, headlength=40, alpha=0.3), zorder=0)
+ax.annotate(r"$N=10^{2}$", xy=(155/x_shift, 2.6/y_shift), c=colors[0], rotation=90-abs(theta), rotation_mode='anchor', fontsize=fontsize)
+ax.annotate(r"$N=10^{300}$", xy=(40/x_shift, 2.5*10**3/y_shift), c=colors[-1], rotation=90-abs(theta), rotation_mode='anchor', fontsize=fontsize)
+
+axins = ax.inset_axes([0.615, 0.05, 0.35, 0.35])
+axins.plot(cdf_df['time'] / logN, var_theory / logN**(ypower), '--', c=colors[i])
+axins.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'] / logN**(ypower), label=N, c=colors[i], alpha=0.5)
+axins.plot(env_time / logN, env_recovered, c=colors[i])
+axins.set_xlim([2*10**2, 3*10**2])
+axins.set_ylim([3.2*10**2, 5.1*10**2])
+axins.set_xscale("log")
+axins.set_yscale("log")
+axins.xaxis.set_ticklabels([])
+ax.indicate_inset_zoom(axins, edgecolor='black')
 
 ax.set_xlim([0.3, 5*10**3])
 ax.set_ylim([10**-1, 10**4])
-fig.savefig("QuantileVar.png", bbox_inches='tight')
+fig.savefig("QuantileVar.pdf", bbox_inches='tight')
 fig.savefig("./TalkPictures/QuantileVar.png", bbox_inches='tight')

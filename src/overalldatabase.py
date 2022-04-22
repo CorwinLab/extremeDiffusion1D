@@ -7,6 +7,15 @@ import glob
 import fileIO
 import pandas as pd
 
+def getQuantilesCDFFile(file):
+    quantiles = []
+    with open(file) as f:
+        file_quantiles = f.readline().split(",")[1:] # get rid of time column
+        for q in file_quantiles:
+            quantiles.append(int(q.replace('\n', '')))
+    print(quantiles)
+    return quantiles
+
 def getQuantilesGumbelFile(file):
     '''
     Get the quantiles for a CDF file.
@@ -23,7 +32,7 @@ def getQuantilesGumbelFile(file):
                 quantiles.append(q_exp)
     return quantiles
 
-def calculateMeanVarHelper(files, skiprows=1, delimiter=',', verbose=False, maxTime=None):
+def calculateMeanVarHelper(files, skiprows=1, delimiter=',', verbose=False, maxTime=None, nFiles=None):
     '''
     Calculate mean and variance of arrays in files.
     '''
@@ -35,6 +44,9 @@ def calculateMeanVarHelper(files, skiprows=1, delimiter=',', verbose=False, maxT
         try:
             data = np.loadtxt(f, delimiter=delimiter, skiprows=skiprows)
         except StopIteration:
+            continue
+        except ValueError:
+            print(f, 'Multiple times')
             continue
         #data = fileIO.loadArrayQuad(f, delimiter=delimiter, skiprows=skiprows)
         df = pd.DataFrame(data.astype(float))
@@ -75,10 +87,12 @@ def calculateMeanVarHelper(files, skiprows=1, delimiter=',', verbose=False, maxT
         squared_sum += data ** 2
         sum += data
         number_of_files += 1
-
         if verbose:
             print(f, time.shape)
 
+        if nFiles is not None:
+            if number_of_files == nFiles:
+                break
 
     if return_time is None:
         return_time = time
@@ -95,7 +109,7 @@ class Database:
     def __len__(self):
         return len(self.dirs.keys())
 
-    def add_directory(self, directory, dir_type, var_file='variables.json'):
+    def add_directory(self, directory, dir_type, var_file='variables.json', read_exp=True):
         '''
         Load a directory into the database.
         '''
@@ -112,7 +126,10 @@ class Database:
         self.dirs[directory] = vars
         if 'N_exp' not in self.dirs[directory].keys():
             quantile_file = os.path.join(directory, 'Quartiles0.txt')
-            quantiles = getQuantilesGumbelFile(quantile_file)
+            if not read_exp:
+                quantiles = getQuantilesCDFFile(quantile_file)
+            else:
+                quantiles = getQuantilesGumbelFile(quantile_file)
             self.dirs[directory]['N_exp'] = quantiles
 
         self.dirs[directory]['type'] = dir_type
@@ -142,6 +159,8 @@ class Database:
         for d in self.dirs.keys():
             if self.dirs[d]['type'] == 'Max':
                 Ns.append(int(self.dirs[d]['N_exp']))
+            elif self.dirs[d]['type'] == 'Gumbel':
+                Ns.append(self.dirs[d]['N_exp'])
         return Ns
 
     def getBetas(self, beta):
@@ -184,7 +203,7 @@ class Database:
 
         return self.fromDirs(N_dirs, dir_types)
 
-    def calculateMeanVar(self, directories, verbose=False, maxTime=None):
+    def calculateMeanVar(self, directories, verbose=False, maxTime=None, nFiles=None):
         '''
         Calculate the mean and variance over a directory.
         '''
@@ -202,7 +221,7 @@ class Database:
             search_path = os.path.join(directories, 'Q*.txt')
             files += glob.glob(search_path)
 
-        time, mean, var, maxTime, number_of_files = calculateMeanVarHelper(files, verbose=verbose, maxTime=maxTime)
+        time, mean, var, maxTime, number_of_files = calculateMeanVarHelper(files, verbose=verbose, maxTime=maxTime, nFiles=nFiles)
         time = time.reshape((mean.shape[0], 1))
 
         mean = np.hstack([time, mean])
@@ -247,7 +266,7 @@ class Database:
 
         print('Done Calculating Mean')
 
-    def getMeanVarN(self, N, delimiter=','):
+    def getMeanVarN(self, N, delimiter=',', read_exp=True):
         db = self.getN(N)
         cdf_df = pd.DataFrame()
         max_df = pd.DataFrame()
@@ -263,6 +282,9 @@ class Database:
                         exp = quadMath.prettifyQuad(N_column).split("e")[-1]
                         if int(exp) == N:
                             cdf_df['Gumbel Mean Variance'] = mean_df[column]
+                    elif not read_exp:
+                        if int(column) == N:
+                            cdf_df['Mean Quantile'] = mean_df[column]
                     else:
                         N_column = np.quad(column)
                         exp = quadMath.prettifyQuad(N_column).split("e")[-1]
@@ -272,6 +294,9 @@ class Database:
                 for column in var_df.columns[1:]:
                     if 'var' in column:
                         continue
+                    elif not read_exp:
+                        if int(column) == N:
+                            cdf_df['Var Quantile'] = var_df[column]
                     else:
                         N_column = np.quad(column)
                         exp = quadMath.prettifyQuad(N_column).split("e")[-1]

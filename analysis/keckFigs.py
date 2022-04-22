@@ -48,9 +48,10 @@ def distWidth(N=1e6, padding = 10):
     plt.axis('scaled')
 
 
-def plotWalkers(nWalkers, startPoint):
+def plotWalkers(nWalkers, startPoint, file):
     walkers = np.random.uniform(size=(nWalkers, 2)) * .8 + .1 + startPoint
     plt.plot(walkers[:,0], walkers[:,1], 'k.')
+    plt.savefig(file)
     plt.show()
 
 def BCModel(size, nWalkers=100):
@@ -58,18 +59,18 @@ def BCModel(size, nWalkers=100):
     midPoint = np.floor(size[1]/2).astype(int)
     plt.pcolormesh(1-bias)
     plt.show()
-    plotWalkers(nWalkers, [midPoint, 0])
+    plotWalkers(nWalkers, [midPoint, 0], '0.png')
 
     step1 = np.random.multinomial(nWalkers, [bias[0, midPoint], 1])
-    plotWalkers(step1[0], [midPoint, 1])
-    plotWalkers(step1[1], [midPoint+1, 1])
+    plotWalkers(step1[0], [midPoint, 1], '1.png')
+    plotWalkers(step1[1], [midPoint+1, 1], '2.png')
 
     step2A = np.random.multinomial(step1[0], [bias[1, midPoint], 1])
     step2B = np.random.multinomial(step1[1], [bias[1, midPoint+1], 1])
-    plotWalkers(step2A[0], [midPoint, 2])
-    plotWalkers(step2A[1], [midPoint+1, 2])
-    plotWalkers(step2B[0], [midPoint+1, 2])
-    plotWalkers(step2B[1], [midPoint+2, 2])
+    plotWalkers(step2A[0], [midPoint, 2], '3.png')
+    plotWalkers(step2A[1], [midPoint+1, 2], '4.txt')
+    plotWalkers(step2B[0], [midPoint+1, 2], '5.txt')
+    plotWalkers(step2B[1], [midPoint+2, 2], '6.txt')
 
 if __name__ == '__main__':
     import matplotlib

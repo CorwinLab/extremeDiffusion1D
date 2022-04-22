@@ -139,7 +139,7 @@ def quantileMean(N, time):
     theory = np.piecewise(
         time,
         [time < logN, time >= logN],
-        [lambda t: t, lambda t: first_order_mean(N, t) + second_order_mean(N, t)],
+        [lambda t: t, lambda t: first_order_mean(N, t)], #+ second_order_mean(N, t)],
     )
     return theory
 

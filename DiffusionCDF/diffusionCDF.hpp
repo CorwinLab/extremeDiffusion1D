@@ -72,6 +72,7 @@ public:
   std::vector<RealType> getGumbelVariance(std::vector<RealType> nParticles);
   std::vector<long int> getxvals();
   std::vector<RealType> getSaveCDF();
+  std::pair<RealType, float> getProbandV(RealType quantile);
 };
 
 class DiffusionPositionCDF: public DiffusionCDF{
