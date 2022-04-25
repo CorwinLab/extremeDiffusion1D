@@ -63,6 +63,28 @@ KPZ_var = np.array([
     0.815189,
 ])
 
+KPZ_mean = np.array([
+ -0.870678,
+ -1.16141,
+ -1.39703,
+ -1.59726,
+ -1.76062,
+ -1.87532,
+ -1.94673,
+ -1.98074,
+ -1.98402,
+ -1.96854,
+ -1.94339,
+ -1.91601,
+ -1.88247,
+ -1.86097,
+ -1.84308,
+ -1.82444,
+ -1.81353,
+ -1.80477,
+ -1.79884,
+])
+
 
 def v0(N, time):
     logN = np.log(N).astype(float)
@@ -114,7 +136,6 @@ def second_order_mean(N, time):
 def third_order_mean(N, time):
     v0_val = v0(N, time)
     return time ** (-1 / 3) * lambda_1(v0_val) * TW_mean_sq
-
 
 def quantileMean(N, time):
     """
@@ -194,7 +215,7 @@ def quantileVar(N, time, crossover=None, width=None):
 
 def quantileVarShortTime(N, time):
     """
-    Returns the quantile variance over time in the short time regime (t~Ln(N)).
+    Returns the quantile variance over time in the short time regime (t~log(N)).
 
     Parameters
     ----------
@@ -217,7 +238,7 @@ def quantileVarShortTime(N, time):
 
 def quantileVarLongTime(N, time):
     """
-    Returns the quantile variance over time in the long time regime (t~Ln(N)^2).
+    Returns the quantile variance over time in the long time regime (t~log(N)^2).
 
     Parameters
     ----------
@@ -236,6 +257,15 @@ def quantileVarLongTime(N, time):
     logN = np.log(N).astype(float)
     that = time / logN**2
     return logN * that / 2 * KPZ_var_fit(4/that)
+
+def quantileMeanLongTime(N, time):
+    """
+    Returns the variance over time in the long time regime
+    """
+
+    logN = np.log(N).astype(float)
+    that = time / logN**2
+    return (2 * time * logN)**(1/2) + np.sqrt(time / 2 / logN) * KPZ_mean_fit(4 / that)
 
 def probMean(vs, t):
     """
@@ -319,12 +349,23 @@ def einstein_var(N, c1):
 def KPZ_var_theory(t):
     return np.sqrt(np.pi/2) * (t/2)**(-1/6) + (1 + 5/4 * np.pi - 8*np.pi/3/np.sqrt(3))*(t/2)**(1/3)
 
+def KPZ_mean_theory(t):
+    return -np.sqrt(np.pi / 8) * (t/2)**(1/6) - (1/2 + 3/8 * np.pi - 8 *np.pi / 9 / np.sqrt(3)) * (t/2)**(2/3)
+
 def KPZ_var_fit(t):
     f = interp1d(KPZ_time, KPZ_var, fill_value = KPZ_var[-1], bounds_error=False)
     y = np.piecewise(t,
                     [t <= 0.33, t > 0.33],
                     [lambda time: KPZ_var_theory(time), lambda time: f(time)])
     y = y * 2 **(-2/3) * t ** (2/3)
+    return y
+
+def KPZ_mean_fit(t):
+    f = interp1d(KPZ_time, KPZ_mean, fill_value = KPZ_mean[-1], bounds_error=False)
+    y = np.piecewise(t,
+                    [t <= 0.33, t > 0.33],
+                    [lambda time: KPZ_mean_theory(time), lambda time: f(time)])
+    y = y*2**(-2/3) * t ** (2/3)
     return y
 
 def gumbel_var(t, N):
