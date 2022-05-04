@@ -682,15 +682,20 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         """
 
         idx = 0
-        times = []
+        f = open(file, 'a')
+        writer = csv.writer(f)
+        header = ['Distance', 'Time']
+        writer.writerow(header)
+
         while idx < len(positions):
             self.iterateTimestep()
             maxIdx = self.getMaxIdx()
-            maxPosition = maxIdx - self.currentTime / 2
+            maxPosition = 2*(maxIdx - self.currentTime / 2) # multiply by 2 since the theory is +/- 1 for each step
             if maxPosition >= positions[idx]:
-                times.append(self.currentTime)
+                row = [maxPosition, self.currentTime]
+                wrtier.writerow(row)
+                f.flush()
                 idx += 1
-        np.savetxt(file, times)
 
     def evolveAndSaveFirstPassageQuantile(self, positions, quantiles):
         """
@@ -750,3 +755,8 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         print("Indices: ", idx)
         print("Occupancy:", np.array(self.getOccupancy())[nonzeros])
         print("Prob: ", np.array(Ns) / self.getNParticles())
+
+if __name__ == '__main__':
+    d = DiffusionPDF(10, np.inf, 1000, ProbDistFlag=False)
+    d.evolveAndSaveFirstPassage([1, 2, 3], 'Times.txt')
+    print(np.loadtxt("Times.txt"))

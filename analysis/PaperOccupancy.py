@@ -2,7 +2,7 @@ import sys
 
 sys.path.append("../src/")
 from pydiffusionPDF import DiffusionPDF
-from theory import quantileMean, quantileVar
+from theory import quantileMean, quantileVar, gumbel_var
 import matplotlib
 
 matplotlib.use("Agg")
@@ -25,9 +25,10 @@ for i in range(numSteps):
 
 
 theory = quantileMean(N, d.time)
-var = quantileVar(N, d.time)
-std_below = theory - var
-std_above = theory + var
+var = quantileVar(N, d.time) + gumbel_var(d.time, N)
+num_of_std = 1
+std_below = theory - num_of_std * np.sqrt(var)
+std_above = theory + num_of_std * np.sqrt(var)
 
 for i in range(allOcc.shape[0]):
     occ = allOcc[i, :]
@@ -43,32 +44,46 @@ cmap.set_bad(color='white')
 vmax = N
 vmin = 0.00001
 
-fig, (ax, ax2) = plt.subplots(2, 1, sharex=True, constrained_layout=True)
-cax = ax.imshow(allOcc.T, norm=colors.LogNorm(vmin=1, vmax=vmax), cmap=cmap, aspect='auto', interpolation='none')
-ax.plot(d.time, theory / 2 + max(d.time) / 2, c=color)
-ax.plot(d.time, max(d.time)/2 - theory / 2, c=color)
-ax.set_ylabel("Distance")
-ax.set_yticks(np.linspace(0, allOcc.shape[1], 21))
+fontsize=12
+alpha = 0.3
+alpha_line=0.8
+#fig, (ax, ax2) = plt.subplots(2, 1, sharex=True, constrained_layout=True)
+fig, ax = plt.subplots(figsize=(8,8))
+cax = ax.imshow(allOcc.T, norm=colors.LogNorm(vmin=1, vmax=vmax), cmap=cmap, interpolation='none')
+ax.plot(d.time, theory / 2 + max(d.time) / 2, c=color, alpha=alpha_line, lw=0.75)
+ax.plot(d.time, max(d.time)/2 - theory / 2, c=color, alpha=alpha_line, lw=0.75)
+ax.fill_between(d.time, (max(d.time) + std_above)/2, (max(d.time) + std_below)/2, color=color, alpha=alpha)
+ax.fill_between(d.time, (max(d.time) - std_above)/2, (max(d.time) - std_below)/2, color=color, alpha=alpha)
+ax.set_ylabel("Distance", fontsize=fontsize)
+ax.set_xlabel(r"t", fontsize=fontsize)
+ax.set_yticks(np.linspace(0, allOcc.shape[1], 41))
 ticks = ax.get_yticks()
 new_ticks = np.linspace(0, allOcc.shape[1], len(ticks)) - (allOcc.shape[1]) / 2
-new_ticks = list(new_ticks.astype(int))
+new_ticks = list(2*new_ticks.astype(int))
 ax.set_yticklabels(new_ticks)
 dist = 100
-ax.set_ylim([(allOcc.shape[1])/2-dist-1, (allOcc.shape[1])/2 + dist +1])
-ax2.plot(d.time, d.maxDistance, label='system', c='k')
-ax2.plot(d.time, theory / 2, c=color)
-ax2.fill_between(d.time, std_below/2, std_above/2, alpha=0.2, color=color)
+ax.set_ylim([(allOcc.shape[1])/2-dist-.1, (allOcc.shape[1])/2 + dist+0.1])
+
+'''
+ax2.plot(d.time, 2*d.maxDistance, label='system', c='k')
+ax2.plot(d.time, theory, c=color)
+#ax2.fill_between(d.time, std_below, std_above, alpha=0.2, color=color)
 
 n_plots = 5
 for _ in range(n_plots):
     d = DiffusionPDF(N, 1, numSteps, ProbDistFlag=False)
     d.evolveToTime(numSteps)
-    ax2.plot(d.time, d.maxDistance, label='system', c='k', alpha=0.4)
+    ax2.plot(d.time, 2*d.maxDistance, label='system', c='k', alpha=0.4)
     assert np.all(np.abs(np.diff(2*d.maxDistance)))
     assert np.all(np.abs(np.diff(2*d.minDistance)))
 
 ax2.set_xlabel(r"$t$")
 ax2.set_ylabel("Distance")
-ax2.set_ylim([0, dist])
-#fig.colorbar(cax, ax=ax, label="Particles")
+ax2.set_ylim([0, dist*2])
+'''
+ax.set_xlim([0, 1000])
+ratio = .5
+x_left, x_right = ax.get_xlim()
+y_low, y_high = ax.get_ylim()
+ax.set_aspect(abs((x_right-x_left)/(y_low-y_high))*ratio)
 fig.savefig("Occupation.pdf", bbox_inches='tight')

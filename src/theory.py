@@ -132,6 +132,10 @@ def second_order_mean(N, time):
     v0_val = v0(N, time)
     return time ** (1 / 3) * TW_mean * lambda_0(v0_val)
 
+def second_order_mean_written_out(N, t):
+    logN = np.log(N).astype(float)
+    return t**(-1/3) * logN ** (2/3) * 2**(1/3) * (1 - logN/t)**(2/3) * 1.771 / np.sqrt(1-(1-logN/t)**2)
+
 
 def third_order_mean(N, time):
     v0_val = v0(N, time)
@@ -160,7 +164,7 @@ def quantileMean(N, time):
     theory = np.piecewise(
         time,
         [time < logN, time >= logN],
-        [lambda t: t, lambda t: first_order_mean(N, t)], #+ second_order_mean(N, t)],
+        [lambda t: t, lambda t: first_order_mean(N, t) - second_order_mean_written_out(N, t)], #+ second_order_mean(N, t)],
     )
     return theory
 
@@ -200,9 +204,9 @@ def quantileVar(N, time, crossover=None, width=None):
     """
 
     if crossover is None:
-        crossover = np.log(N).astype(float) * 10 ** 2
+        crossover = np.log(N).astype(float) ** (3/2)
     if width is None:
-        width = crossover
+        width = np.log(N).astype(float) ** (4/3)
 
     logN = np.log(N).astype(float)
     theory = np.piecewise(
@@ -365,7 +369,7 @@ def KPZ_mean_fit(t):
     y = np.piecewise(t,
                     [t <= 0.33, t > 0.33],
                     [lambda time: KPZ_mean_theory(time), lambda time: f(time)])
-    y = y*2**(-2/3) * t ** (2/3)
+    y = y*2**(-1/3) * t ** (1/3) - t/24
     return y
 
 def gumbel_var(t, N):
@@ -373,3 +377,35 @@ def gumbel_var(t, N):
     return np.piecewise(t,
                         [t <= logN, t > logN],
                         [lambda time: 0, lambda time: np.pi**2 / 6 * (time/logN-1)**2 / (2*time/logN-1)])
+
+
+def log_moving_average(time, data, N, window_size=10):
+    assert window_size > 1
+    window_min = time[0]
+    window_max = window_size * window_min
+    new_times = []
+    mean_data = []
+    while window_min <= max(time):
+        window_time = time[(time >= window_min) & (time < window_max)]
+        window_data = data[(time >= window_min) & (time < window_max)]
+
+        mean_data.append(np.mean(window_data))
+        new_times.append(np.exp(np.mean(np.log(window_time))))
+
+        window_min = window_max
+        window_max = window_size * window_min
+
+    return np.array(new_times), np.array(mean_data)
+
+if __name__ == '__main__':
+    num = 100
+    times = np.geomspace(1, 10**3, num)
+    data = np.random.random(len(times)) * times **3
+    fig, ax = plt.subplots()
+    log_times, mean_data = log_moving_average(times, data, window_size=10)
+    ax.scatter(times, data)
+    ax.scatter(log_times, mean_data)
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("time")
+    fig.savefig("Test.png")
