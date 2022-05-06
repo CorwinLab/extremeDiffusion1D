@@ -144,6 +144,15 @@ class Database:
                 Ns.append(int(self.dirs[d]['N_exp']))
         return Ns
 
+    def betas(self):
+        '''
+        Get the beta values for a specific datatype
+        '''
+        betas = []
+        for d in self.dirs.keys():
+                betas.append(float(self.dirs[d]['beta']))
+        return betas
+
     def getBetas(self, beta):
         '''
         Get all datasets with specified beta value.

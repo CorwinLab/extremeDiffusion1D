@@ -691,7 +691,8 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             self.iterateTimestep()
             maxIdx = self.getMaxIdx()
             maxPosition = 2*(maxIdx - self.currentTime / 2) # multiply by 2 since the theory is +/- 1 for each step
-            if maxPosition >= positions[idx]:
+            minPosition = 2*(minIdx - self.currentTime / 2)
+            if maxPosition >= positions[idx] or abs(minPosition) >= positions[idx]: # also want to check the minimum position
                 row = [maxPosition, self.currentTime]
                 wrtier.writerow(row)
                 f.flush()

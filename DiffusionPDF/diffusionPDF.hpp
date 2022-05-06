@@ -92,6 +92,7 @@ public:
   }
 
   unsigned long int getMaxIdx(){ return edges.second[time]; };
+  unsigned long int getMinIdx(){ return edges.first[time]; };
 
   double getSmallCutoff() { return smallCutoff; };
   void setSmallCutoff(const double _smallCutoff) { smallCutoff = _smallCutoff; };
