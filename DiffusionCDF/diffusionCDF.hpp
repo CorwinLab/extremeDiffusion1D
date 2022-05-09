@@ -65,8 +65,10 @@ public:
   void iterateTimeStep();
 
   unsigned long int findQuantile(RealType quantile);
-
   std::vector<unsigned long int> findQuantiles(std::vector<RealType> quantiles);
+
+  unsigned long int findLowerQuantile(RealType quantile);
+
 
   RealType getGumbelVariance(RealType nParticles);
   std::vector<RealType> getGumbelVariance(std::vector<RealType> nParticles);

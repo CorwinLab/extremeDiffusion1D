@@ -242,6 +242,14 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             returnVals.reverse()
             return np.array(returnVals)
 
+    def findLowerQuantile(self, quantile):
+        """
+        Find a quantile in the lower part of the distribution.
+        Opposite the findQuantile method
+        """
+
+        return super().findLowerQuantile(quantile)
+
     def getGumbelVariance(self, nParticles):
         """
         Get the gumbel variance from the CDF.
@@ -360,12 +368,12 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         # empty or non-existant file
         f = open(file, "a")
         writer = csv.writer(f)
-        
+
         if not append:
             header = ["time"] + [str(N) for N in nParticles] + ['var' + str(N) for N in nParticles]
             writer.writerow(header)
             f.flush()
-        
+
         for t in times:
             self.evolveToTime(t)
             discrete = self.getGumbelVariance(nParticles)
@@ -450,6 +458,31 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             f.flush()
 
         f.close()
+
+    def evolveAndSaveFirstPassage(self, quantile, distances, save_file):
+        """
+        Measure the first passage time of a quantile at various distances.
+        """
+
+        f = open(save_file, 'a')
+        writer = csv.writer(f)
+
+        header = ['Distance', 'Time']
+        writer.writerow(header)
+        f.flush()
+
+        idx = 0
+        while idx < len(distances):
+            self.iterateTimeStep()
+            upper_dist = self.findQuantile(quantile)
+            lower_dist = abs(self.findLowerQuantile(quantile))
+
+            if upper_dist >= distances[idx] or lower_dist >= distances[idx]:
+                row = [distances[idx], self.time]
+                writer.writerow(row)
+                f.flush()
+            idx += 1
+
 
 class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
     """

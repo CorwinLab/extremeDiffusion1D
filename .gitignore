@@ -157,3 +157,7 @@ dmypy.json
 
 # Editor files
 *~
+*.sqlite
+*.db
+*.ipch
+DiffusionCDF/.vs/DiffusionCDF/v16/.suo

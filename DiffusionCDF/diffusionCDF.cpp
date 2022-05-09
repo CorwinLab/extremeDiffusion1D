@@ -121,6 +121,18 @@ unsigned long int DiffusionTimeCDF::findQuantile(RealType quantile)
   return quantilePosition;
 }
 
+unsigned long int DiffusionTimeCDF::findLowerQuantile(RealType quantile) {
+
+  long int quantilePosition; 
+  for (unsigned long int n = 0; n <= t; n++) {
+	  if (CDF[n] < 1. - 1 / quantile) {
+		  quantilePosition = 2 * n - t; 
+		break 
+	}
+  }
+  return quantilePosition;
+}
+
 std::vector<unsigned long int> DiffusionTimeCDF::findQuantiles(
   std::vector<RealType> quantiles)
 {
@@ -259,6 +271,7 @@ PYBIND11_MODULE(diffusionCDF, m)
       .def("iterateTimeStep", &DiffusionTimeCDF::iterateTimeStep)
       .def("findQuantile", &DiffusionTimeCDF::findQuantile, py::arg("quantile"))
       .def("findQuantiles", &DiffusionTimeCDF::findQuantiles, py::arg("quantiles"))
+      .def("findLowerQuantile", &DiffusionTimeCDF::findLowerQuantile, py::arg("quantile"))
       .def("getSaveCDF", &DiffusionTimeCDF::getSaveCDF)
       .def("getxvals", &DiffusionTimeCDF::getxvals)
       .def("getProbandV", &DiffusionTimeCDF::getProbandV, py::arg("quantile"));
