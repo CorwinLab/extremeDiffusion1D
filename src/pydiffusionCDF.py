@@ -416,7 +416,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             writer.writerow(row)
         f.close()
 
-    def evolveAndGetProbAndV(self, quantile, time, file):
+    def evolveAndGetProbAndV(self, quantile, time, save_file):
         """
         Measure the probability of a quantile at different times.
 
@@ -435,7 +435,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
 
         assert quantile >= 1
 
-        f = open(file, 'a')
+        f = open(save_file, 'a')
         writer = csv.writer(f)
 
         header = ["time", "prob", "v"]
@@ -448,6 +448,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             row = [self.time, prob, v]
             writer.writerow(row)
             f.flush()
+
         f.close()
 
 class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):

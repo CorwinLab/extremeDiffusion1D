@@ -23,9 +23,10 @@ def runExperiment(beta, N_exp, num_of_save_distances, save_file, save_occ, sysID
     tMax = int(tMax)
     num_of_save_distances = int(num_of_save_distances)
     probDistFlag = bool(int(probDistFlag))
+    max_distance = int(max_distance)
 
-    logN = np.log(N).astype(float))
-    distances = np.geomspace(int(logN), max_distance, num_of_save_distances, dtype=np.int64)
+    logN = np.log(N).astype(float)
+    distances = np.geomspace(1, max_distance, num_of_save_distances, dtype=np.int64)
     distances = np.unique(distances)
 
     occupancy_file = os.path.join(save_dir, f"Occupancy{sysID}.txt")
@@ -55,7 +56,6 @@ if __name__ == "__main__":
         beta,
         N_exp,
         num_of_save_distances,
-        max_distance,
         probDistFlag,
         tMax,
     ) = sys.argv[1:]
@@ -68,7 +68,8 @@ if __name__ == "__main__":
     save_occ = os.path.abspath(save_occ)
     if os.path.exists(save_occ):
         exit()
-
+    max_distance = 100 * np.log(float(f"1e{N_exp}"))
+    
     vars = {
         "beta": beta,
         "N_exp": N_exp,

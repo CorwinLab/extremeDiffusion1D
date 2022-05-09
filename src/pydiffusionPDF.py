@@ -686,15 +686,16 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         writer = csv.writer(f)
         header = ['Distance', 'Time']
         writer.writerow(header)
-
+        f.flush()
         while idx < len(positions):
             self.iterateTimestep()
             maxIdx = self.getMaxIdx()
+            minIdx = self.getMinIdx()
             maxPosition = 2*(maxIdx - self.currentTime / 2) # multiply by 2 since the theory is +/- 1 for each step
             minPosition = 2*(minIdx - self.currentTime / 2)
             if maxPosition >= positions[idx] or abs(minPosition) >= positions[idx]: # also want to check the minimum position
                 row = [maxPosition, self.currentTime]
-                wrtier.writerow(row)
+                writer.writerow(row)
                 f.flush()
                 idx += 1
 
