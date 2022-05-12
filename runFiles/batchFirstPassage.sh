@@ -21,7 +21,7 @@ do
   mkdir -p $TOPDIR
   for i in {0..25}
   do
-    id=$((SLURM_ARRAY_TASK_ID*10 + i + SLURM_ARRAY_TASK_ID))
+    id=$((SLURM_ARRAY_TASK_ID*25 + i + SLURM_ARRAY_TASK_ID))
     python3 FirstPassageTime.py $TOPDIR $id $BETA $N_EXP $NUM_OF_SAVE_DISTANCES $PROBDISTFLAG $TMAX
   done
 done
