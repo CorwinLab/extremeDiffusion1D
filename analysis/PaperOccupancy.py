@@ -64,26 +64,15 @@ ax.set_yticklabels(new_ticks)
 dist = 100
 ax.set_ylim([(allOcc.shape[1])/2-dist-.1, (allOcc.shape[1])/2 + dist+0.1])
 
-'''
-ax2.plot(d.time, 2*d.maxDistance, label='system', c='k')
-ax2.plot(d.time, theory, c=color)
-#ax2.fill_between(d.time, std_below, std_above, alpha=0.2, color=color)
-
-n_plots = 5
-for _ in range(n_plots):
-    d = DiffusionPDF(N, 1, numSteps, ProbDistFlag=False)
-    d.evolveToTime(numSteps)
-    ax2.plot(d.time, 2*d.maxDistance, label='system', c='k', alpha=0.4)
-    assert np.all(np.abs(np.diff(2*d.maxDistance)))
-    assert np.all(np.abs(np.diff(2*d.minDistance)))
-
-ax2.set_xlabel(r"$t$")
-ax2.set_ylabel("Distance")
-ax2.set_ylim([0, dist*2])
-'''
 ax.set_xlim([0, 1000])
 ratio = .5
 x_left, x_right = ax.get_xlim()
 y_low, y_high = ax.get_ylim()
 ax.set_aspect(abs((x_right-x_left)/(y_low-y_high))*ratio)
 fig.savefig("Occupation.pdf", bbox_inches='tight')
+
+# Just a check to make sure the scaling matches up.
+fig, ax = plt.subplots()
+ax.plot(d.time, theory)
+ax.fill_between(d.time, (theory + np.sqrt(var)), (theory - np.sqrt(var)), alpha=0.5)
+fig.savefig("Theory.png")
