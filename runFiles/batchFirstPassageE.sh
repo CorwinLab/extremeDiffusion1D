@@ -4,15 +4,15 @@
 #SBATCH --error=/home/jhass2/jamming/JacobData/logs/ParallelFirstPass/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --array=0-100
+#SBATCH --array=0-10
 #SBATCH --output=/home/jhass2/jamming/JacobData/logs/ParallelFirstPass/%A-%a.out
 #SBATCH --account=jamming
 #SBATCH --partition=preempt
 
 NUM_OF_SAVE_DISTANCES=1500
-BETA=1
+BETA=inf
 TMAX=500000
-NUM_OF_SYSTEMS=500
+NUM_OF_SYSTEMS=50
 
 for N_EXP in 2 7 24 85
 do
