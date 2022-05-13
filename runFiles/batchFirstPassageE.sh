@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=FirstPass
 #SBATCH --time=0-12:00:00
-#SBATCH --error=/home/jhass2/jamming/JacobData/logs/ParallelFirstPass/%A-%a.err
+#SBATCH --error=/home/jhass2/jamming/JacobData/logs/ParallelFirstPassE/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --array=0-10
-#SBATCH --output=/home/jhass2/jamming/JacobData/logs/ParallelFirstPass/%A-%a.out
+#SBATCH --output=/home/jhass2/jamming/JacobData/logs/ParallelFirstPassE/%A-%a.out
 #SBATCH --account=jamming
 #SBATCH --partition=preempt
 
@@ -16,7 +16,7 @@ NUM_OF_SYSTEMS=50
 
 for N_EXP in 2 7 24 85
 do
-  TOPDIR=/home/jhass2/jamming/JacobData/FirstPassAbsTimed/$N_EXP/
+  TOPDIR=/home/jhass2/jamming/JacobData/ParallelFirstPassE/$N_EXP/
   mkdir -p $TOPDIR
   for i in {0..5}
   do

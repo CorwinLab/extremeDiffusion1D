@@ -9,7 +9,7 @@ import numpy as np
 from datetime import date
 from experimentUtils import saveVars
 from sys import exit
-
+import time
 
 def runExperiment(beta, N_exp, numSystems, num_of_save_distances, save_file, max_distance, tMax):
     """
@@ -24,7 +24,7 @@ def runExperiment(beta, N_exp, numSystems, num_of_save_distances, save_file, max
 
     distances = np.geomspace(1, max_distance, num_of_save_distances, dtype=np.int64)
     distances = np.unique(distances)
-
+    
     d = AllSystems(
         numSystems, beta, tMax, N
     )
@@ -64,5 +64,6 @@ if __name__ == "__main__":
         vars.update({"Date": text_date})
         saveVars(vars, vars_file)
         vars.pop("Date")
-
+    s = time.time()
     runExperiment(**vars)
+    np.savetxt(os.path.join(topDir, f"Time{sysID}.txt"), [time.time() - s])

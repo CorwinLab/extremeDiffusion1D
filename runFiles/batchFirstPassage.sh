@@ -16,11 +16,11 @@ NUM_OF_SYSTEMS=500
 
 for N_EXP in 2 7 24 85
 do
-  TOPDIR=/home/jhass2/jamming/JacobData/FirstPassAbsTimed/$N_EXP/
+  TOPDIR=/home/jhass2/jamming/JacobData/ParallelFirstPass/$N_EXP/
   mkdir -p $TOPDIR
-  for i in {0..5}
+  for i in {0..10}
   do
-    id=$((SLURM_ARRAY_TASK_ID*5 + i + SLURM_ARRAY_TASK_ID))
+    id=$((SLURM_ARRAY_TASK_ID*10 + i + SLURM_ARRAY_TASK_ID))
     python3 FirstPassageTime.py $TOPDIR $id $BETA $N_EXP $NUM_OF_SAVE_DISTANCES $NUM_OF_SYSTEMS $TMAX
   done
 done
