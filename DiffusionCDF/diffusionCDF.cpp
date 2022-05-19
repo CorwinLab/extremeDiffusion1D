@@ -109,11 +109,11 @@ void DiffusionTimeCDF::iterateTimeStep()
   t += 1;
 }
 
-unsigned long int DiffusionTimeCDF::findQuantile(RealType quantile)
-{
+long int DiffusionTimeCDF::findQuantile(RealType quantile)
+{ 
   unsigned long int quantilePosition;
   for (unsigned long int n = t; n >= 0; n--){
-    if (CDF[n] > 1 / quantile){
+    if (CDF[n] > 1 / (quantile+1)){
       quantilePosition = 2* n + 2 - t;
       break;
     }
@@ -121,7 +121,7 @@ unsigned long int DiffusionTimeCDF::findQuantile(RealType quantile)
   return quantilePosition;
 }
 
-unsigned long int DiffusionTimeCDF::findLowerQuantile(RealType quantile) {
+long int DiffusionTimeCDF::findLowerQuantile(RealType quantile) {
   long int quantilePosition=0;
   for (unsigned long int n = 0; n <= t; n++) {
     if (CDF[n] < 1. - 1 / quantile) {
@@ -132,7 +132,7 @@ unsigned long int DiffusionTimeCDF::findLowerQuantile(RealType quantile) {
   return quantilePosition;
 }
 
-std::vector<unsigned long int> DiffusionTimeCDF::findQuantiles(
+std::vector<long int> DiffusionTimeCDF::findQuantiles(
   std::vector<RealType> quantiles)
 {
   // Sort incoming quantiles b/c we need them to be in descending order for
@@ -140,10 +140,10 @@ std::vector<unsigned long int> DiffusionTimeCDF::findQuantiles(
   std::sort(quantiles.begin(), quantiles.end(), std::greater<RealType>());
 
   // Initialize to have same number of vectors as in Ns
-  std::vector<unsigned long int> quantilePositions(quantiles.size());
+  std::vector<long int> quantilePositions(quantiles.size(), 0);
   unsigned long int quantile_idx = 0;
   for (unsigned long int n = t; n >= 0; n--){
-    while(CDF[n] > 1 / quantiles[quantile_idx]){
+    while(CDF.at(n) > 1 / (quantiles[quantile_idx]+1)){
       quantilePositions[quantile_idx] = 2 * n + 2 - t;
       quantile_idx += 1;
 
@@ -170,6 +170,7 @@ std::vector<long int> DiffusionTimeCDF::getxvals(){
 
 RealType DiffusionTimeCDF::getGumbelVariance(RealType nParticles)
 {
+  nParticles+=1;
   std::vector<RealType> cdf = slice(CDF, 0, t);
   cdf.push_back(0); // Need to add 0 to CDF to make it complete.
 
@@ -179,6 +180,9 @@ RealType DiffusionTimeCDF::getGumbelVariance(RealType nParticles)
 }
 
 std::vector<RealType> DiffusionTimeCDF::getGumbelVariance(std::vector<RealType> nParticles){
+  for (unsigned int i=0; i < nParticles.size(); i++){
+    nParticles[i] += 1;
+  }
   std::vector<RealType> cdf = slice(CDF, 0, t);
   cdf.push_back(0); // Need to add 0 to CDF to make it complete.
   std::vector<long int> xvals = getxvals();
