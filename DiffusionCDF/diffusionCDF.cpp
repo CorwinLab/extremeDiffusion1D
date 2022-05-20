@@ -74,7 +74,11 @@ double DiffusionCDF::generateBeta()
     return 0.5;
   }
   else {
-    return beta_dist(gen, betaParams);
+    double randomVal = beta_dist(gen, betaParams);
+    if (isnan(randomVal)){
+      randomVal = beta_dist(gen, betaParams);
+    }
+    return randomVal;
   }
 }
 
@@ -277,7 +281,8 @@ PYBIND11_MODULE(diffusionCDF, m)
       .def("findLowerQuantile", &DiffusionTimeCDF::findLowerQuantile, py::arg("quantile"))
       .def("getSaveCDF", &DiffusionTimeCDF::getSaveCDF)
       .def("getxvals", &DiffusionTimeCDF::getxvals)
-      .def("getProbandV", &DiffusionTimeCDF::getProbandV, py::arg("quantile"));
+      .def("getProbandV", &DiffusionTimeCDF::getProbandV, py::arg("quantile"))
+      .def("generateBeta", &DiffusionTimeCDF::generateBeta);
 
   py::class_<DiffusionPositionCDF, DiffusionCDF>(m, "DiffusionPositionCDF")
       .def(py::init<const double, const unsigned long int, std::vector<RealType> >(), py::arg("beta"), py::arg("tMax"), py::arg("quantiles"))

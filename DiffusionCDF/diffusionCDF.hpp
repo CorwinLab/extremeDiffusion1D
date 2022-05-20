@@ -32,14 +32,14 @@ protected:
   std::uniform_real_distribution<> dis;
   boost::random::beta_distribution<> beta_dist;
 
-  double generateBeta();
-
 public:
   DiffusionCDF(const double _beta, const unsigned long int _tMax);
   ~DiffusionCDF(){};
 
   double getBeta() { return beta; };
   void setBeta(double _beta){ beta = _beta; };
+
+  double generateBeta();
 
   std::vector<RealType> getCDF() { return CDF; };
   void setCDF(std::vector<RealType> _CDF){ CDF = _CDF; };
