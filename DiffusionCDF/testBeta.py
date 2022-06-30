@@ -3,7 +3,7 @@ import numpy as np
 import npquad
 import matplotlib.pyplot as plt
 
-beta = 0.01
+beta = 100
 tMax = 10
 num_of_vals = 10_000_000
 d = DiffusionTimeCDF(beta, tMax)
