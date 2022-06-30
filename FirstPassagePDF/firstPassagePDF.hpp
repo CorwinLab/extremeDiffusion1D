@@ -21,6 +21,7 @@ protected:
   double beta; 
   unsigned long int maxPosition; 
   unsigned long int t = 0;
+  RealType firstPassageProbability;
 
   boost::random::beta_distribution<>::param_type betaParams;
 
@@ -50,7 +51,7 @@ public:
 
   void iterateTimeStep();
 
-  RealType getFirstPassageProbability(); 
+  RealType getFirstPassageProbability() { return firstPassageProbability; };
 };
 
 #endif /* FISRTPASSAGEPDF_HPP_ */

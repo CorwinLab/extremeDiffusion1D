@@ -111,6 +111,8 @@ void FirstPassagePDF::iterateTimeStep()
     }
   }
 
+  firstPassageProbability = transitionProbabilities[1] * PDF.at(1) + (1 - transitionProbabilities[PDF.size() - 2]) * PDF.at(PDF.size() - 2);
+  std::cout << firstPassageProbability << std::endl;
   PDF = newPDF;
   t += 1;
 }
@@ -127,5 +129,6 @@ PYBIND11_MODULE(firstPassagePDF, m)
       .def("setPDF", &FirstPassagePDF::setPDF)
       .def("getMaxPosition", &FirstPassagePDF::getMaxPosition)
       .def("setMaxPosition", &FirstPassagePDF::setMaxPosition)
-      .def("iterateTimeStep", &FirstPassagePDF::iterateTimeStep);
+      .def("iterateTimeStep", &FirstPassagePDF::iterateTimeStep)
+      .def("getFirstPassageProbability", &FirstPassagePDF::getFirstPassageProbability);
 }
