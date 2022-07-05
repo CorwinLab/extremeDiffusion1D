@@ -21,5 +21,5 @@ mkdir -p $TOPDIR
 for i in {0..10}
 do
     id=$((SLURM_ARRAY_TASK_ID*10 + i + SLURM_ARRAY_TASK_ID))
-    python3 FirstPassage.py $TOPDIR $BETA $N_EXP $id $DMIN $DMAX $CUTOFF
+    python3 FirstPassageTimes.py $TOPDIR $BETA $NEXP $id $DMIN $DMAX $CUTOFF
 done
