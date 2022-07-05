@@ -88,9 +88,11 @@ void FirstPassagePDF::iterateTimeStep()
 
   // Need to keep track of the transition probabilities to make sure 
   // that the PDF stays normalized. 
-  std::vector<double> transitionProbabilities(PDF.size());
+  std::vector<double> transitionProbabilities(PDF.size(), 0);
   for (unsigned int i=0; i < transitionProbabilities.size(); i++){
-    transitionProbabilities[i] = generateBeta();
+    if (PDF[i] != 0){
+      transitionProbabilities[i] = generateBeta();
+    }
   }
 
   for (unsigned int i=0; i < PDF.size(); i++){
@@ -112,9 +114,32 @@ void FirstPassagePDF::iterateTimeStep()
   }
 
   firstPassageProbability = transitionProbabilities[1] * PDF.at(1) + (1 - transitionProbabilities[PDF.size() - 2]) * PDF.at(PDF.size() - 2);
-  std::cout << firstPassageProbability << std::endl;
   PDF = newPDF;
   t += 1;
+}
+
+std::tuple<std::vector<unsigned int long>, std::vector<RealType>, std::vector<RealType> > FirstPassagePDF::evolveToCutoff(RealType cutOff){
+  std::vector<RealType> pdf;
+  std::vector<RealType> cdf;
+  std::vector<unsigned int long> times; 
+
+  // Not sure how big these arrays will need to be but they should be at least the size of maxPosition
+  // So I'll allocate that much memory
+  pdf.reserve(maxPosition);
+  cdf.reserve(maxPosition);
+  times.reserve(maxPosition);
+
+  RealType cdf_sum = 0;
+
+  while ( cdf_sum < cutOff ){
+    iterateTimeStep();
+    pdf.push_back(firstPassageProbability);
+    cdf_sum += firstPassageProbability;
+    cdf.push_back(cdf_sum);
+    times.push_back(t);
+  }
+
+  return std::make_tuple(times, pdf, cdf);
 }
 
 PYBIND11_MODULE(firstPassagePDF, m)
@@ -130,5 +155,6 @@ PYBIND11_MODULE(firstPassagePDF, m)
       .def("getMaxPosition", &FirstPassagePDF::getMaxPosition)
       .def("setMaxPosition", &FirstPassagePDF::setMaxPosition)
       .def("iterateTimeStep", &FirstPassagePDF::iterateTimeStep)
-      .def("getFirstPassageProbability", &FirstPassagePDF::getFirstPassageProbability);
+      .def("getFirstPassageProbability", &FirstPassagePDF::getFirstPassageProbability)
+      .def("evolveToCutoff", &FirstPassagePDF::evolveToCutoff);
 }

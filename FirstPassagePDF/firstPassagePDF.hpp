@@ -52,6 +52,9 @@ public:
   void iterateTimeStep();
 
   RealType getFirstPassageProbability() { return firstPassageProbability; };
+
+  std::tuple<std::vector<unsigned int long>, std::vector<RealType>, std::vector<RealType> >  evolveToCutoff(RealType prob_cutOff);
+
 };
 
 #endif /* FISRTPASSAGEPDF_HPP_ */

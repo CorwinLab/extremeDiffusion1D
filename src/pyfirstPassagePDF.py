@@ -87,35 +87,33 @@ class FirstPassagePDF(firstPassagePDF.FirstPassagePDF):
 
         saveArrayQuad(file, np.array([times, pdf]).T)
 
-if __name__ == '__main__':
-    from matplotlib import pyplot as plt
-    from quadMath import prettifyQuad
-    beta = np.inf
-    maxPosition = 5000
-    file = 'Data.txt'
-    N = np.quad('1e24')
-    logN = np.log(N).astype(float)
-    times = np.arange(1, 100000)
-    pdf = FirstPassagePDF(beta, maxPosition)
-    pdf.evolveAndSaveFirstPassagePDF(times, file)
-    data = loadArrayQuad(file)
-    pdf_distribution = data[:, 1][1::2]
-    times = data[:, 0][1::2].astype(float)
-    cdf_distribution = np.cumsum(pdf_distribution)
-    N_particle_cdf = 1-np.exp(-cdf_distribution*N)
-    N_particle_pdf = np.diff(N_particle_cdf)
-    fig, ax = plt.subplots(ncols=2, nrows=2, sharex=True)
-    fig.suptitle(f"First Passage Probabilities for Distance={maxPosition}", fontsize=16)
-    ax[0][0].plot(times, pdf_distribution)
-    ax[0][0].set_ylabel("PDF")
-    ax[0][0].set_title("Single Particle")
-    ax[1][0].plot(times, cdf_distribution)
-    ax[1][0].set_ylabel("CDF")
-    ax[1][0].set_xlabel("Time")
-    ax[0][1].set_title(f"N={prettifyQuad(N)}")
-    ax[1][1].plot(times, N_particle_cdf)
-    ax[1][1].set_xscale("log")
-    ax[0][1].plot(times[1:], N_particle_pdf)
-    ax[0][1].set_yscale("log")
-    plt.tight_layout()
-    fig.savefig("PDF.png", bbox_inches='tight')
+    def evolveToCutoff(self, cutoff):
+        return np.array(super().evolveToCutoff(cutoff)).T
+
+def sampleCDF(cdf, N):
+    Ncdf = 1 - np.exp(-cdf * N)
+    Npdf = np.diff(Ncdf)
+    return Ncdf, Npdf
+
+def calculateMeanAndVariance(x, pdf): 
+    mean = sum(x*pdf)
+    var = sum(x**2 * pdf) - mean ** 2
+    return mean, var
+
+def runExperiment(distances, N, beta, cutoff=0.9, verbose=False):
+    mean = np.zeros(shape=len(distances))
+    var = np.zeros(shape=len(distances))
+    for i, d in enumerate(distances): 
+        pdf = FirstPassagePDF(beta, d)
+        data = pdf.evolveToCutoff(cutoff)
+        times = data[:, 0]
+        pdf = data[:, 1]
+        cdf = data[:, 2]
+        nonzero_indeces = np.nonzero(pdf)
+        Ncdf, Npdf = sampleCDF(cdf, N)
+        mean_val, var_val = calculateMeanAndVariance(times[1:], Npdf)
+        mean[i] = mean_val
+        var[i] = var_val
+        if verbose:
+            print(100 * i / len(distances), '%')
+    return mean, var
