@@ -80,7 +80,7 @@ if __name__ == "__main__":
     save_file = os.path.abspath(save_file)
 
     n_exp = [2, 7, 24, 85, 300]
-    tMax = np.log(np.quad("1e24")).astype(float) * 5 * 10**3
+    tMax = np.log(1e24) ** 2.5
 
     vars = {
         "beta": beta,
