@@ -22,13 +22,16 @@ def calculateMeanAndVariance(x, pdf):
     return mean, var
 
 def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file):
+    beta = float(beta)
+    dmin = float(dmin)
+    dmax = float(dmax)
+    cutoff = float(cutoff)
     N = np.quad(f"1e{N_exp}")
-    distances = np.arange(dmin, dmax)
+    distances = np.arange(dmin, dmax).astype(int)
 
     f = open(save_file, "a")
     writer = csv.writer(f)
     writer.writerow(['distance', 'mean', 'var'])
-    f.flush()
 
     for i, d in enumerate(distances): 
         pdf = FirstPassagePDF(beta, d)
@@ -65,7 +68,8 @@ if __name__ == '__main__':
         "N_exp": N_exp,
         "dmin": dmin, 
         "dmax": dmax, 
-        "cutoff": cutoff
+        "cutoff": cutoff,
+        "save_file": save_file
     }
     vars_file = os.path.join(save_dir, "variables.json")
     today = date.today()
