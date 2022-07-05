@@ -1,6 +1,6 @@
 import sys
-import os 
-import numpy as np 
+import os
+import numpy as np
 import npquad
 from fileIO import saveArrayQuad, loadArrayQuad
 
@@ -9,7 +9,22 @@ sys.path.append(path)
 
 import firstPassagePDF
 
+
 class FirstPassagePDF(firstPassagePDF.FirstPassagePDF):
+    """Object to simulate the probability distribution of the
+    first passage time.
+
+    Parameters
+    ----------
+    beta : float
+        Value of beta to draw random numbers from. Note that
+        beta = inf is the deterministic case where all the
+        transition probabilities are 0.5.
+
+    maxPosition : int
+        Maximum position to run the system out to.
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -24,7 +39,7 @@ class FirstPassagePDF(firstPassagePDF.FirstPassagePDF):
     @property
     def beta(self):
         return self.getBeta()
-    
+
     @beta.setter
     def beta(self, beta):
         self.setBeta(beta)
@@ -36,12 +51,12 @@ class FirstPassagePDF(firstPassagePDF.FirstPassagePDF):
     @pdf.setter
     def pdf(self, pdf):
         self.setPDF(pdf)
-    
-    @property 
+
+    @property
     def maxPosition(self):
         return self.getMaxPosition()
-    
-    @maxPosition.setter 
+
+    @maxPosition.setter
     def maxPosition(self, maxPosition):
         self.setMaxPosition(maxPosition)
 
@@ -53,7 +68,7 @@ class FirstPassagePDF(firstPassagePDF.FirstPassagePDF):
         super().iterateTimeStep()
 
     def evolveToTime(self, time):
-        while self.currentTime < time: 
+        while self.currentTime < time:
             self.iterateTimeStep()
 
     def evolveAndSaveFirstPassagePDF(self, times, file):
@@ -69,7 +84,7 @@ class FirstPassagePDF(firstPassagePDF.FirstPassagePDF):
         Example
         -------
         >>> from matplotlib import pyplot as plt
-        >>> beta = np.inf 
+        >>> beta = np.inf
         >>> maxPosition = 50
         >>> file = 'Data.txt'
         >>> times = np.arange(1, 10000)
@@ -90,20 +105,23 @@ class FirstPassagePDF(firstPassagePDF.FirstPassagePDF):
     def evolveToCutoff(self, cutoff):
         return np.array(super().evolveToCutoff(cutoff)).T
 
+
 def sampleCDF(cdf, N):
     Ncdf = 1 - np.exp(-cdf * N)
     Npdf = np.diff(Ncdf)
     return Ncdf, Npdf
 
-def calculateMeanAndVariance(x, pdf): 
-    mean = sum(x*pdf)
-    var = sum(x**2 * pdf) - mean ** 2
+
+def calculateMeanAndVariance(x, pdf):
+    mean = sum(x * pdf)
+    var = sum(x ** 2 * pdf) - mean ** 2
     return mean, var
+
 
 def runExperiment(distances, N, beta, cutoff=0.9, verbose=False):
     mean = np.zeros(shape=len(distances))
     var = np.zeros(shape=len(distances))
-    for i, d in enumerate(distances): 
+    for i, d in enumerate(distances):
         pdf = FirstPassagePDF(beta, d)
         data = pdf.evolveToCutoff(cutoff)
         times = data[:, 0]
@@ -115,5 +133,5 @@ def runExperiment(distances, N, beta, cutoff=0.9, verbose=False):
         mean[i] = mean_val
         var[i] = var_val
         if verbose:
-            print(100 * i / len(distances), '%')
+            print(100 * i / len(distances), "%")
     return mean, var

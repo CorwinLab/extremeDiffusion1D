@@ -15,11 +15,11 @@ typedef boost::multiprecision::float128 RealType;
 #ifndef FISRTPASSAGEPDF_HPP_
 #define FISRTPASSAGEPDF_HPP_
 
-class FirstPassagePDF{
+class FirstPassagePDF {
 protected:
-  std::vector<RealType> PDF; 
-  double beta; 
-  unsigned long int maxPosition; 
+  std::vector<RealType> PDF;
+  double beta;
+  unsigned long int maxPosition;
   unsigned long int t = 0;
   RealType firstPassageProbability;
 
@@ -33,28 +33,33 @@ protected:
 
   double generateBeta();
 
-public: 
+public:
   FirstPassagePDF(const double _beta, const unsigned long int _maxPosition);
   ~FirstPassagePDF(){};
 
   double getBeta() { return beta; };
-  void setBeta(double _beta){ beta = _beta; };
+  void setBeta(double _beta) { beta = _beta; };
 
   unsigned long int getTime() { return t; };
-  void setTime(unsigned long int _t){ t = _t; };
+  void setTime(unsigned long int _t) { t = _t; };
 
   std::vector<RealType> getPDF() { return PDF; };
-  void setPDF(std::vector<RealType> _PDF){ PDF = _PDF; };
+  void setPDF(std::vector<RealType> _PDF) { PDF = _PDF; };
 
   unsigned long int getMaxPosition() { return maxPosition; };
-  void setMaxPosition(unsigned long int _maxPosition){ maxPosition = _maxPosition; };
+  void setMaxPosition(unsigned long int _maxPosition)
+  {
+    maxPosition = _maxPosition;
+  };
 
   void iterateTimeStep();
 
   RealType getFirstPassageProbability() { return firstPassageProbability; };
 
-  std::tuple<std::vector<unsigned int long>, std::vector<RealType>, std::vector<RealType> >  evolveToCutoff(RealType prob_cutOff);
-
+  std::tuple<std::vector<unsigned int long>,
+             std::vector<RealType>,
+             std::vector<RealType>>
+  evolveToCutoff(RealType prob_cutOff);
 };
 
 #endif /* FISRTPASSAGEPDF_HPP_ */

@@ -20,7 +20,17 @@ from experimentUtils import saveVars
 from sys import exit
 
 
-def runExperiment(beta, N_exp, num_of_save_distances, save_file, save_occ, sysID, probDistFlag, max_distance, tMax):
+def runExperiment(
+    beta,
+    N_exp,
+    num_of_save_distances,
+    save_file,
+    save_occ,
+    sysID,
+    probDistFlag,
+    max_distance,
+    tMax,
+):
     """
     Run simulation to get first passage time for some distances.
     """
@@ -36,13 +46,13 @@ def runExperiment(beta, N_exp, num_of_save_distances, save_file, save_occ, sysID
 
     d = DiffusionTimeCDF(beta, tMax)
 
-
     d.save_dir = save_dir
     d.id = sysID
 
     d.evolveAndSaveFirstPassage(N, distances, save_file)
 
     fileIO.saveArrayQuad(save_occ, d.occupancy)
+
 
 if __name__ == "__main__":
     (

@@ -35,15 +35,17 @@ for i in range(allOcc.shape[0]):
     occ = np.roll(occ, idx_shift)
     allOcc[i, :] = occ
 
-color = 'tab:red'
-cmap = copy.copy(matplotlib.cm.get_cmap('rainbow'))
-cmap.set_under(color='white')
-cmap.set_bad(color='white')
+color = "tab:red"
+cmap = copy.copy(matplotlib.cm.get_cmap("rainbow"))
+cmap.set_under(color="white")
+cmap.set_bad(color="white")
 vmax = N
 vmin = 0.00001
 
 fig, ax = plt.subplots()
-cax = ax.imshow(allOcc.T, norm=colors.LogNorm(vmin=1, vmax=vmax), cmap=cmap, interpolation='none')
+cax = ax.imshow(
+    allOcc.T, norm=colors.LogNorm(vmin=1, vmax=vmax), cmap=cmap, interpolation="none"
+)
 ax.set_ylabel("Distance")
 ax.set_xlabel("Time")
 ax.set_yticks(np.linspace(0, allOcc.shape[1], 13))
@@ -52,6 +54,6 @@ new_ticks = np.linspace(0, allOcc.shape[1], len(ticks)) - (allOcc.shape[1]) / 2
 new_ticks = list(new_ticks.astype(int))
 ax.set_yticklabels(new_ticks)
 ax.set_ylim([425, 575])
-#fig.colorbar(cax, ax=ax, label="Particles")
+# fig.colorbar(cax, ax=ax, label="Particles")
 ax.axis("off")
-fig.savefig("OccTalkFigure.png", bbox_inches='tight', dpi=1280)
+fig.savefig("OccTalkFigure.png", bbox_inches="tight", dpi=1280)

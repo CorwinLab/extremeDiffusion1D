@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("../../src")
 
 from overalldatabase import Database
@@ -12,10 +13,11 @@ import glob
 import os
 import pandas as pd
 
+
 def calculate_mean(files, save_file, verbose=True):
     df_tot = pd.DataFrame()
     for f in files:
-        df = pd.read_csv(f, delimiter=',')
+        df = pd.read_csv(f, delimiter=",")
         df_tot = pd.concat([df_tot, df])
         if verbose:
             print(f)
@@ -24,27 +26,29 @@ def calculate_mean(files, save_file, verbose=True):
     df_tot.to_csv(save_file)
     return df_tot
 
+
 def calculate_distance_mean(df, mean_save, var_save):
-    unique_distances = np.unique(df['Distance'].values)
+    unique_distances = np.unique(df["Distance"].values)
 
     mean = []
     var = []
 
     for d in unique_distances:
-        df_d = df[df['Distance'] == d]
-        mean.append(np.mean(df_d['Time'].values))
-        var.append(np.var(df_d['Time'].values))
+        df_d = df[df["Distance"] == d]
+        mean.append(np.mean(df_d["Time"].values))
+        var.append(np.var(df_d["Time"].values))
 
     np.savetxt(mean_save, np.array([unique_distances, mean]))
     np.savetxt(var_save, np.array([unique_distances, var]))
     return unique_distances, mean, var
+
 
 directory = "/home/jacob/Desktop/talapasMount/JacobData/FirstPass/Q*.txt"
 files = glob.glob(directory)
 
 run_again = False
 if run_again:
-    dfe = calculate_mean(files, 'CompiledData.txt', verbose=True)
+    dfe = calculate_mean(files, "CompiledData.txt", verbose=True)
 else:
     dfe = pd.read_csv("CompiledData.txt")
 
@@ -52,13 +56,13 @@ directory = "/home/jacob/Desktop/talapasMount/JacobData/FirstPassUniform/Q*.txt"
 files = glob.glob(directory)
 
 if run_again:
-    dfu = calculate_mean(files, 'UniformCompiledData.txt', verbose=True)
+    dfu = calculate_mean(files, "UniformCompiledData.txt", verbose=True)
 else:
     dfu = pd.read_csv("UniformCompiledData.txt")
 
 
-distance_u, mean_u, var_u = calculate_distance_mean(dfu, 'UMean.txt', 'UVar.txt')
-distance_e, mean_e, var_e = calculate_distance_mean(dfe, 'EMean.txt', 'EVar.txt')
+distance_u, mean_u, var_u = calculate_distance_mean(dfu, "UMean.txt", "UVar.txt")
+distance_e, mean_e, var_e = calculate_distance_mean(dfe, "EMean.txt", "EVar.txt")
 
 N_exp = 24
 N = np.quad(f"1e{N_exp}")
@@ -83,5 +87,5 @@ ax.set_xlabel("Distance / log2(N)")
 ax.set_ylabel("Var(First Passage Time)")
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.set_ylim([10**-4, 10**7])
+ax.set_ylim([10 ** -4, 10 ** 7])
 fig.savefig("Var.png")

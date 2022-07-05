@@ -13,6 +13,7 @@ import fileIO
 import json
 import time
 
+
 class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
     """
     Create a class that iterates through the time of the CDF. Can also be used to
@@ -370,7 +371,11 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         writer = csv.writer(f)
 
         if not append:
-            header = ["time"] + [str(N) for N in nParticles] + ['var' + str(N) for N in nParticles]
+            header = (
+                ["time"]
+                + [str(N) for N in nParticles]
+                + ["var" + str(N) for N in nParticles]
+            )
             writer.writerow(header)
             f.flush()
 
@@ -443,7 +448,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
 
         assert quantile >= 1
 
-        f = open(save_file, 'a')
+        f = open(save_file, "a")
         writer = csv.writer(f)
 
         header = ["time", "prob", "v"]
@@ -464,10 +469,10 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         Measure the first passage time of a quantile at various distances.
         """
 
-        f = open(save_file, 'a')
+        f = open(save_file, "a")
         writer = csv.writer(f)
 
-        header = ['Distance', 'Time']
+        header = ["Distance", "Time"]
         writer.writerow(header)
         f.flush()
 
@@ -554,6 +559,7 @@ class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
         for _ in range(num_positions):
             self.stepPosition()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     r = DiffusionTimeCDF(1, tMax=10000)
-    r.evolveAndGetProbAndV(100, [10, 100, 1000], 'data.txt')
+    r.evolveAndGetProbAndV(100, [10, 100, 1000], "data.txt")

@@ -34,16 +34,21 @@ ax.set_yscale("log")
 vs = db.getVelocities()
 mean = db.mean
 time = db.time
-cm = LinearSegmentedColormap.from_list('rg', ['tab:orange', 'tab:red', "tab:purple", 'tab:blue'], N=256)
-colors = [
-    cm(1.0 * i / len(vs) / 1) for i in range(len(vs))
-]
+cm = LinearSegmentedColormap.from_list(
+    "rg", ["tab:orange", "tab:red", "tab:purple", "tab:blue"], N=256
+)
+colors = [cm(1.0 * i / len(vs) / 1) for i in range(len(vs))]
 
 downsample = 50
 for i, v in enumerate(vs):
     log_P = mean[:, i]
     I = theory.I(v)
     sigma = theory.sigma(v)
-    val = (log_P + I*time) / time**(1/3) / sigma
-    ax.scatter(time[::downsample], abs((val[::downsample]/theory.TW_mean)), label=f'{v}', color=colors[i])
+    val = (log_P + I * time) / time ** (1 / 3) / sigma
+    ax.scatter(
+        time[::downsample],
+        abs((val[::downsample] / theory.TW_mean)),
+        label=f"{v}",
+        color=colors[i],
+    )
 fig.savefig("Collapse.png")

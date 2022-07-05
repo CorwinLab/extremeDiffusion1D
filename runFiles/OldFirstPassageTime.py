@@ -14,7 +14,17 @@ from experimentUtils import saveVars
 from sys import exit
 
 
-def runExperiment(beta, N_exp, num_of_save_distances, save_file, save_occ, sysID, probDistFlag, max_distance, tMax):
+def runExperiment(
+    beta,
+    N_exp,
+    num_of_save_distances,
+    save_file,
+    save_occ,
+    sysID,
+    probDistFlag,
+    max_distance,
+    tMax,
+):
     """
     Run simulation to get first passage time for some distances.
     """
@@ -32,14 +42,12 @@ def runExperiment(beta, N_exp, num_of_save_distances, save_file, save_occ, sysID
     occupancy_file = os.path.join(save_dir, f"Occupancy{sysID}.txt")
     scalars_file = os.path.join(save_dir, f"Scalars{sysID}.json")
 
-    #if os.path.exists(occupancy_file) and os.path.exists(scalars_file):
+    # if os.path.exists(occupancy_file) and os.path.exists(scalars_file):
     #    d = DiffusionPDF.fromFiles(scalars_file, occupancy_file)
     #    save_times = save_times[save_times > d.currentTime]
     #    append = True
-    #else:
-    d = DiffusionPDF(
-        N, beta=beta, occupancySize=tMax, ProbDistFlag=probDistFlag
-    )
+    # else:
+    d = DiffusionPDF(N, beta=beta, occupancySize=tMax, ProbDistFlag=probDistFlag)
 
     d.save_dir = save_dir
     d.id = sysID
@@ -48,6 +56,7 @@ def runExperiment(beta, N_exp, num_of_save_distances, save_file, save_occ, sysID
     d.evolveAndSaveFirstPassage(distances, save_file)
 
     fileIO.saveArrayQuad(save_occ, d.occupancy)
+
 
 if __name__ == "__main__":
     (
@@ -69,7 +78,7 @@ if __name__ == "__main__":
     if os.path.exists(save_occ):
         exit()
     max_distance = 100 * np.log(float(f"1e{N_exp}"))
-    
+
     vars = {
         "beta": beta,
         "N_exp": N_exp,

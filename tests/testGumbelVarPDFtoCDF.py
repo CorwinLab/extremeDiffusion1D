@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("../src")
 sys.path.append("../DiffusionCDF")
 from pydiffusionPDF import DiffusionPDF
@@ -16,14 +17,14 @@ d = DiffusionPDF(nParticles, np.inf, t, ProbDistFlag=True)
 d.evolveToTime(t)
 var = d.getGumbelVariance(maxParticles)
 cdf = d.getCDF()
-print('PDF Variance:', var)
+print("PDF Variance:", var)
 
 print("-----CDF Stuff--------")
 d = DiffusionTimeCDF(np.inf, t)
 d.evolveToTime(t)
-print('CDF Variance:', d.getGumbelVariance(maxParticles))
-percent_diff = (abs(np.array(d.CDF, dtype=np.quad)/np.array(cdf, dtype=np.quad)))
-print('Min Percent difference', min(percent_diff))
+print("CDF Variance:", d.getGumbelVariance(maxParticles))
+percent_diff = abs(np.array(d.CDF, dtype=np.quad) / np.array(cdf, dtype=np.quad))
+print("Min Percent difference", min(percent_diff))
 
 fig, ax = plt.subplots()
 bins = np.logspace(-300, 1)
