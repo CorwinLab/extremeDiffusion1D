@@ -2,6 +2,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import npquad
 import sys
+from scipy.special import erf
 
 sys.path.append("../../src")
 from pyfirstPassagePDF import FirstPassagePDF
@@ -20,7 +21,6 @@ def stackExchange(t, L, nmax=10):
             * np.exp(-((phi) ** 2) / 2 / t)
         )
     return sum
-
 
 def jacob(t, L, nmax=10):
     sum = 0
@@ -61,6 +61,18 @@ def continousPDF(t, L, nmax=10, D=1 / 2):
         )
     return sum / np.sum(sum)
 
+def jacobCDF(t, L, nmax=100): 
+    sum = 0 
+    for k in range(-nmax, nmax): 
+        sum += - (-1)**(abs(k)) * (k+1/2)/abs(k+1/2) * erf(np.sqrt(2*L**2 *(k+1/2)**2 / t))
+    return sum
+
+def jacobCDFExp(t, L, nmax=100): 
+    sum = 0 
+    for k in range(-nmax, nmax): 
+        x = np.sqrt(2*L**2 *(k+1/2)**2 / t)
+        sum += - (-1)**(abs(k)) * (k+1/2)/abs(k+1/2) / np.sqrt(np.pi) * np.exp(-x**2)/x
+    return sum
 
 beta = np.inf
 maxPosition = 250
@@ -83,6 +95,8 @@ redner_fit = continousPDF(times, maxPosition, nmax=1000)
 stack_fit = stackExchange(times, maxPosition, nmax=1000)
 stack_fit2 = stackExchange2(times, maxPosition * 2, nmax=1000)
 jacob_fit = jacob(times, maxPosition, nmax=1000)
+jacob_cdf_fit = jacobCDF(times, maxPosition, nmax=1000)
+jacob_cdf_exp = jacobCDFExp(times, maxPosition)
 
 print(sum(stack_fit))
 print(sum(pdf_distribution))
@@ -105,12 +119,13 @@ ax[0][0].plot(times, stack_fit2.astype(float))
 ax[0][0].plot(
     np.arange(1, 500_000), stackExchange(np.arange(1, 500_000), maxPosition, nmax=1000)
 )
-ax[0][0].set_yscale("log")
 ax[0][0].set_ylim([10 ** -8, 10 ** -4])
 # ax[0][0].plot([mean.astype(float), mean.astype(float)], [0, max(pdf_distribution.astype(float))], color='r')
 ax[0][0].set_ylabel("PDF")
 ax[0][0].set_title("Single Particle")
 ax[1][0].plot(times, cdf_distribution)
+ax[1][0].plot(times, jacob_cdf_fit, '--')
+ax[1][0].plot(times, jacob_cdf_exp, '--')
 ax[1][0].set_ylabel("CDF")
 ax[1][0].set_xlabel("Time")
 ax[0][1].set_title(f"N={prettifyQuad(N)}")

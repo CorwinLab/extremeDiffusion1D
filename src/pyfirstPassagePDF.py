@@ -99,7 +99,7 @@ class FirstPassagePDF(firstPassagePDF.FirstPassagePDF):
         for i, t in enumerate(times):
             self.evolveToTime(t)
             pdf[i] = self.firstPassageProbability
-
+            print(t)
         saveArrayQuad(file, np.array([times, pdf]).T)
 
     def evolveToCutoff(self, cutoff):
