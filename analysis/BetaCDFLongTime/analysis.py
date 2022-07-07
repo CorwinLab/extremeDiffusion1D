@@ -70,9 +70,9 @@ for i, beta in enumerate([0.01, 0.1, 1, 10]):
     time = np.loadtxt(time_file)
 
     ax.plot(time / logN, mean[:,3], label=beta)
-    axv.plot(time / logN, var[:,3], label=beta, c=colors[i], alpha=0.5)
-    axv.plot(time / logN, varPowerLaw(beta, time, N), c=colors[i], ls='--')
-    axv.plot(time / logN, theory.quantileVarLongTimeBetaDist(N, time, beta), ls='-.', c=colors[i])
+    axv.plot(time / logN, var[:,3], label=beta, c=colors[i], alpha=1)
+    #axv.plot(time / logN, varPowerLaw(beta, time, N), c=colors[i], ls='--')
+    #axv.plot(time / logN, theory.quantileVarLongTimeBetaDist(N, time, beta), ls='-.', c=colors[i])
 
 ax.set_xlim([min(time/logN), max(time/logN)])
 axv.set_xlim([min(time/logN), max(time/logN)])
