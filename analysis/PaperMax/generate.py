@@ -97,6 +97,10 @@ ax.annotate("", xy=end_coord, xytext=start_coord,
 ax.annotate(r"$N=10^{2}$", xy=(12.5, 2.6), c=colors[0], rotation=90-abs(theta), rotation_mode='anchor', fontsize=fontsize)
 ax.annotate(r"$N=10^{300}$", xy=(3, 8*10**2), c=colors[-1], rotation=90-abs(theta), rotation_mode='anchor', fontsize=fontsize)
 
+# Make a linear plot
+ax.plot([100, 1000], np.array([100, 1000]) / 10, c='k', alpha=0.6)
+ax.annotate(r"$\propto t$", xy=(2*10**3, 40), c='k', fontsize=fontsize+3)
+
 ax.set_xlim([0.3, 5*10**3])
 ax.set_ylim([10**-1, 10**4])
 ax2.remove()
@@ -401,8 +405,13 @@ for i, N in enumerate(quantiles):
     ax.plot(cdf_df['time'] / logN, var_theory / logN**(ypower), '--', c=colors[i])
     ax.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'] / logN**(ypower), label=N, c=colors[i], alpha=0.5)
     ax.plot(env_time[env_time > logN] / logN, env_recovered[env_time > logN], c=colors[i])
-    ax.scatter(x=logN**2 / logN, y=theory.quantileVar(Nquad, logN**2, crossover=logN**(1.5), width=logN**(4/3)), color=colors[i], edgecolor='k', marker='*', s=50, linewidth=0.005, zorder=99)
+    #ax.scatter(x=logN**2 / logN, y=theory.quantileVar(Nquad, logN**2, crossover=logN**(1.5), width=logN**(4/3)), color=colors[i], edgecolor='k', marker='*', s=50, linewidth=0.005, zorder=99)
 
+ax.plot([100, 1000], (np.array([100, 1000]))**(1/2) * 90, c='k', alpha=0.6)
+ax.annotate(r"$\propto t^{\frac{1}{2}}$", xy=(100, 5000), fontsize=fontsize+3)
+
+ax.plot([2, 30], 100 * np.array([2, 30])**(1/3), c='k', alpha=0.6)
+ax.annotate(r"$\propto t^{\frac{1}{3}}$", xy=(20, 5000), fontsize=fontsize+3)
 
 #x, y
 x_shift = 12
