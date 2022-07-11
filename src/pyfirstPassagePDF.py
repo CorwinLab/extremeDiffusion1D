@@ -99,39 +99,7 @@ class FirstPassagePDF(firstPassagePDF.FirstPassagePDF):
         for i, t in enumerate(times):
             self.evolveToTime(t)
             pdf[i] = self.firstPassageProbability
-            print(t)
         saveArrayQuad(file, np.array([times, pdf]).T)
 
     def evolveToCutoff(self, cutoff):
         return np.array(super().evolveToCutoff(cutoff)).T
-
-
-def sampleCDF(cdf, N):
-    Ncdf = 1 - np.exp(-cdf * N)
-    Npdf = np.diff(Ncdf)
-    return Ncdf, Npdf
-
-
-def calculateMeanAndVariance(x, pdf):
-    mean = sum(x * pdf)
-    var = sum(x ** 2 * pdf) - mean ** 2
-    return mean, var
-
-
-def runExperiment(distances, N, beta, cutoff=0.9, verbose=False):
-    mean = np.zeros(shape=len(distances))
-    var = np.zeros(shape=len(distances))
-    for i, d in enumerate(distances):
-        pdf = FirstPassagePDF(beta, d)
-        data = pdf.evolveToCutoff(cutoff)
-        times = data[:, 0]
-        pdf = data[:, 1]
-        cdf = data[:, 2]
-        nonzero_indeces = np.nonzero(pdf)
-        Ncdf, Npdf = sampleCDF(cdf, N)
-        mean_val, var_val = calculateMeanAndVariance(times[1:], Npdf)
-        mean[i] = mean_val
-        var[i] = var_val
-        if verbose:
-            print(100 * i / len(distances), "%")
-    return mean, var

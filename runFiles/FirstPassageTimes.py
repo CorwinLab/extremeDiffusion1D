@@ -34,7 +34,7 @@ def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file):
 
     f = open(save_file, "a")
     writer = csv.writer(f)
-    writer.writerow(['distance', 'mean', 'var'])
+    writer.writerow(['distance', 'mean', 'var', 'quantile'])
 
     for i, d in enumerate(distances):
         pdf = FirstPassagePDF(beta, d)
@@ -42,11 +42,12 @@ def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file):
         times = data[:, 0]
         pdf = data[:, 1]
         cdf = data[:, 2]
-        nonzero_indeces = np.nonzero(pdf)
+        quantile = np.argmax(cdf > 1 / N)
+        quantile_time = times[quantile]
         Ncdf, Npdf = sampleCDF(cdf, N)
         mean_val, var_val = calculateMeanAndVariance(times[1:], Npdf)
 
-        writer.writerow([d, mean_val, var_val])
+        writer.writerow([d, mean_val, var_val, quantile_time])
         f.flush()
 
     f.close()
