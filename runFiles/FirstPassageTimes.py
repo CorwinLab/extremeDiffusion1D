@@ -38,7 +38,7 @@ def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file):
 
     for i, d in enumerate(distances):
         pdf = FirstPassagePDF(beta, d)
-        data = pdf.evolveToCutoff(cutoff)
+        data = pdf.evolveToCutoff(cutoff, N)
         times = data[:, 0]
         pdf = data[:, 1]
         cdf = data[:, 2]
