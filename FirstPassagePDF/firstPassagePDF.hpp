@@ -58,8 +58,9 @@ public:
 
   std::tuple<std::vector<unsigned int long>,
              std::vector<RealType>,
+             std::vector<RealType>,
              std::vector<RealType>>
-  evolveToCutoff(RealType prob_cutOff);
+  evolveToCutoff(RealType prob_cutOff, RealType nParticles);
 };
 
 #endif /* FISRTPASSAGEPDF_HPP_ */

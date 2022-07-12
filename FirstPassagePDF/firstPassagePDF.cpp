@@ -125,30 +125,36 @@ void FirstPassagePDF::iterateTimeStep()
 
 std::tuple<std::vector<unsigned int long>,
            std::vector<RealType>,
+           std::vector<RealType>,
            std::vector<RealType>>
-FirstPassagePDF::evolveToCutoff(RealType cutOff)
+FirstPassagePDF::evolveToCutoff(RealType cutOff, RealType nParticles)
 {
   std::vector<RealType> pdf;
   std::vector<RealType> cdf;
+  std::vector<RealType> cdfN;
   std::vector<unsigned int long> times;
 
   // Not sure how big these arrays will need to be but they should be at least
   // the size of maxPosition So I'll allocate that much memory
   pdf.reserve(maxPosition);
   cdf.reserve(maxPosition);
+  cdfN.reserve(maxPosition);
   times.reserve(maxPosition);
 
   RealType cdf_sum = 0;
+  RealType cdf_sumN = 0; 
 
-  while (cdf_sum < cutOff) {
+  while ((cdf_sumN < cutOff) || (cdf_sum < 1/nParticles)) {
     iterateTimeStep();
     pdf.push_back(firstPassageProbability);
     cdf_sum += firstPassageProbability;
     cdf.push_back(cdf_sum);
+    cdf_sumN = 1 - exp(-cdf_sum * nParticles);
+    cdfN.push_back(cdf_sumN);
     times.push_back(t);
   }
 
-  return std::make_tuple(times, pdf, cdf);
+  return std::make_tuple(times, pdf, cdf, cdfN);
 }
 
 PYBIND11_MODULE(firstPassagePDF, m)

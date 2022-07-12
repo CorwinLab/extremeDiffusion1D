@@ -101,5 +101,38 @@ class FirstPassagePDF(firstPassagePDF.FirstPassagePDF):
             pdf[i] = self.firstPassageProbability
         saveArrayQuad(file, np.array([times, pdf]).T)
 
-    def evolveToCutoff(self, cutoff):
-        return np.array(super().evolveToCutoff(cutoff)).T
+    def evolveToCutoff(self, cutoff, nParticles):
+        """Evolve the system until it reaches a threshold for the 
+        cumulative distribution function of the Nth particle.
+
+        Parameters
+        ----------
+        cutoff : float or np.quad
+            Probability threshold that determines when to stop the 
+            simulation. When the CDF of the Nth particle reaches this 
+            value the function stops. We also need the 1/N quantile
+            position so will continue until the cdf of a single particle
+            is at least 1/N. 
+
+        nParticles : np.quad or float
+            Number of particles
+
+        Returns
+        -------
+        np.array
+            Array with columns: (distance, pdf, cdf, cdf of N particles)
+        
+        Examples
+        --------
+        >>> from matplotlib import pyplot as plt
+        >>> maxPosition = 500 
+        >>> beta = np.inf
+        >>> pdf = FirstPassagePDF(beta, maxPosition)
+        >>> data = pdf.evolveToCutoff(0.99, 10**24)
+        >>> fig, ax = plt.subplots()
+        >>> ax.plot(data[:, 0], data[:, 2], c='k', label='Single Particle')
+        >>> ax.plot(data[:, 0], data[:, 3], c='b', label='N=10^24 Particles')
+        >>> ax.legend()
+        >>> fig.savefig("PDFtest.png")
+        """
+        return np.array(super().evolveToCutoff(cutoff, nParticles)).T
