@@ -7,6 +7,7 @@ import numpy as np
 import glob
 import os
 import pandas as pd
+from scipy.stats import linregress
 
 def calculate_mean(files, save_file, verbose=True):
     df_tot = pd.DataFrame()
@@ -74,12 +75,19 @@ if __name__ == '__main__':
     mean = mean[:, 1]
     ax.plot(distance / logN, var, label=r'$\mathrm{Var}(\mathrm{Min}_x^N)$', alpha=alpha)
 
-    RWRESam = np.loadtxt("../FirstPassageCDF2/AveragedData.txt")
+    RWRESam = np.loadtxt("../FirstPassageCDFLong/AveragedData.txt")
     theoretical_distances = np.loadtxt("../FirstPass/distances.txt")
     theoretical_variance = np.loadtxt("../FirstPass/variance.txt")
     theoretical_variance = (theoretical_variance / 2)**2
+    
+    res = linregress(np.log(distance)[-500:], np.log(var[-500:]))
+    slope = res.slope
+    intercept = res.intercept
+    theoretical_var = np.exp(intercept) * (distance[-500:] ** slope)
+    print(slope)
 
-    ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 2], label=r'$\mathrm{Var}(\mathrm{Sam}_x^N)$', alpha=alpha)
+    #ax.plot(distance[-500:] / logN, theoretical_var, label=r'$x^{3.8}$', ls='--')
+    ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 2] / 10**2, label=r'$\mathrm{Var}(\mathrm{Sam}_x^N)$', alpha=alpha)
     ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 4], label=r'$\mathrm{Var}(\mathrm{Env}_x^N)$', alpha=alpha)
     ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 4] + RWRESam[:, 2], label=r'$\mathrm{Var}(\mathrm{Env}_x^N) + \mathrm{Var}(\mathrm{Sam}_x^N)$', alpha=alpha)
     ax.plot(theoretical_distances / logN, theoretical_variance, c='m', label=r'"Theoretical" $\mathrm{Var}(\mathrm{Env}_x^N)$', ls='--')
@@ -91,3 +99,5 @@ if __name__ == '__main__':
     ax.set_xlim([0.6, 100])
     ax.legend()
     fig.savefig("Var.pdf", bbox_inches='tight')
+    
+
