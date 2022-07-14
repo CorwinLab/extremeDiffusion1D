@@ -13,11 +13,12 @@ files = glob.glob(dir)
 average_data = None
 average_data_squared = None
 number_of_files = 0
+max_dist = 3600
 for f in files:
     data = pd.read_csv(f, delimiter=',') # columns are distance, mean, variance, quantile position
-    print(f)
-    if max(data['distance']) != 5526.0: 
+    if max(data['distance']) < max_dist: 
         continue
+    data = data[data['distance'] <= max_dist].values
     number_of_files += 1
     if average_data is None: 
         average_data = data
@@ -27,11 +28,6 @@ for f in files:
         average_data_squared += data ** 2
 
 average_data = average_data / number_of_files
-average_data.drop_duplicates('distance', inplace=True)
-average_data_squared.drop_duplicates('distance', inplace=True)
-average_data = average_data.values
-average_data_squared = average_data_squared.values
-print(number_of_files)
 quantile_position_var = average_data_squared[:, 3] / number_of_files - average_data[:, 3]**2
 average_data = np.hstack((average_data, quantile_position_var.reshape(average_data.shape[0], 1)))
 
