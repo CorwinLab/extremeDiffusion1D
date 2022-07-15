@@ -13,7 +13,7 @@ files = glob.glob(dir)
 average_data = None
 average_data_squared = None
 number_of_files = 0
-max_dist = 3600
+max_dist = 5526
 for f in files:
     data = pd.read_csv(f, delimiter=',') # columns are distance, mean, variance, quantile position
     if max(data['distance']) < max_dist: 

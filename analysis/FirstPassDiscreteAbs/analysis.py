@@ -62,6 +62,11 @@ if __name__ == '__main__':
     ax.set_yscale("log")
     ax.set_ylabel(r"$\mathrm{Var}(\tau)$", fontsize=fontsize)
     ax.set_xlabel(r"$x / \log(N)$", fontsize=fontsize)
+    min_color ='tab:red'
+    sam_color = 'tab:green'
+    env_color = 'tab:blue'
+    theory_color = 'tab:purple'
+
     N_exp = 24
     N = float(f"1e{N_exp}")
     logN = np.log(N).astype(float)
@@ -73,12 +78,14 @@ if __name__ == '__main__':
     assert (var[:, 0] == distance).all()
     var = var[:, 1]
     mean = mean[:, 1]
-    ax.plot(distance / logN, var, label=r'$\mathrm{Var}(\mathrm{Min}_x^N)$', alpha=alpha)
+    ax.plot(distance / logN, var, label=r'$\mathrm{Var}(\tau_{min})$', alpha=alpha, c=min_color)
 
     RWRESam = np.loadtxt("../FirstPassageCDFLong/AveragedData.txt")
     theoretical_distances = np.loadtxt("../FirstPass/distances.txt")
     theoretical_variance = np.loadtxt("../FirstPass/variance.txt")
     theoretical_variance = (theoretical_variance / 2)**2
+    theoretical_variance = np.delete(theoretical_variance, np.argmax(theoretical_variance))
+    theoretical_distances = np.delete(theoretical_distances, np.argmax(theoretical_variance))
     
     res = linregress(np.log(RWRESam[:, 0])[-500:], np.log(RWRESam[:, 4])[-500:])
     slope = res.slope
@@ -86,18 +93,18 @@ if __name__ == '__main__':
     theoretical_var = np.exp(intercept) * (RWRESam[:,0][-500:] ** slope)
     print(f"{np.exp(intercept)} * x^{slope}")
 
-    ax.plot(RWRESam[:, 0][-500:] / logN, theoretical_var, label=r'$x^{3.8}$', ls='--')
-    ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 2], label=r'$\mathrm{Var}(\mathrm{Sam}_x^N)$', alpha=alpha)
-    ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 4], label=r'$\mathrm{Var}(\mathrm{Env}_x^N)$', alpha=alpha)
-    ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 4] + RWRESam[:, 2], label=r'$\mathrm{Var}(\mathrm{Env}_x^N) + \mathrm{Var}(\mathrm{Sam}_x^N)$', alpha=alpha)
-    ax.plot(theoretical_distances / logN, theoretical_variance, c='m', label=r'"Theoretical" $\mathrm{Var}(\mathrm{Env}_x^N)$', ls='--')
+    #ax.plot(RWRESam[:, 0][-500:] / logN, theoretical_var, label=r'$x^{3.8}$', ls='--')
+    ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 2], label=r'$\mathrm{Var}(\tau_{sam})$', alpha=alpha, c=sam_color)
+    ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 4], label=r'$\mathrm{Var}(\tau_{env})$', alpha=alpha, c=env_color)
+    #ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 4] + RWRESam[:, 2], label=r'$\mathrm{Var}(\mathrm{Env}_x^N) + \mathrm{Var}(\mathrm{Sam}_x^N)$', alpha=alpha)
+    ax.plot(theoretical_distances / logN, theoretical_variance, label=r'"Theoretical" $\mathrm{Var}(\tau_{env})$', ls='--', c=theory_color)
     xvals = np.array([50, 90])
     xvals2 = np.array([5, 20])
     yvals = xvals ** 4
     ax.plot(xvals, yvals / 5, c='k', ls='--', label=r'$x^4$')
-    ax.plot(xvals2, xvals2**(2.5) * 9, c='k', ls='-.', label=r'$x^2$')
+    ax.plot(xvals2, xvals2**(8/3) * 9, c='k', ls='-.', label=r'$x^{8/3}$')
     ax.set_xlim([0.6, 100])
-    ax.legend()
+    leg = ax.legend(fontsize=fontsize, loc='upper left', framealpha=0, labelcolor=[min_color, sam_color, env_color, theory_color, 'k', 'k'], handlelength=0, handletextpad=0)
     fig.savefig("Var.pdf", bbox_inches='tight')
     
 
