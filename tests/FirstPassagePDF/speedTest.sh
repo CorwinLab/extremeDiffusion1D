@@ -1,0 +1,1 @@
+python3 -m cProfile -o -s time speed.txt speedTest.py

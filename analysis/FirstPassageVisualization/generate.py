@@ -34,4 +34,22 @@ mark_inset(ax, axins, loc1=1, loc2=2, fc="none", ec="0.5")
 axins.set_xlim(10**3, 1.5*10**3)
 axins.set_ylim(3.1*10**2, 4*10**2)
 
-fig.savefig("FirstPassage.png")
+ax.annotate(
+    r"$\mathrm{Var}(x(t))$",
+    xy=(10, 10 ** 3),
+    c='r',
+    rotation_mode="anchor",
+    fontsize=12,
+)
+
+ax.annotate(
+    r"$\mathrm{Var}(t(x))$",
+    xy=(10, 10 ** 2.5),
+    c='g',
+    rotation_mode="anchor",
+    fontsize=12,
+)
+
+
+
+fig.savefig("FirstPassage.pdf")
