@@ -2,7 +2,6 @@ import numpy as np
 import npquad
 from scipy.special import erf
 from scipy.interpolate import interp1d
-from matplotlib import pyplot as plt
 
 # Going to define latex strings of each equation here to render in matplotlib labels
 quantileMeanStr = r"$t\sqrt{1 - (1 - \frac{ln(N)}{t})^{2}}$"
@@ -254,7 +253,6 @@ def quantileVarShortTime(N, time):
     """
     v0_val = v0(N, time)
     first_order = time ** (2 / 3) * TW_var * lambda_0(v0_val) ** 2
-    second_order = time ** (-2 / 3) * TW_x2 * lambda_1(v0_val) ** 2
     return first_order
 
 
@@ -280,6 +278,11 @@ def quantileVarLongTime(N, time):
     that = time / logN ** 2
     return logN * that / 2 * KPZ_var_fit(4 / that)
 
+
+def quantileVarLongTimeBetaDist(N, time, beta):
+    logN = np.log(N).astype(float)
+    that = time / logN**2
+    return logN * that / 2 * KPZ_var_fit(4/that/beta**2)
 
 def quantileMeanLongTime(N, time):
     """
@@ -442,15 +445,22 @@ def log_moving_average(time, data, N, window_size=10):
     return np.array(new_times), np.array(mean_data)
 
 
-if __name__ == "__main__":
-    num = 100
-    times = np.geomspace(1, 10 ** 3, num)
-    data = np.random.random(len(times)) * times ** 3
+if __name__ == '__main__':
+    from matplotlib import pyplot as plt
     fig, ax = plt.subplots()
-    log_times, mean_data = log_moving_average(times, data, window_size=10)
-    ax.scatter(times, data)
-    ax.scatter(log_times, mean_data)
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_xlabel("time")
+    ax.set_xlabel(r"$t / log(N)$")
+    ax.set_ylabel(r"$Var^{asy}(Env)$")
+    N = np.quad("1e24")
+    logN = np.log(N).astype(float)
+    t = np.logspace(2, 6, 5000)
+    var = quantileVarShortTime(N, t)
+    ax.plot(t / logN, var, label='Paper Theory')
+
+    times = np.loadtxt("times.txt")
+    vals = np.loadtxt("values.txt")
+
+    ax.plot(times / logN , vals, label='Jacob Approximation')
+    ax.legend()
     fig.savefig("Test.png")

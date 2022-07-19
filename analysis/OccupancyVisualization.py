@@ -14,7 +14,7 @@ import copy
 N = 100_000000
 numSteps = 1000
 numSteps = int(numSteps)
-d = DiffusionPDF(N, 1, numSteps, ProbDistFlag=False)
+d = DiffusionPDF(N, float('inf'), numSteps, ProbDistFlag=False)
 allOcc = np.zeros(shape=(numSteps + 1, numSteps + 1))
 
 for i in range(numSteps):
@@ -53,7 +53,9 @@ ticks = ax.get_yticks()
 new_ticks = np.linspace(0, allOcc.shape[1], len(ticks)) - (allOcc.shape[1]) / 2
 new_ticks = list(new_ticks.astype(int))
 ax.set_yticklabels(new_ticks)
-ax.set_ylim([425, 575])
-# fig.colorbar(cax, ax=ax, label="Particles")
+
+ax.set_ylim([400, 600])
+#fig.colorbar(cax, ax=ax, label="Particles")
 ax.axis("off")
-fig.savefig("OccTalkFigure.png", bbox_inches="tight", dpi=1280)
+fig.savefig("OccTalkFigure.png", bbox_inches='tight', dpi=1280)
+fig.savefig("OccTalkFigure.pdf", bbox_inches='tight', dpi=1280)

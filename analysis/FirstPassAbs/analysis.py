@@ -38,8 +38,7 @@ def calculate_distance_mean(df, mean_save, var_save):
     np.savetxt(var_save, np.array([unique_distances, var]))
     return unique_distances, mean, var
 
-
-directory = "Y:\home\jhass2\jamming\JacobData\FirstPassAbs"
+directory = "/home/jacob/Desktop/talapasMount/JacobData/FirstPassAbs"
 dirs = os.listdir(directory)
 
 run_again = False
@@ -66,7 +65,7 @@ ax.set_xscale("log")
 ax.set_yscale("log")
 ax.set_ylabel(r"$\mathrm{Var}(\tau)$", fontsize=fontsize)
 ax.set_xlabel(r"$x / \log(N)$", fontsize=fontsize)
-
+print(dirs)
 dirs = [int(x) for x in dirs]
 dirs.sort()
 for i, d in enumerate(dirs):
@@ -83,12 +82,9 @@ for i, d in enumerate(dirs):
     assert (var[:, 0] == distance).all()
     var = var[:, 1]
     mean = mean[:, 1]
-    ax.plot(distance / logN, mean, label=N_exp, c=colors[i])
+    ax.plot(distance / logN, var, label=N_exp, c=colors[i])
 
 ax.grid(True)
-ax.set_xlim([0.5, 10 ** 2])
-xvals = np.linspace(0.01, 2000, num=1000)
-yvals = xvals ** 2
-ax.plot(xvals, yvals)
+ax.set_xlim([.5, 10**2])
 ax.legend()
 fig.savefig("Variance.png", bbox_inches="tight")

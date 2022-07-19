@@ -32,14 +32,14 @@ protected:
   std::uniform_real_distribution<> dis;
   boost::random::beta_distribution<> beta_dist;
 
-  double generateBeta();
-
 public:
   DiffusionCDF(const double _beta, const unsigned long int _tMax);
   ~DiffusionCDF(){};
 
   double getBeta() { return beta; };
   void setBeta(double _beta) { beta = _beta; };
+
+  double generateBeta();
 
   std::vector<RealType> getCDF() { return CDF; };
   void setCDF(std::vector<RealType> _CDF) { CDF = _CDF; };
@@ -63,10 +63,10 @@ public:
   // Functions that do things
   void iterateTimeStep();
 
-  unsigned long int findQuantile(RealType quantile);
-  std::vector<unsigned long int> findQuantiles(std::vector<RealType> quantiles);
+  long int findQuantile(RealType quantile);
+  std::vector<long int> findQuantiles(std::vector<RealType> quantiles);
 
-  unsigned long int findLowerQuantile(RealType quantile);
+  long int findLowerQuantile(RealType quantile);
 
   RealType getGumbelVariance(RealType nParticles);
   std::vector<RealType> getGumbelVariance(std::vector<RealType> nParticles);

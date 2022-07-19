@@ -74,7 +74,11 @@ double DiffusionCDF::generateBeta()
     return 0.5;
   }
   else {
-    return beta_dist(gen, betaParams);
+    double randomVal = beta_dist(gen, betaParams);
+    if (isnan(randomVal)){
+      randomVal = beta_dist(gen, betaParams);
+    }
+    return randomVal;
   }
 }
 
@@ -111,8 +115,8 @@ void DiffusionTimeCDF::iterateTimeStep()
   t += 1;
 }
 
-unsigned long int DiffusionTimeCDF::findQuantile(RealType quantile)
-{
+long int DiffusionTimeCDF::findQuantile(RealType quantile)
+{ 
   unsigned long int quantilePosition;
   for (unsigned long int n = t; n >= 0; n--) {
     if (CDF[n] > 1 / quantile) {
@@ -123,9 +127,8 @@ unsigned long int DiffusionTimeCDF::findQuantile(RealType quantile)
   return quantilePosition;
 }
 
-unsigned long int DiffusionTimeCDF::findLowerQuantile(RealType quantile)
-{
-  long int quantilePosition = 0;
+long int DiffusionTimeCDF::findLowerQuantile(RealType quantile) {
+  long int quantilePosition=0;
   for (unsigned long int n = 0; n <= t; n++) {
     if (CDF[n] < 1. - 1 / quantile) {
       quantilePosition = 2 * n - t;
@@ -135,15 +138,16 @@ unsigned long int DiffusionTimeCDF::findLowerQuantile(RealType quantile)
   return quantilePosition;
 }
 
-std::vector<unsigned long int>
-DiffusionTimeCDF::findQuantiles(std::vector<RealType> quantiles)
+
+std::vector<long int> DiffusionTimeCDF::findQuantiles(
+  std::vector<RealType> quantiles)
 {
   // Sort incoming quantiles b/c we need them to be in descending order for
   // algorithm to work
   std::sort(quantiles.begin(), quantiles.end(), std::greater<RealType>());
 
   // Initialize to have same number of vectors as in Ns
-  std::vector<unsigned long int> quantilePositions(quantiles.size());
+  std::vector<long int> quantilePositions(quantiles.size(), 0);
   unsigned long int quantile_idx = 0;
   for (unsigned long int n = t; n >= 0; n--) {
     while (CDF[n] > 1 / quantiles[quantile_idx]) {
@@ -174,6 +178,7 @@ std::vector<long int> DiffusionTimeCDF::getxvals()
 
 RealType DiffusionTimeCDF::getGumbelVariance(RealType nParticles)
 {
+  nParticles+=1;
   std::vector<RealType> cdf = slice(CDF, 0, t);
   cdf.push_back(0); // Need to add 0 to CDF to make it complete.
 
@@ -224,7 +229,10 @@ DiffusionPositionCDF::DiffusionPositionCDF(const double _beta,
   // measurement and each row is a differeent time.
   quantilePositions.resize(quantiles.size());
   for (unsigned long int i = 0; i < quantilePositions.size(); i++) {
-    quantilePositions[i].resize(tMax + 1, 0);
+    quantilePositions[i].resiz    if (CDF[n] > 1 / (quantile+1)){
+128
+ 
+e(tMax + 1, 0);
     // At t=0, all the quantiles will be 2 (2*n + 2 - t for n=t=0) - I think
     // this is mainly for testing.
     quantilePositions[i][0] = 2;
@@ -297,7 +305,8 @@ PYBIND11_MODULE(diffusionCDF, m)
            py::arg("quantile"))
       .def("getSaveCDF", &DiffusionTimeCDF::getSaveCDF)
       .def("getxvals", &DiffusionTimeCDF::getxvals)
-      .def("getProbandV", &DiffusionTimeCDF::getProbandV, py::arg("quantile"));
+      .def("getProbandV", &DiffusionTimeCDF::getProbandV, py::arg("quantile"))
+      .def("generateBeta", &DiffusionTimeCDF::generateBeta);
 
   py::class_<DiffusionPositionCDF, DiffusionCDF>(m, "DiffusionPositionCDF")
       .def(py::init<const double,

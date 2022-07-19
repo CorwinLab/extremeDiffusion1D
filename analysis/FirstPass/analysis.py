@@ -68,7 +68,11 @@ N_exp = 24
 N = np.quad(f"1e{N_exp}")
 logN = np.log(N).astype(float) / np.log(2)
 
-prob_data = np.loadtxt("Data.txt")
+
+RWRESam = np.loadtxt("../FirstPassageCDF2/AveragedData.txt")
+theoretical_distances = np.loadtxt("distances.txt")
+theoretical_variance = np.loadtxt("variance.txt")
+theoretical_variance = (theoretical_variance / 2)**2
 
 fig, ax = plt.subplots()
 ax.plot(distance_u / logN, mean_u)
@@ -80,12 +84,18 @@ ax.set_yscale("log")
 fig.savefig("Mean.png")
 
 fig, ax = plt.subplots()
-ax.plot(distance_u / logN, var_u)
-ax.plot(distance_e / logN, var_e)
-ax.plot(prob_data[:, 0] / logN, prob_data[:, 2])
+ax.plot(distance_u / logN, var_u, label='Min RWRE')
+ax.plot(distance_e / logN, var_e, label='Min SSRW')
+ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 2], label='Sampling RWRE')
+ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 4], label='Env RWRE')
+ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 4] + RWRESam[:, 2], label='Sampling + Env')
+ax.plot(distance_e[-1000:] / logN, (distance_e[-1000:])**4 / 10**8, c='k', label=r'$t^{4}$')
+ax.plot(distance_e[-1500:-1000] / logN, (distance_e[-1500:-1000])**2 / 10**2.5, c='k', label=r'$t^{2}$', ls='--')
+ax.plot(theoretical_distances / logN, theoretical_variance, c='m')
+
 ax.set_xlabel("Distance / log2(N)")
 ax.set_ylabel("Var(First Passage Time)")
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.set_ylim([10 ** -2, 10 ** 5])
+ax.legend()
 fig.savefig("Var.png")
