@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append("../../src")
+sys.path.append("../../pysrc")
 
 from pydiffusionCDF import DiffusionTimeCDF
 from nativePyDiffusionCDF import makeRec, findQuintile

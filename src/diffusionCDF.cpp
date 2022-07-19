@@ -44,42 +44,9 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 } // namespace detail
 } // namespace pybind11
 
-DiffusionCDF::DiffusionCDF(const double _beta, const unsigned long int _tMax)
+DiffusionCDF::DiffusionCDF(const double _beta, const unsigned long int _tMax) : RandomNumGenerator(_beta)
 {
-  beta = _beta;
   tMax = _tMax;
-
-  if (_beta != 0) {
-    boost::random::beta_distribution<>::param_type params(_beta, _beta);
-    betaParams = params;
-  }
-
-  std::uniform_real_distribution<>::param_type unifParams(0.0, 1.0);
-  dis.param(unifParams);
-  gen.seed(rd());
-}
-
-double DiffusionCDF::generateBeta()
-{
-  // If beta = 0 return either 0 or 1
-  if (beta == 0.0) {
-    return round(dis(gen));
-  }
-  // If beta = 1 use random uniform distribution
-  else if (beta == 1) {
-    return dis(gen);
-  }
-  // If beta = inf return 0.5
-  else if (isinf(beta)) {
-    return 0.5;
-  }
-  else {
-    double randomVal = beta_dist(gen, betaParams);
-    if (isnan(randomVal)){
-      randomVal = beta_dist(gen, betaParams);
-    }
-    return randomVal;
-  }
 }
 
 DiffusionTimeCDF::DiffusionTimeCDF(const double _beta,
@@ -267,7 +234,7 @@ void DiffusionPositionCDF::stepPosition()
 PYBIND11_MODULE(diffusionCDF, m)
 {
   m.doc() = "Diffusion recurrance relation";
-  py::class_<DiffusionCDF>(m, "DiffusionCDF")
+  py::class_<DiffusionCDF, RandomNumGenerator>(m, "DiffusionCDF")
       .def(py::init<const double, const unsigned long int>(),
            py::arg("beta"),
            py::arg("tMax"))

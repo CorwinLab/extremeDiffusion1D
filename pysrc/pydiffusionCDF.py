@@ -558,8 +558,3 @@ class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
 
         for _ in range(num_positions):
             self.stepPosition()
-
-
-if __name__ == "__main__":
-    r = DiffusionTimeCDF(1, tMax=10000)
-    r.evolveAndGetProbAndV(100, [10, 100, 1000], "data.txt")
