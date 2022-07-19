@@ -91,7 +91,6 @@ if __name__ == '__main__':
 
     theoretical_variance = np.delete(theoretical_variance, np.argmax(theoretical_variance))
     theoretical_distances = np.delete(theoretical_distances, np.argmax(theoretical_variance))
-    
     res = linregress(np.log(RWRESam[:, 0])[-500:], np.log(RWRESam[:, 4])[-500:])
     slope = res.slope
     intercept = res.intercept
