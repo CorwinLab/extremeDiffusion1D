@@ -44,9 +44,9 @@ def runExperiment(
     beta = float(beta)
     tMax = int(tMax)
     num_of_save_times = int(num_of_save_times)
-    
+
     nParticles = [np.quad(f"1e{i}") for i in n_exp]
-    
+
     save_times = np.geomspace(1, tMax, num_of_save_times, dtype=np.int64)
     save_times = np.unique(save_times)
 
@@ -62,8 +62,9 @@ def runExperiment(
         rec.id = sysID
         rec.save_dir = save_dir
         append = False
-     
+
     rec.evolveAndGetVariance(save_times, nParticles, save_file, append=append)
+
 
 if __name__ == "__main__":
     (
@@ -80,7 +81,7 @@ if __name__ == "__main__":
     save_file = os.path.abspath(save_file)
 
     n_exp = [2, 7, 24, 85, 300]
-    tMax = np.log(np.quad(f"1e{n_exp[-1]}")).astype(float) * 5 * 10**3
+    tMax = np.log(np.quad(f"1e{n_exp[-1]}")).astype(float) * 5 * 10 ** 3
 
     vars = {
         "beta": beta,

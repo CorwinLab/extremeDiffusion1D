@@ -11,14 +11,8 @@ from datetime import date
 from pydiffusionCDF import DiffusionTimeCDF
 import quadMath
 
-def runExperiment(
-    beta,
-    times,
-    quantile,
-    save_file,
-    id=None,
-    save_dir="."
-):
+
+def runExperiment(beta, times, quantile, save_file, id=None, save_dir="."):
     """
     Run a simulation to get the probability and velocity at a specific quantile.
 
@@ -47,7 +41,7 @@ def runExperiment(
     cdf.evolveAndGetProbAndV(quantile, times, save_file)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     (
         topDir,
         sysID,

@@ -1,27 +1,25 @@
 #!/bin/bash
-#SBATCH --job-name=UFirstPass
+#SBATCH --job-name=FirstPass
 #SBATCH --time=0-12:00:00
-#SBATCH --error=/home/jhass2/jamming/JacobData/logs/FirstPassAbsTimed/%A-%a.err
+#SBATCH --error=/home/jhass2/jamming/JacobData/logs/FirstPassCDF/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --array=0-100
-#SBATCH --output=/home/jhass2/jamming/JacobData/logs/FirstPassAbsTimed/%A-%a.out
+#SBATCH --array=0-49
+#SBATCH --output=/home/jhass2/jamming/JacobData/logs/FirstPassCDF/%A-%a.out
 #SBATCH --account=jamming
 #SBATCH --partition=preempt
 
-NUM_OF_SAVE_DISTANCES=7500
-PROBDISTFLAG=0
+TOPDIR=/home/jhass2/jamming/JacobData/FirstPassCDF/
 BETA=1
-TMAX=500000
-NUM_OF_SYSTEMS=50
+NEXP=24
+DMIN=50
+DMAX=500
+CUTOFF=0.99
 
-for N_EXP in 2 7 24 85
+mkdir -p $TOPDIR
+
+for i in {0..10}
 do
-  TOPDIR=/home/jhass2/jamming/JacobData/FirstPassAbsTimed/$N_EXP/
-  mkdir -p $TOPDIR
-  for i in {0..25}
-  do
-    id=$((SLURM_ARRAY_TASK_ID*25 + i + SLURM_ARRAY_TASK_ID))
-    python3 FirstPassageTime.py $TOPDIR $id $BETA $N_EXP $NUM_OF_SAVE_DISTANCES $PROBDISTFLAG $TMAX
-  done
+    id=$((SLURM_ARRAY_TASK_ID*10 + i + SLURM_ARRAY_TASK_ID))
+    python3 FirstPassageTimes.py $TOPDIR $BETA $NEXP $id $DMIN $DMAX $CUTOFF
 done

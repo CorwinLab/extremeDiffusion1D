@@ -5,14 +5,14 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <algorithm>
 #include <boost/multiprecision/float128.hpp>
 #include <cmath>
 #include <limits>
-#include <algorithm>
 #include <math.h>
 
-#include "pybind11_numpy_scalar.h"
 #include "../Stats/stat.h"
+#include "pybind11_numpy_scalar.h"
 
 namespace py = pybind11;
 
@@ -47,16 +47,17 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 
 // Constuctor
 DiffusionPDF::DiffusionPDF(const RealType _nParticles,
-                     const double _beta,
-                     const unsigned long int _occupancySize,
-                     const bool _ProbDistFlag)
-    : nParticles(_nParticles), beta(_beta),
-    occupancySize(_occupancySize), ProbDistFlag(_ProbDistFlag)
+                           const double _beta,
+                           const unsigned long int _occupancySize,
+                           const bool _ProbDistFlag)
+    : nParticles(_nParticles), beta(_beta), occupancySize(_occupancySize),
+      ProbDistFlag(_ProbDistFlag)
 {
-  if (isnan(nParticles) || isinf(nParticles)){
+  if (isnan(nParticles) || isinf(nParticles)) {
     throw std::runtime_error("Number of particles initialized to NaN");
   }
-  edges.first.resize(_occupancySize + 1), edges.second.resize(_occupancySize + 1);
+  edges.first.resize(_occupancySize + 1),
+      edges.second.resize(_occupancySize + 1);
   edges.first[0] = 0, edges.second[0] = 0;
 
   occupancy.resize(_occupancySize + 1);
@@ -74,11 +75,14 @@ DiffusionPDF::DiffusionPDF(const RealType _nParticles,
   time = 0;
 }
 
-std::vector<RealType> DiffusionPDF::getSaveOccupancy(){
+std::vector<RealType> DiffusionPDF::getSaveOccupancy()
+{
   return slice(occupancy, edges.first[time], edges.second[time]);
 }
 
-std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > DiffusionPDF::getSaveEdges(){
+std::pair<std::vector<unsigned long int>, std::vector<unsigned long int>>
+DiffusionPDF::getSaveEdges()
+{
   std::vector<unsigned long int> minEdge = slice(edges.first, 0, time);
   std::vector<unsigned long int> maxEdge = slice(edges.second, 0, time);
   return std::make_pair(minEdge, maxEdge);
@@ -88,7 +92,7 @@ RealType DiffusionPDF::toNextSite(RealType currentSite, RealType bias)
 {
   // If generating the probability distribution just default to the
   // number of particles * bias
-  if (ProbDistFlag){
+  if (ProbDistFlag) {
     return (currentSite * bias);
   }
 
@@ -102,7 +106,9 @@ RealType DiffusionPDF::toNextSite(RealType currentSite, RealType bias)
   // answer to RealType.
   if (currentSite < smallCutoff) {
 
-    return RealType(binomial(gen, boost::random::binomial_distribution<>::param_type(double(currentSite), double(bias))));
+    return RealType(binomial(gen,
+                             boost::random::binomial_distribution<>::param_type(
+                                 double(currentSite), double(bias))));
   }
 
   else if (currentSite > largeCutoff) {
@@ -112,7 +118,7 @@ RealType DiffusionPDF::toNextSite(RealType currentSite, RealType bias)
   else {
 
     RealType mediumVariance = sqrt(currentSite * bias * (1 - bias));
-    return currentSite * bias + mediumVariance * (2*RealType(dis(gen))-1);
+    return currentSite * bias + mediumVariance * (2 * RealType(dis(gen)) - 1);
   }
 }
 
@@ -191,8 +197,8 @@ void DiffusionPDF::iterateTimestep()
         *occ < 0 || *occ > nParticles || isnan(*occ)) {
       std::cout << "Time:" << time << "\n";
       std::cout << "Occupancy: " << *occ << "\n";
-      std::cout << "Next site: "  << toNextSite << "\n";
-      std::cout << "Bias: "  << bias << std::endl;
+      std::cout << "Next site: " << toNextSite << "\n";
+      std::cout << "Bias: " << bias << std::endl;
       throw std::runtime_error("One or more variables out of bounds: ");
     }
   }
@@ -241,8 +247,8 @@ std::vector<double> DiffusionPDF::findQuantiles(std::vector<RealType> quantiles)
   RealType sum = occupancy.at(maxIdx);
 
   unsigned long int quantiles_idx = 0;
-  while (quantiles_idx < quantiles.size()){
-    while (sum < nParticles / quantiles[quantiles_idx]){
+  while (quantiles_idx < quantiles.size()) {
+    while (sum < nParticles / quantiles[quantiles_idx]) {
       maxIdx -= 1;
       dist -= 1;
       sum += occupancy.at(maxIdx);
@@ -301,37 +307,42 @@ DiffusionPDF::VsAndPb(const double v)
   return returnTuple;
 }
 
-std::pair<std::vector<long int>, std::vector<RealType> > DiffusionPDF::getxvals_and_pdf(){
+std::pair<std::vector<long int>, std::vector<RealType>>
+DiffusionPDF::getxvals_and_pdf()
+{
   unsigned long int minIdx = edges.first[time];
   unsigned long int maxIdx = edges.second[time];
 
-  if (minIdx == 0){
+  if (minIdx == 0) {
     minIdx += 1;
   }
 
-  if (maxIdx == occupancy.size()-1){
+  if (maxIdx == occupancy.size() - 1) {
     maxIdx -= 1;
   }
 
   std::vector<long int> xvals(maxIdx - minIdx + 2);
   std::vector<RealType> pdf(maxIdx - minIdx + 2);
 
-  for (unsigned long int i=minIdx-1; i <= maxIdx; i++){
-    xvals.at(i-minIdx+1) = 2 * i - time;
-    pdf.at(i-minIdx+1) = occupancy.at(i);
+  for (unsigned long int i = minIdx - 1; i <= maxIdx; i++) {
+    xvals.at(i - minIdx + 1) = 2 * i - time;
+    pdf.at(i - minIdx + 1) = occupancy.at(i);
   }
   return std::make_pair(xvals, pdf);
 }
 
-std::vector<RealType> DiffusionPDF::getCDF(){
-  std::pair<std::vector<long int>, std::vector<RealType> > pair = getxvals_and_pdf();
+std::vector<RealType> DiffusionPDF::getCDF()
+{
+  std::pair<std::vector<long int>, std::vector<RealType>> pair =
+      getxvals_and_pdf();
   std::vector<RealType> pdf = pair.second;
   return pdf_to_comp_cdf(pdf, nParticles);
 }
 
 RealType DiffusionPDF::getGumbelVariance(RealType maxParticle)
 {
-  std::pair<std::vector<long int>, std::vector<RealType> > pair = getxvals_and_pdf();
+  std::pair<std::vector<long int>, std::vector<RealType>> pair =
+      getxvals_and_pdf();
   std::vector<long int> xvals = pair.first;
   std::vector<RealType> pdf = pair.second;
   return getGumbelVariancePDF(xvals, pdf, maxParticle, nParticles);
@@ -342,24 +353,26 @@ Trying to hackily get the PDF for the Einstein random walk. Doesn't look like
 it works very well b/c there are a lot of zeros in the PDF and it only sums
 to 0.5
 */
-RealType getEinsteinPDF(unsigned long int n, unsigned long int k){
-  if (k==0){
-    return RealType( 1 / pow(2, n));
+RealType getEinsteinPDF(unsigned long int n, unsigned long int k)
+{
+  if (k == 0) {
+    return RealType(1 / pow(2, n));
   }
   RealType product = 1;
   unsigned long int multiples = floor(n / k);
   unsigned long int remainder = n % k;
-  for (RealType i=1; i <= k; i++){
+  for (RealType i = 1; i <= k; i++) {
     product *= (n + 1 - i) / i / pow(2, multiples);
   }
   product /= pow(2, remainder);
   return product;
 }
 
-std::vector<RealType> getWholeEinsteinPDF(unsigned long int n){
+std::vector<RealType> getWholeEinsteinPDF(unsigned long int n)
+{
 
-  std::vector<RealType> pdf(n+1);
-  for (unsigned long int i=0; i <= n; i++){
+  std::vector<RealType> pdf(n + 1);
+  for (unsigned long int i = 0; i <= n; i++) {
     pdf.at(i) = getEinsteinPDF(n, i);
   }
   return pdf;
@@ -384,7 +397,9 @@ PYBIND11_MODULE(diffusionPDF, m)
       .def("getOccupancySize", &DiffusionPDF::getOccupancySize)
       .def("getSaveOccupancy", &DiffusionPDF::getSaveOccupancy)
       .def("getSaveEdges", &DiffusionPDF::getSaveEdges)
-      .def("resizeOccupancyAndEdges", &DiffusionPDF::resizeOccupancyAndEdges, py::arg("size"))
+      .def("resizeOccupancyAndEdges",
+           &DiffusionPDF::resizeOccupancyAndEdges,
+           py::arg("size"))
       .def("getNParticles", &DiffusionPDF::getNParticles)
       .def("getBeta", &DiffusionPDF::getBeta)
       .def("setProbDistFlag",
@@ -392,9 +407,13 @@ PYBIND11_MODULE(diffusionPDF, m)
            py::arg("ProbDistFlag"))
       .def("getProbDistFlag", &DiffusionPDF::getProbDistFlag)
       .def("getSmallCutoff", &DiffusionPDF::getSmallCutoff)
-      .def("setSmallCutoff", &DiffusionPDF::setSmallCutoff, py::arg("smallCutoff"))
+      .def("setSmallCutoff",
+           &DiffusionPDF::setSmallCutoff,
+           py::arg("smallCutoff"))
       .def("getLargeCutoff", &DiffusionPDF::getLargeCutoff)
-      .def("setLargeCutoff", &DiffusionPDF::setLargeCutoff, py::arg("largeCutoff"))
+      .def("setLargeCutoff",
+           &DiffusionPDF::setLargeCutoff,
+           py::arg("largeCutoff"))
       .def("getEdges", &DiffusionPDF::getEdges)
       .def("setEdges", &DiffusionPDF::setEdges)
       .def("getMaxIdx", &DiffusionPDF::getMaxIdx)
@@ -407,7 +426,9 @@ PYBIND11_MODULE(diffusionPDF, m)
       .def("pGreaterThanX", &DiffusionPDF::pGreaterThanX, py::arg("idx"))
       .def("calcVsAndPb", &DiffusionPDF::calcVsAndPb, py::arg("num"))
       .def("VsAndPb", &DiffusionPDF::VsAndPb, py::arg("v"))
-      .def("getGumbelVariance", &DiffusionPDF::getGumbelVariance, py::arg("nParticles"))
+      .def("getGumbelVariance",
+           &DiffusionPDF::getGumbelVariance,
+           py::arg("nParticles"))
       .def("getCDF", &DiffusionPDF::getCDF);
   m.def("getEinsteinPDF", &getEinsteinPDF);
   m.def("getWholeEinsteinPDF", &getWholeEinsteinPDF);

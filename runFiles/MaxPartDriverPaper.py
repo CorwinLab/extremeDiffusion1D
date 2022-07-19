@@ -13,6 +13,7 @@ from datetime import date
 from experimentUtils import saveVars
 from sys import exit
 
+
 def runExperiment(
     beta,
     N_exp,
@@ -65,11 +66,11 @@ def runExperiment(
     occupancy_file = os.path.join(save_dir, f"Occupancy{sysID}.txt")
     scalars_file = os.path.join(save_dir, f"Scalars{sysID}.json")
 
-    #if os.path.exists(occupancy_file) and os.path.exists(scalars_file):
+    # if os.path.exists(occupancy_file) and os.path.exists(scalars_file):
     #    d = DiffusionPDF.fromFiles(scalars_file, occupancy_file)
     #    save_times = save_times[save_times > d.currentTime]
     #    append = True
-    #else:
+    # else:
     d = DiffusionPDF(
         N, beta=beta, occupancySize=num_of_steps, ProbDistFlag=probDistFlag
     )
@@ -101,7 +102,7 @@ if __name__ == "__main__":
     if os.path.exists(save_occ):
         exit()
 
-    num_of_steps = np.log(np.quad(f"1e{N_exp}")).astype(float) * 5 * 10**3
+    num_of_steps = np.log(np.quad(f"1e{N_exp}")).astype(float) * 5 * 10 ** 3
 
     vars = {
         "beta": beta,

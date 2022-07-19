@@ -3,18 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Folders
-cDiffusion/.vs/
-cDiffusion/.vs/cDiffusion/v16/Browse.VC.db
-N50/
-times/
-
 #Latex stuff
 *.aux
 *.log
-
-#Files
-test_one_liner.cpp
 
 # Data
 *.txt

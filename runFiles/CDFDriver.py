@@ -47,7 +47,7 @@ def runExperiment(
     q_start = int(q_start)
     q_stop = int(q_stop)
     q_step = int(q_step)
-    quantiles = np.arange(q_start, q_stop+q_step, q_step)
+    quantiles = np.arange(q_start, q_stop + q_step, q_step)
 
     save_times = np.geomspace(1, tMax, num_of_save_times, dtype=np.int64)
     save_times = np.unique(save_times)

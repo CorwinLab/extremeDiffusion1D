@@ -46,9 +46,9 @@ private:
 
 public:
   DiffusionPDF(const RealType _nParticles,
-            const double _beta,
-            const unsigned long int _occupancySize,
-            const bool _probDistFlag = true);
+               const double _beta,
+               const unsigned long int _occupancySize,
+               const bool _probDistFlag = true);
   ~DiffusionPDF(){};
 
   RealType getNParticles() { return nParticles; };
@@ -66,9 +66,11 @@ public:
   unsigned long int getOccupancySize() { return occupancySize; };
 
   std::vector<RealType> getSaveOccupancy();
-  std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > getSaveEdges();
+  std::pair<std::vector<unsigned long int>, std::vector<unsigned long int>>
+  getSaveEdges();
 
-  void resizeOccupancyAndEdges(unsigned long int size) {
+  void resizeOccupancyAndEdges(unsigned long int size)
+  {
     occupancy.insert(occupancy.end(), size, RealType(0));
     edges.first.insert(edges.first.end(), size, 0);
     edges.second.insert(edges.second.end(), size, 0);
@@ -81,24 +83,32 @@ public:
 
   void setTime(const unsigned long int _time) { time = _time; };
 
-  std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> >
+  std::pair<std::vector<unsigned long int>, std::vector<unsigned long int>>
   getEdges()
   {
     return edges;
   };
 
-  void setEdges(std::pair<std::vector<unsigned long int>, std::vector<unsigned long int> > _edges){
+  void setEdges(std::pair<std::vector<unsigned long int>,
+                          std::vector<unsigned long int>> _edges)
+  {
     edges = _edges;
   }
 
-  unsigned long int getMaxIdx(){ return edges.second[time]; };
-  unsigned long int getMinIdx(){ return edges.first[time]; };
+  unsigned long int getMaxIdx() { return edges.second[time]; };
+  unsigned long int getMinIdx() { return edges.first[time]; };
 
   double getSmallCutoff() { return smallCutoff; };
-  void setSmallCutoff(const double _smallCutoff) { smallCutoff = _smallCutoff; };
+  void setSmallCutoff(const double _smallCutoff)
+  {
+    smallCutoff = _smallCutoff;
+  };
 
   double getLargeCutoff() { return largeCutoff; };
-  void setLargeCutoff(const double _largeCutoff) { largeCutoff = _largeCutoff; };
+  void setLargeCutoff(const double _largeCutoff)
+  {
+    largeCutoff = _largeCutoff;
+  };
 
   // Functions that do things
 
@@ -114,14 +124,13 @@ public:
 
   std::pair<std::vector<double>, std::vector<RealType>> VsAndPb(const double v);
 
-  std::vector<std::vector<unsigned long int> > evolveAndSaveFirstPassageQuantile(
-    std::vector<unsigned long int> positions,
-    std::vector<RealType> quantiles);
+  std::vector<std::vector<unsigned long int>>
+  evolveAndSaveFirstPassageQuantile(std::vector<unsigned long int> positions,
+                                    std::vector<RealType> quantiles);
 
   RealType getGumbelVariance(RealType maxParticle);
   std::vector<RealType> getCDF();
-  std::pair<std::vector<long int>, std::vector<RealType> > getxvals_and_pdf();
-
+  std::pair<std::vector<long int>, std::vector<RealType>> getxvals_and_pdf();
 };
 
 #endif /* DIFFUSIONPDF_HPP_ */

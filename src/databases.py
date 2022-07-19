@@ -132,7 +132,9 @@ class QuartileDatabase(Database):
         new_files = []
         for f in self.files:
             try:
-                data = loadArrayQuad(f, delimiter=self.delimiter, skiprows=self.skiprows)
+                data = loadArrayQuad(
+                    f, delimiter=self.delimiter, skiprows=self.skiprows
+                )
             except:
                 continue
             time = data[:, 0].astype(float)
@@ -865,11 +867,11 @@ class CDFQuartileDatabase(QuartileDatabase):
 
         return quantiles
 
-class CDFVarianceDatabase(Database):
 
+class CDFVarianceDatabase(Database):
     @property
     def header(self):
-        with open(self.files[0], 'r') as f:
+        with open(self.files[0], "r") as f:
             return f.readline().split(self.delimiter)
 
     @property
@@ -877,17 +879,17 @@ class CDFVarianceDatabase(Database):
         # Exclude the first column that is time
         header = self.header[1:]
         for i, val in enumerate(header):
-            if 'var' in val:
+            if "var" in val:
                 continue
             else:
-                yield i+1, val
+                yield i + 1, val
 
     @property
     def variances(self):
         header = self.header[1:]
         for i, val in enumerate(header):
-            if 'var' in val:
-                yield i+1, val.replace('var', '')
+            if "var" in val:
+                yield i + 1, val.replace("var", "")
 
     @property
     def quantile_list(self):

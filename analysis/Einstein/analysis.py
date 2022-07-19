@@ -5,7 +5,7 @@ import glob
 import sys
 
 sys.path.append("../../src")
-#from theory import theoreticalNthQuartVar, NthQuartVarStr
+# from theory import theoreticalNthQuartVar, NthQuartVarStr
 from theory import einstein_mean, einstein_var
 
 files = glob.glob(
@@ -40,12 +40,14 @@ time = np.loadtxt("Time.txt")
 N = 1e50
 logN = np.log2(N)
 
-mean_theory = np.piecewise(time,
-                           [time < logN, time >= logN],
-                           [lambda t: t, lambda t: np.sqrt(2 * t * np.log(N))])
-var_theory = np.piecewise(time,
-                          [time < logN, time >= logN],
-                          [0, lambda t: np.pi**2 / 12 * t/np.log(N)])
+mean_theory = np.piecewise(
+    time,
+    [time < logN, time >= logN],
+    [lambda t: t, lambda t: np.sqrt(2 * t * np.log(N))],
+)
+var_theory = np.piecewise(
+    time, [time < logN, time >= logN], [0, lambda t: np.pi ** 2 / 12 * t / np.log(N)]
+)
 
 new_time = np.loadtxt("Numerical_Time.txt", skiprows=3)
 c1 = np.loadtxt("c1.txt", skiprows=3)
@@ -57,20 +59,20 @@ ax.set_xlabel(r"$t / \log_2(N)$")
 ax.set_ylabel(r"$\sigma^2_{max}(t)$")
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.plot(time / logN, var, c='k', alpha=0.5)
-ax.plot(time / logN, var_theory, c='r')
-ax.plot(new_time / logN, better_var_theory, c='g')
+ax.plot(time / logN, var, c="k", alpha=0.5)
+ax.plot(time / logN, var_theory, c="r")
+ax.plot(new_time / logN, better_var_theory, c="g")
 ax.set_xlim([0.5, max(time / logN)])
-fig.savefig("Variance.png", bbox_inches='tight')
+fig.savefig("Variance.png", bbox_inches="tight")
 
 fig, ax = plt.subplots()
 ax.set_xlabel(r"$t / \log_2(N)$")
 ax.set_ylabel(r"$\bar{X}_{max}(t)$")
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.plot(time / logN, mean, zorder=0, c='k')
-ax.plot(time / logN, mean_theory, '--', c='r')
-ax.plot(new_time / logN, better_mean_theory, '--', c='g')
-ax.set_xlim([min(time/logN), max(time/logN)])
-ax.set_ylim([1, 10**4])
-fig.savefig("Mean.png", bbox_inches='tight')
+ax.plot(time / logN, mean, zorder=0, c="k")
+ax.plot(time / logN, mean_theory, "--", c="r")
+ax.plot(new_time / logN, better_mean_theory, "--", c="g")
+ax.set_xlim([min(time / logN), max(time / logN)])
+ax.set_ylim([1, 10 ** 4])
+fig.savefig("Mean.png", bbox_inches="tight")
