@@ -136,4 +136,3 @@ class FirstPassagePDF(firstPassagePDF.FirstPassagePDF):
         >>> fig.savefig("PDFtest.png")
         """
         return np.array(super().evolveToCutoff(cutoff, nParticles)).T
-        

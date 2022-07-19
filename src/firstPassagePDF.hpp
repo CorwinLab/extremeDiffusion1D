@@ -9,36 +9,23 @@
 #include <random>
 #include <utility>
 #include <vector>
+#include "randomNumGenerator.hpp"
 
 typedef boost::multiprecision::float128 RealType;
 
 #ifndef FISRTPASSAGEPDF_HPP_
 #define FISRTPASSAGEPDF_HPP_
 
-class FirstPassagePDF {
+class FirstPassagePDF : public RandomNumGenerator {
 protected:
   std::vector<RealType> PDF;
-  double beta;
   unsigned long int maxPosition;
   unsigned long int t = 0;
   RealType firstPassageProbability;
 
-  boost::random::beta_distribution<>::param_type betaParams;
-
-  std::random_device rd;
-  boost::random::mt19937_64 gen;
-
-  std::uniform_real_distribution<> dis;
-  boost::random::beta_distribution<> beta_dist;
-
-  double generateBeta();
-
 public:
   FirstPassagePDF(const double _beta, const unsigned long int _maxPosition);
   ~FirstPassagePDF(){};
-
-  double getBeta() { return beta; };
-  void setBeta(double _beta) { beta = _beta; };
 
   unsigned long int getTime() { return t; };
   void setTime(unsigned long int _t) { t = _t; };

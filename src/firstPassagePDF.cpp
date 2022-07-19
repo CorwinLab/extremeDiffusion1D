@@ -11,6 +11,7 @@
 
 #include "firstPassagePDF.hpp"
 #include "pybind11_numpy_scalar.h"
+#include "randomNumGenerator.hpp"
 
 namespace py = pybind11;
 
@@ -45,42 +46,13 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 
 FirstPassagePDF::FirstPassagePDF(const double _beta,
                                  const unsigned long int _maxPosition)
+                                : RandomNumGenerator(_beta)
 {
-  beta = _beta;
   maxPosition = _maxPosition;
   PDF.resize(2 * maxPosition + 1);
 
   // Set middle element of array to 1
   PDF[maxPosition] = 1;
-
-  // Initialize random variables
-  if (_beta != 0) {
-    boost::random::beta_distribution<>::param_type params(_beta, _beta);
-    betaParams = params;
-  }
-
-  std::uniform_real_distribution<>::param_type unifParams(0.0, 1.0);
-  dis.param(unifParams);
-  gen.seed(rd());
-}
-
-double FirstPassagePDF::generateBeta()
-{
-  // If beta = 0 return either 0 or 1
-  if (beta == 0.0) {
-    return round(dis(gen));
-  }
-  // If beta = 1 use random uniform distribution
-  else if (beta == 1) {
-    return dis(gen);
-  }
-  // If beta = inf return 0.5
-  else if (isinf(beta)) {
-    return 0.5;
-  }
-  else {
-    return beta_dist(gen, betaParams);
-  }
 }
 
 void FirstPassagePDF::iterateTimeStep()
@@ -159,7 +131,7 @@ FirstPassagePDF::evolveToCutoff(RealType cutOff, RealType nParticles)
 
 PYBIND11_MODULE(firstPassagePDF, m)
 {
-  py::class_<FirstPassagePDF>(m, "FirstPassagePDF")
+  py::class_<FirstPassagePDF, RandomNumGenerator>(m, "FirstPassagePDF")
       .def(py::init<const double, const unsigned long int>(),
            py::arg("beta"),
            py::arg("maxPosition"))

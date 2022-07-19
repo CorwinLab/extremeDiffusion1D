@@ -37,4 +37,4 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots()
     ax.plot(x, var[:, 0] - var[:, 1])
-    fig.savefig("VAr.png")
+    fig.savefig("Var.png")
