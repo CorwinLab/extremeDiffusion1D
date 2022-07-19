@@ -50,8 +50,8 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 DiffusionPDF::DiffusionPDF(const RealType _nParticles,
                            const double _beta,
                            const unsigned long int _occupancySize,
-                           const bool _ProbDistFlag)
-    : nParticles(_nParticles), beta(_beta), occupancySize(_occupancySize),
+                           const bool _ProbDistFlag) 
+      : RandomNumGenerator(_beta), nParticles(_nParticles), occupancySize(_occupancySize),
       ProbDistFlag(_ProbDistFlag)
 {
   if (isnan(nParticles) || isinf(nParticles)) {
@@ -63,15 +63,6 @@ DiffusionPDF::DiffusionPDF(const RealType _nParticles,
 
   occupancy.resize(_occupancySize + 1);
   occupancy[0] = nParticles;
-
-  if (_beta != 0) {
-    boost::random::beta_distribution<>::param_type params(_beta, _beta);
-    betaParams = params;
-  }
-
-  std::uniform_real_distribution<>::param_type unifParams(0.0, 1.0);
-  dis.param(unifParams);
-  gen.seed(rd());
 
   time = 0;
 }
@@ -383,7 +374,7 @@ PYBIND11_MODULE(diffusionPDF, m)
 {
   m.doc() = "C++ diffusionPDF";
 
-  py::class_<DiffusionPDF>(m, "DiffusionPDF")
+  py::class_<DiffusionPDF, RandomNumGenerator>(m, "DiffusionPDF")
       .def(py::init<const RealType,
                     const double,
                     const unsigned long int,

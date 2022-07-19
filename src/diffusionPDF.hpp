@@ -9,32 +9,22 @@
 #include <random>
 #include <utility>
 #include <vector>
+#include "randomNumGenerator.hpp"
 
 typedef boost::multiprecision::float128 RealType;
 
 #ifndef DIFFUSIONPDF_HPP_
 #define DIFFUSIONPDF_HPP_
 
-class DiffusionPDF {
+class DiffusionPDF : public RandomNumGenerator {
 private:
   std::vector<RealType> occupancy;
   RealType nParticles;
-  double beta;
   unsigned long int occupancySize;
   bool ProbDistFlag;
   double smallCutoff = pow(2, 31) - 2;
   double largeCutoff = 1e64;
 
-  // It would be nice if this could be a generic distribution as:
-  // boost::random::distribution bias
-  boost::random::beta_distribution<>::param_type betaParams;
-
-  std::random_device rd;
-  boost::random::mt19937_64 gen;
-
-  // std::uniform_real_distribution<> dis(0.0, 1.0);
-  std::uniform_real_distribution<> dis;
-  boost::random::beta_distribution<> beta_dist;
   boost::random::binomial_distribution<> binomial;
 
   std::pair<std::vector<unsigned long int>, std::vector<unsigned long int>>
@@ -52,8 +42,6 @@ public:
   ~DiffusionPDF(){};
 
   RealType getNParticles() { return nParticles; };
-
-  double getBeta() { return betaParams.beta(); };
 
   void setProbDistFlag(bool _probDistFlag) { ProbDistFlag = _probDistFlag; };
   bool getProbDistFlag() { return ProbDistFlag; };
@@ -76,8 +64,6 @@ public:
     edges.second.insert(edges.second.end(), size, 0);
     occupancySize += size;
   };
-
-  void setBetaSeed(const unsigned int seed) { gen.seed(seed); };
 
   unsigned long int getTime() { return time; };
 
