@@ -229,10 +229,7 @@ DiffusionPositionCDF::DiffusionPositionCDF(const double _beta,
   // measurement and each row is a differeent time.
   quantilePositions.resize(quantiles.size());
   for (unsigned long int i = 0; i < quantilePositions.size(); i++) {
-    quantilePositions[i].resiz    if (CDF[n] > 1 / (quantile+1)){
-128
- 
-e(tMax + 1, 0);
+    quantilePositions[i].resize(tMax + 1, 1);
     // At t=0, all the quantiles will be 2 (2*n + 2 - t for n=t=0) - I think
     // this is mainly for testing.
     quantilePositions[i][0] = 2;
