@@ -1,99 +1,34 @@
 # extremeDiffusion1D
-Simulations of the 1D Barraquand-Corwin model for extreme diffusion. The costly
+## Description
+High performance simulations of random walks in various environments. The costly
 functions are written in C++ and then ported to Python using [PyBind11](https://github.com/pybind/pybind11).
-Current paper can be found here: https://www.overleaf.com/2173114897prxgbwzwwjds. 
 
-## File Structure
-* DiffusionPDF
+## Installation
+Installation is automated in bash with the setup.sh script. 
 
-  Contains the C++ algorithms to compute the probability density function (PDF).
-  This should be used to simulate discrete systems.
+Dependences:  
+* [pybind11](http://www.github.com/pybind/pybind11)
+*  [npquad](https://github.com/SimonsGlass/numpy_quad)
 
-* DiffusionCDF
+## Python Iterfaces
 
-  Contains the C++ algorithms to compute the cumulative distribution function (CDF).
+### Data Structures
 
-* examples
+Numerical data is handled using the npquad numpy extension. Floating point data is returned as numpy arrays with ```dtype=np.quad```. Note that quad precision support is limited so downcasting to ```np.float64``` after all calculations are done is recommended. Some helper functions are located in `/pysrc/fileIO.py` and `/pysrc/quadMath.py`.
 
-  A couple example simulations using the DiffusionPDF module and a speed comparison
-  of generating random doubles versus random quads in C++.
+### Classes
 
-* analysis
+* `pydiffusionCDF.DiffusionTimeCDF`
+* `pydiffusionCDF.DiffusionPositionCDF`
+* `pydiffusionPDF.DiffusionPDF`
+* `pyfirstPassagePDF.FirstPassagePDF`
 
-  Analysis for all the experiments that have been run. Each folder is generally
-  a different experiment.
-
-* src
-
-  Wrapper classes for the C++/PyBind11 class defined in DiffusionPDF/diffusionPDF.cpp
-  and DiffusionCDF/diffusionCDF.cpp. Also contains a lot of helper functions
-  for easier analysis. This is generally what should be imported into Python
-  versus the base C++/PyBind11 class.
-
-* tests
-
-  Contains some tests to make sure the the files defined in src run properly.
-
-* runFiles
-
-  Files to run experiments on Locust using SLURM.
-
-# Installation and Setup
-There are only two steps needed to setup the library and start running simulations
-
-1. [Install Pybind11](https://pybind11.readthedocs.io/en/stable/installing.html)
-
-  What we've done in the past is just clone the PyBind11 repository to the same
-  local directory as the extremeDiffusion1D folder. Since PyBind11 is a header
-  only file I don't recall there being any installation process besides that.
-
-2. Compile the DiffusionCDF/diffusionCDF.cpp and DiffusionPDF/diffusionPDF.cpp files
-
-  Since we're using PyBind11 to interface Python with the C++ code you can't
-  simply use `g++ -o <outfile> diffusionPDF.cpp`. The Pybind11 compilation is somewhat
-  lengthy as we have to make our compiler aware that we want to compile to a Python
-  library with Pybind11 but this is taken care of with the C++ files. To do this,
-  run in a terminal:
-
-  ```
-  cd extremeDiffusion1D/DiffusionPDF
-  ./compile.sh
-  ```
-
-  And the same for the DiffusionCDF. If it runs successfully it should make a
-  diffusionPDF.so and diffusionPDF.hpp.gch file.
-
-3. Install [Numpy_Quad](https://github.com/SimonsGlass/numpy_quad)
-
-## Importing to Python
-  After compiling the library need to add the src folder to your Python
-  path or you can use a hack around this by adding the folder to your path at the
-  beginning of each script. Paste the code block below to the beginning of a
-  script to import the base C++/Pybind11 class.
-
-  ```python
-  import sys
-  # The path needs to point to the src folder. This can be done relative
-  # to the script you're running or with an absolute path.
-  sys.path.append('./extremeDiffusion1D/src')
-  import diffusion
-  ```
-
-  To import the Python helper class you need to add the src folder
-  to your Python path. Therefore, you can use:
-
-  ```python
-  import sys
-  sys.path.append('./extremeDiffusion1D/src')
-  import pydiffusion
-  ```
-
-# Examples
+### Examples
 
 ```python
 import sys
 
-sys.path.append("../src")
+sys.path.append("pysrc")
 from pydiffusionPDF as DiffusionPDF
 import matplotlib
 
@@ -121,13 +56,13 @@ d.evolveToTime(num_of_timesteps)
 maxEdge = d.maxDistance
 time = d.time
 
-# Plot the edge over time and save
+# Plot the rightmost edge over time and save
 fig, ax = plt.subplots()
 ax.set_xlabel("Time")
 ax.set_ylabel("Distance to Center")
 ax.set_xscale("log")
 ax.set_yscale("log")
 ax.plot(time, maxEdge)
-fig.savefig("MaxEdge.png")
+plt.show()
 ```
 ![plot](./examples/MaxEdge.png)
