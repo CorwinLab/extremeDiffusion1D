@@ -80,35 +80,40 @@ if __name__ == '__main__':
     mean = mean[:, 1]
     ax.plot(distance / logN, var, label=r'$\mathrm{Var}(\tau_{min})$', alpha=alpha, c=min_color)
 
-    RWRESam = np.loadtxt("../FirstPassageCDFLong/AveragedData.txt")
-    theoretical_distances = np.loadtxt("../FirstPass/distances.txt")
-    theoretical_variance = np.loadtxt("../FirstPass/variance.txt")
-    theoretical_distances_2 = np.loadtxt("distancesLongTime.txt")
+    RWRESam = np.loadtxt("../FirstPassageCDFLonger/AveragedData.txt")
+    theoretical_distances = np.loadtxt("distances.txt")
+    theoretical_variance = np.loadtxt("varianceShortTime.txt")
     theoretical_variance_2 = np.loadtxt("varianceLongTime.txt")
 
-    theoretical_variance_2 = (theoretical_variance_2 / 2)**2
-    theoretical_variance = (theoretical_variance / 2)**2
+    # put this in mathematica code so don't need to do this anymore
+    #theoretical_variance_2 = (theoretical_variance_2 / 2)**2
+    #theoretical_variance = (theoretical_variance / 2)**2
 
     theoretical_variance = np.delete(theoretical_variance, np.argmax(theoretical_variance))
     theoretical_distances = np.delete(theoretical_distances, np.argmax(theoretical_variance))
+    theoretical_variance_2 = np.delete(theoretical_variance_2, np.argmax(theoretical_variance))
+    '''
     res = linregress(np.log(RWRESam[:, 0])[-500:], np.log(RWRESam[:, 4])[-500:])
     slope = res.slope
     intercept = res.intercept
     theoretical_var = np.exp(intercept) * (RWRESam[:,0][-500:] ** slope)
     print(f"{np.exp(intercept)} * x^{slope}")
+    '''
 
     #ax.plot(RWRESam[:, 0][-500:] / logN, theoretical_var, label=r'$x^{3.8}$', ls='--')
     ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 2], label=r'$\mathrm{Var}(\tau_{sam})$', alpha=alpha, c=sam_color)
     ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 4], label=r'$\mathrm{Var}(\tau_{env})$', alpha=alpha, c=env_color)
     #ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 4] + RWRESam[:, 2], label=r'$\mathrm{Var}(\mathrm{Env}_x^N) + \mathrm{Var}(\mathrm{Sam}_x^N)$', alpha=alpha)
     ax.plot(theoretical_distances / logN, theoretical_variance, label=r'"Theoretical" $\mathrm{Var}(\tau_{env})$', ls='--', c=theory_color)
-    ax.plot(theoretical_distances_2 / logN, theoretical_variance_2, label=r'"Theoretical KPZ" $\mathrm{Var}(\tau_{env})$', ls='--', c='saddlebrown')
+    ax.plot(theoretical_distances / logN, theoretical_variance_2, label=r'"Theoretical KPZ" $\mathrm{Var}(\tau_{env})$', ls='--', c='saddlebrown')
     xvals = np.array([50, 90])
     xvals2 = np.array([5, 20])
     yvals = xvals ** 4
-    ax.plot(xvals, yvals / 5, c='k', ls='--', label=r'$x^4$')
-    ax.plot(xvals2, xvals2**(8/3) * 9, c='k', ls='-.', label=r'$x^{8/3}$')
-    ax.set_xlim([0.6, 100])
+    ax.vlines(logN**(3/2)/logN, 10**-2, 10**9, ls='--', color='k', label=r'$(\log(N))^{3/2}$')
+    ax.set_ylim([10**-2, 10**9])
+    #ax.plot(xvals, yvals / 5, c='k', ls='--', label=r'$x^4$')
+    #ax.plot(xvals2, xvals2**(8/3) * 9, c='k', ls='-.', label=r'$x^{8/3}$')
+    ax.set_xlim([0.6, max(RWRESam[:,0])/logN])
     leg = ax.legend(fontsize=fontsize, loc='upper left', framealpha=0, labelcolor=[min_color, sam_color, env_color, theory_color, 'saddlebrown', 'k', 'k'], handlelength=0, handletextpad=0)
     fig.savefig("Var.pdf", bbox_inches='tight')
     

@@ -1,7 +1,7 @@
 import os 
 import glob 
 import sys 
-sys.path.append("../../src")
+sys.path.append("../../pysrc")
 import numpy as np
 import npquad
 import pandas as pd
@@ -13,7 +13,7 @@ files = glob.glob(dir)
 average_data = None
 average_data_squared = None
 number_of_files = 0
-max_dist = 10000
+max_dist = 13000
 for f in files:
     data = pd.read_csv(f, delimiter=',') # columns are distance, mean, variance, quantile position
     if max(data['distance']) < max_dist: 
@@ -27,6 +27,7 @@ for f in files:
         average_data += data
         average_data_squared += data ** 2
 
+print(number_of_files)
 average_data = average_data / number_of_files
 quantile_position_var = average_data_squared[:, 3] / number_of_files - average_data[:, 3]**2
 average_data = np.hstack((average_data, quantile_position_var.reshape(average_data.shape[0], 1)))
