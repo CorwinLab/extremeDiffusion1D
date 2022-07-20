@@ -1,48 +1,15 @@
 #include <math.h>
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
 #include <algorithm>
 #include <boost/multiprecision/float128.hpp>
 #include <cmath>
 #include <limits>
-#include <math.h>
 
 #include "firstPassagePDF.hpp"
 #include "pybind11_numpy_scalar.h"
 #include "randomNumGenerator.hpp"
 
-namespace py = pybind11;
-
 using RealType = boost::multiprecision::float128;
 static_assert(sizeof(RealType) == 16, "Bad size");
-
-// Boilerplate to get PyBind11 to cast to a npquad precision.
-namespace pybind11 {
-namespace detail {
-
-// Similar to enums in `pybind11/numpy.h`. Determined by doing:
-// python3 -c 'import numpy as np; print(np.dtype(np.float16).num)'
-constexpr int NPY_FLOAT16 = 256;
-
-// Kinda following:
-// https://github.com/pybind/pybind11/blob/9bb3313162c0b856125e481ceece9d8faa567716/include/pybind11/numpy.h#L1000
-template <> struct npy_format_descriptor<RealType> {
-  static constexpr auto name = _("RealType");
-  static pybind11::dtype dtype()
-  {
-    handle ptr = npy_api::get().PyArray_DescrFromType_(NPY_FLOAT16);
-    return reinterpret_borrow<pybind11::dtype>(ptr);
-  }
-};
-
-template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
-  static constexpr auto name = _("RealType");
-};
-
-} // namespace detail
-} // namespace pybind11
 
 FirstPassagePDF::FirstPassagePDF(const double _beta,
                                  const unsigned long int _maxPosition)
@@ -127,24 +94,4 @@ FirstPassagePDF::evolveToCutoff(RealType cutOff, RealType nParticles)
   }
 
   return std::make_tuple(times, pdf, cdf, cdfN);
-}
-
-PYBIND11_MODULE(firstPassagePDF, m)
-{
-  py::class_<FirstPassagePDF, RandomNumGenerator>(m, "FirstPassagePDF")
-      .def(py::init<const double, const unsigned long int>(),
-           py::arg("beta"),
-           py::arg("maxPosition"))
-      .def("getBeta", &FirstPassagePDF::getBeta)
-      .def("setBeta", &FirstPassagePDF::setBeta)
-      .def("getTime", &FirstPassagePDF::getTime)
-      .def("setTime", &FirstPassagePDF::setTime)
-      .def("getPDF", &FirstPassagePDF::getPDF)
-      .def("setPDF", &FirstPassagePDF::setPDF)
-      .def("getMaxPosition", &FirstPassagePDF::getMaxPosition)
-      .def("setMaxPosition", &FirstPassagePDF::setMaxPosition)
-      .def("iterateTimeStep", &FirstPassagePDF::iterateTimeStep)
-      .def("getFirstPassageProbability",
-           &FirstPassagePDF::getFirstPassageProbability)
-      .def("evolveToCutoff", &FirstPassagePDF::evolveToCutoff);
 }

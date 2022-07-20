@@ -1,50 +1,16 @@
 #include "diffusionPDF.hpp"
 #include "randomNumGenerator.hpp"
+#include "stat.h"
 
 #include <math.h>
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
 #include <algorithm>
 #include <boost/multiprecision/float128.hpp>
 #include <cmath>
 #include <limits>
 #include <math.h>
 
-#include "stat.h"
-#include "pybind11_numpy_scalar.h"
-
-namespace py = pybind11;
-
 using RealType = boost::multiprecision::float128;
 static_assert(sizeof(RealType) == 16, "Bad size");
-
-// Boilerplate to get PyBind11 to cast to a npquad precision.
-namespace pybind11 {
-namespace detail {
-
-// Similar to enums in `pybind11/numpy.h`. Determined by doing:
-// python3 -c 'import numpy as np; print(np.dtype(np.float16).num)'
-constexpr int NPY_FLOAT16 = 256;
-
-// Kinda following:
-// https://github.com/pybind/pybind11/blob/9bb3313162c0b856125e481ceece9d8faa567716/include/pybind11/numpy.h#L1000
-template <> struct npy_format_descriptor<RealType> {
-  static constexpr auto name = _("RealType");
-  static pybind11::dtype dtype()
-  {
-    handle ptr = npy_api::get().PyArray_DescrFromType_(NPY_FLOAT16);
-    return reinterpret_borrow<pybind11::dtype>(ptr);
-  }
-};
-
-template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
-  static constexpr auto name = _("RealType");
-};
-
-} // namespace detail
-} // namespace pybind11
 
 // Constuctor
 DiffusionPDF::DiffusionPDF(const RealType _nParticles,
@@ -368,60 +334,4 @@ std::vector<RealType> getWholeEinsteinPDF(unsigned long int n)
     pdf.at(i) = getEinsteinPDF(n, i);
   }
   return pdf;
-}
-
-PYBIND11_MODULE(diffusionPDF, m)
-{
-  m.doc() = "C++ diffusionPDF";
-
-  py::class_<DiffusionPDF, RandomNumGenerator>(m, "DiffusionPDF")
-      .def(py::init<const RealType,
-                    const double,
-                    const unsigned long int,
-                    const bool>(),
-           py::arg("numberOfParticles"),
-           py::arg("beta"),
-           py::arg("occupancySize"),
-           py::arg("ProbDistFlag") = true)
-
-      .def("getOccupancy", &DiffusionPDF::getOccupancy)
-      .def("setOccupancy", &DiffusionPDF::setOccupancy, py::arg("occupancy"))
-      .def("getOccupancySize", &DiffusionPDF::getOccupancySize)
-      .def("getSaveOccupancy", &DiffusionPDF::getSaveOccupancy)
-      .def("getSaveEdges", &DiffusionPDF::getSaveEdges)
-      .def("resizeOccupancyAndEdges",
-           &DiffusionPDF::resizeOccupancyAndEdges,
-           py::arg("size"))
-      .def("getNParticles", &DiffusionPDF::getNParticles)
-      .def("getBeta", &DiffusionPDF::getBeta)
-      .def("setProbDistFlag",
-           &DiffusionPDF::setProbDistFlag,
-           py::arg("ProbDistFlag"))
-      .def("getProbDistFlag", &DiffusionPDF::getProbDistFlag)
-      .def("getSmallCutoff", &DiffusionPDF::getSmallCutoff)
-      .def("setSmallCutoff",
-           &DiffusionPDF::setSmallCutoff,
-           py::arg("smallCutoff"))
-      .def("getLargeCutoff", &DiffusionPDF::getLargeCutoff)
-      .def("setLargeCutoff",
-           &DiffusionPDF::setLargeCutoff,
-           py::arg("largeCutoff"))
-      .def("getEdges", &DiffusionPDF::getEdges)
-      .def("setEdges", &DiffusionPDF::setEdges)
-      .def("getMaxIdx", &DiffusionPDF::getMaxIdx)
-      .def("getMinIdx", &DiffusionPDF::getMinIdx)
-      .def("getTime", &DiffusionPDF::getTime)
-      .def("setTime", &DiffusionPDF::setTime)
-      .def("iterateTimestep", &DiffusionPDF::iterateTimestep)
-      .def("findQuantile", &DiffusionPDF::findQuantile, py::arg("quantile"))
-      .def("findQuantiles", &DiffusionPDF::findQuantiles, py::arg("quantiles"))
-      .def("pGreaterThanX", &DiffusionPDF::pGreaterThanX, py::arg("idx"))
-      .def("calcVsAndPb", &DiffusionPDF::calcVsAndPb, py::arg("num"))
-      .def("VsAndPb", &DiffusionPDF::VsAndPb, py::arg("v"))
-      .def("getGumbelVariance",
-           &DiffusionPDF::getGumbelVariance,
-           py::arg("nParticles"))
-      .def("getCDF", &DiffusionPDF::getCDF);
-  m.def("getEinsteinPDF", &getEinsteinPDF);
-  m.def("getWholeEinsteinPDF", &getWholeEinsteinPDF);
 }

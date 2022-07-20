@@ -1,12 +1,12 @@
+#ifndef RANDOMNUMGENERATOR_HPP_
+#define RANDOMNUMGENERATOR_HPP_
+
 #include <boost/math/distributions.hpp>
 #include <boost/random.hpp>
 #include <boost/random/beta_distribution.hpp>
 #include <boost/random/binomial_distribution.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <random>
-
-#ifndef RANDOMNUMGENERATOR_HPP_
-#define RANDOMNUMGENERATOR_HPP_
 
 class RandomNumGenerator{
     protected:

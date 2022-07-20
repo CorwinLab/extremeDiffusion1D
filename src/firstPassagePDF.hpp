@@ -1,3 +1,6 @@
+#ifndef FISRTPASSAGEPDF_HPP_
+#define FISRTPASSAGEPDF_HPP_
+
 #include <assert.h>
 #include <boost/math/distributions.hpp>
 #include <boost/multiprecision/float128.hpp>
@@ -12,9 +15,6 @@
 #include "randomNumGenerator.hpp"
 
 typedef boost::multiprecision::float128 RealType;
-
-#ifndef FISRTPASSAGEPDF_HPP_
-#define FISRTPASSAGEPDF_HPP_
 
 class FirstPassagePDF : public RandomNumGenerator {
 protected:
