@@ -3,6 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+#pybind11 folder
+pybind11/
+
+#np quad folder
+numpy_quad/
+
 #Latex stuff
 *.aux
 *.log
@@ -15,8 +21,6 @@ __pycache__/
 
 # Keep example files
 !/examples/*
-!/Paper/Figures/*
-!/Paper/*.png
 
 # C extensions
 *.out
