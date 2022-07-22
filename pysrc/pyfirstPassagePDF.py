@@ -8,7 +8,7 @@ path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "FirstPass
 sys.path.append(path)
 
 import firstPassagePDF
-
+from typing import Iterable
 
 class FirstPassagePDF(firstPassagePDF.FirstPassagePDF):
     """Object to simulate the probability distribution of the
@@ -25,8 +25,8 @@ class FirstPassagePDF(firstPassagePDF.FirstPassagePDF):
         Maximum position to run the system out to.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, beta: float, maxPosition: int):
+        super().__init__(beta, maxPosition)
 
     @property
     def currentTime(self):
@@ -67,11 +67,11 @@ class FirstPassagePDF(firstPassagePDF.FirstPassagePDF):
     def iterateTimeStep(self):
         super().iterateTimeStep()
 
-    def evolveToTime(self, time):
+    def evolveToTime(self, time: int):
         while self.currentTime < time:
             self.iterateTimeStep()
 
-    def evolveAndSaveFirstPassagePDF(self, times, file):
+    def evolveAndSaveFirstPassagePDF(self, times: Iterable[int], file: str):
         """Evolve and save the first passage time pdf
 
         Parameters
@@ -101,7 +101,7 @@ class FirstPassagePDF(firstPassagePDF.FirstPassagePDF):
             pdf[i] = self.firstPassageProbability
         saveArrayQuad(file, np.array([times, pdf]).T)
 
-    def evolveToCutoff(self, cutoff, nParticles):
+    def evolveToCutoff(self, cutoff: float, nParticles: np.quad) -> np.ndarray:
         """Evolve the system until it reaches a threshold for the 
         cumulative distribution function of the Nth particle.
 
