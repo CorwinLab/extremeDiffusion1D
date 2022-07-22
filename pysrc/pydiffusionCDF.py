@@ -12,6 +12,7 @@ import csv
 import fileIO
 import json
 import time
+from typing import Sequence, Tuple, List
 
 
 class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
@@ -79,20 +80,20 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         to a file.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, beta: float, tMax: int):
+        super().__init__(beta, tMax)
         self._last_saved_time = time.process_time()  # seconds
         self._save_interval = 3600 * 6  # Set to save occupancy every XX hours.
         self.id = None  # Need to also get SLURM ID
         self.save_dir = "."
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"DiffusionTimeCDF(beta={self.beta}, time={self.time})"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
-    def __eq__(self, other):
+    def __eq__(self, other: 'DiffusionTimeCDF') -> bool:
         if not isinstance(other, DiffusionTimeCDF):
             raise TypeError(
                 f"Comparison must be between same object types, but other of type {type(other)}"
@@ -141,7 +142,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
     def tMax(self, tMax):
         self.settMax(tMax)
 
-    def setBetaSeed(self, seed):
+    def setBetaSeed(self, seed: int):
         """
         Set the random seed of the beta distribution.
 
@@ -173,7 +174,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
 
         super().iterateTimeStep()
 
-    def evolveToTime(self, time):
+    def evolveToTime(self, time: int):
         """
         Evolve the system to a time t.
 
@@ -186,7 +187,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         while self.time < time:
             self.iterateTimeStep()
 
-    def evolveTimesteps(self, num):
+    def evolveTimesteps(self, num: int):
         """
         Evolve the system forward a number of timesteps.
 
@@ -199,7 +200,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         for _ in range(num):
             self.iterateTimeStep()
 
-    def findQuantile(self, quantile):
+    def findQuantile(self, quantile: np.quad) -> int:
         """
         Find the corresponding quantile position.
 
@@ -216,7 +217,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
 
         return super().findQuantile(quantile)
 
-    def findQuantiles(self, quantiles, descending=False):
+    def findQuantiles(self, quantiles: Sequence[np.quad], descending: bool=False) -> np.ndarray:
         """
         Find the corresponding quantiles. Should be faster than a list compression
         over findQuntile b/c it does it in one loop.
@@ -243,7 +244,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             returnVals.reverse()
             return np.array(returnVals)
 
-    def findLowerQuantile(self, quantile):
+    def findLowerQuantile(self, quantile: np.quad) -> int:
         """
         Find a quantile in the lower part of the distribution.
         Opposite the findQuantile method
@@ -251,7 +252,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
 
         return super().findLowerQuantile(quantile)
 
-    def getGumbelVariance(self, nParticles):
+    def getGumbelVariance(self, nParticles: np.quad) -> np.quad:
         """
         Get the gumbel variance from the CDF.
 
@@ -268,7 +269,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
 
         return super().getGumbelVariance(nParticles)
 
-    def getProbandV(self, quantile):
+    def getProbandV(self, quantile: np.quad) -> Tuple[np.quad, float]:
         """
         Get the probability and velocity of a quantile.
 
@@ -318,7 +319,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             json.dump(vars, f)
 
     @classmethod
-    def fromFiles(cls, cdf_file, scalars_file):
+    def fromFiles(cls, cdf_file: str, scalars_file: str) -> 'DiffusionTimeCDF':
         """
         Load a DiffusionTimeCDF object from saved files.
 
@@ -350,7 +351,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
         d.CDF = cdf
         return d
 
-    def evolveAndGetVariance(self, times, nParticles, file, append=False):
+    def evolveAndGetVariance(self, times: Sequence[int], nParticles: Sequence[np.quad], file: str, append: bool=False):
         """
         Get the gumbel variance at specific times and save to file.
 
@@ -388,7 +389,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             f.flush()
         f.close()
 
-    def evolveAndSaveQuantile(self, time, quantiles, file, append=False):
+    def evolveAndSaveQuantile(self, time: Sequence[int], quantiles: Sequence[np.quad], file: str, append: bool=False):
         """
         Evolve the system to specific times and save the quantiles at those times
         to a file.
@@ -429,7 +430,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             writer.writerow(row)
         f.close()
 
-    def evolveAndGetProbAndV(self, quantile, time, save_file):
+    def evolveAndGetProbAndV(self, quantile: np.quad, time: Sequence[int], save_file: str):
         """
         Measure the probability of a quantile at different times.
 
@@ -464,7 +465,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
 
         f.close()
 
-    def evolveAndSaveFirstPassage(self, quantile, distances, save_file):
+    def evolveAndSaveFirstPassage(self, quantile: np.quad, distances: Sequence[int], save_file: str):
         """
         Measure the first passage time of a quantile at various distances.
         """
