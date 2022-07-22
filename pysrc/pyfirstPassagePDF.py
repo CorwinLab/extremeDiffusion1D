@@ -2,7 +2,7 @@ import sys
 import os
 import numpy as np
 import npquad
-from fileIO import saveArrayQuad, loadArrayQuad
+from fileIO import saveArrayQuad
 
 path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "FirstPassagePDF")
 sys.path.append(path)

@@ -110,10 +110,6 @@ public:
 
   std::pair<std::vector<double>, std::vector<RealType>> VsAndPb(const double v);
 
-  std::vector<std::vector<unsigned long int>>
-  evolveAndSaveFirstPassageQuantile(std::vector<unsigned long int> positions,
-                                    std::vector<RealType> quantiles);
-
   RealType getGumbelVariance(RealType maxParticle);
   std::vector<RealType> getCDF();
   std::pair<std::vector<long int>, std::vector<RealType>> getxvals_and_pdf();

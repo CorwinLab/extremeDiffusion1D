@@ -104,6 +104,7 @@ PYBIND11_MODULE(libDiffusion, m)
                &DiffusionPDF::getGumbelVariance,
                py::arg("nParticles"))
           .def("getCDF", &DiffusionPDF::getCDF);
+     
      py::class_<DiffusionCDF, RandomNumGenerator>(m, "DiffusionCDF")
           .def(py::init<const double, const unsigned long int>(),
                py::arg("beta"),

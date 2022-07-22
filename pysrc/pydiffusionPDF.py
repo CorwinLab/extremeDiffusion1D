@@ -13,7 +13,7 @@ import diffusionPDF
 import csv
 import npquad
 import fileIO
-
+from typing import Tuple, List, Sequence
 
 class DiffusionPDF(diffusionPDF.DiffusionPDF):
     """
@@ -90,8 +90,8 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         again.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, nParticles: np.quad, beta: float, occupancySize: int, ProbDistFlag: bool=True):
+        super().__init__(nParticles, beta, occupancySize, ProbDistFlag)
         self._last_saved_time = time.process_time()  # seconds
         self._save_interval = 3600 * 6  # Set to save occupancy every 2 hours.
         self.id = None  # Need to also get SLURM ID
@@ -216,7 +216,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         self.saveState()
         sys.exit(0)
 
-    def resizeOccupancyAndEdges(self, size):
+    def resizeOccupancyAndEdges(self, size: int):
         """
         Add elements to the end of the occupancy vector.
 
@@ -268,7 +268,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             json.dump(vars, file)
 
     @classmethod
-    def fromFiles(cls, variables_file, occupancy_file):
+    def fromFiles(cls, variables_file: str, occupancy_file: str) -> 'DiffusionPDF':
         """
         Create a DiffusionPDF class from variables saved with saveVariables()
         and saveState().
@@ -318,7 +318,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
         return d
 
-    def setBetaSeed(self, seed):
+    def setBetaSeed(self, seed: int):
         """
         Set the random generator seed for the beta distribution.
 
@@ -334,6 +334,12 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         """
         Move the occupancy forward one timestep drawing biases from the beta
         distribution.
+
+        Raises
+        ------
+        RuntimeError
+            If trying to iterate to a time greater than what was originally 
+            allocated.
         """
         # Save the occupancy periodically so we can start it up later.
         if (time.process_time() - self._last_saved_time) > self._save_interval:
@@ -345,13 +351,13 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             raise RuntimeError("Cannot iterate past the size of the edges")
         super().iterateTimestep()
 
-    def findQuantile(self, quantile):
+    def findQuantile(self, quantile: np.quad) -> np.ndarray:
         """
         Get the rightmost Nth quantile of the occupancy.
 
         Parameters
         ----------
-        quantile : float
+        quantile : np.quad or float
             Nth quantile to find. Must satisfy 1 < NQuart.
 
         Returns
@@ -372,7 +378,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
         return np.array(super().findQuantile(quantile))
 
-    def findQuantiles(self, quantiles):
+    def findQuantiles(self, quantiles: Sequence[np.quad]) -> np.ndarray:
         """
         Get the rightmost Nth quantile of the occupancy for multiple quantiles.
         Will be faster than writing a for loop over the findQuantile for most
@@ -411,7 +417,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
         return np.array(super().findQuantiles(quantiles))
 
-    def pGreaterThanX(self, idx):
+    def pGreaterThanX(self, idx: int) -> np.quad:
         """
         Get the probability of a particle being greater than index x.
 
@@ -420,11 +426,16 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         idx : int
             Index to find the number of particles in the occupancy that are greater
             than the index position.
+        
+        Returns
+        -------
+        np.quad 
+            Probability of a particle being greater than index x.
         """
 
         return super().pGreaterThanX(idx)
 
-    def calcVsAndPb(self, num):
+    def calcVsAndPb(self, num: int) -> Tuple[List, List]:
         """
         Calculate the velocity and probability being greater than v*t at the
         current time for a given number of points. Accrues velocities by moving
@@ -443,7 +454,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
         return super().calcVsAndPb(num)
 
-    def VsAndPv(self, minv=0.0):
+    def VsAndPv(self, minv: float=0.0) -> Tuple[List, List]:
         """
         Calculate velocities and ln(Pb(vt, t)) until minimum velocity is reached.
 
@@ -460,7 +471,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
 
         return super().VsAndPb(minv)
 
-    def evolveTimeSteps(self, iterations):
+    def evolveTimeSteps(self, iterations: int):
         """
         Evolves the system forward a specified number of timesteps.
 
@@ -473,7 +484,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         for _ in range(iterations):
             self.iterateTimestep()
 
-    def evolveToTime(self, time):
+    def evolveToTime(self, time: int):
         """
         Evolve the system to a specified time. If the input time is greater than
         the system's current time it won't actually do anything.
@@ -487,7 +498,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         while self.getTime() < time:
             self.iterateTimestep()
 
-    def evolveAndSaveQuantiles(self, time, quantiles, file, append=False):
+    def evolveAndSaveQuantiles(self, time: Sequence[int], quantiles: Sequence[np.quad], file: str, append=False):
         """
         Incrementally evolves the system forward to the specified times and saves
         the specified quantiles after each increment.
@@ -547,7 +558,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             f.flush()
         f.close()
 
-    def evolveAndSaveMax(self, time, file, append=False):
+    def evolveAndSaveMax(self, time: Sequence[int], file: str, append=False):
         f = open(file, "a")
         writer = csv.writer(f)
 
@@ -565,7 +576,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             f.flush()
         f.close()
 
-    def evolveAndSaveV(self, time, vs, file):
+    def evolveAndSaveV(self, time: Sequence[int], vs: Sequence[float], file: str):
         """
         Incrementally evolves the system forward to the specified times and saves
         the number of particles greater than position v * time after each increment.
@@ -621,7 +632,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             writer.writerow(row)
         f.close()
 
-    def evolveAndSave(self, time, quantiles, file):
+    def evolveAndSave(self, time: Sequence[int], quantiles: Sequence[np.quad], file: str):
         """
         Incrementally evolves the system forward to the specified times and saves
         the specified quantiles after each increment. The data is stored as a
@@ -659,7 +670,7 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
             save_array[row_num, :] = row
         np.savetxt(file, save_array)
 
-    def evolveAndSaveFirstPassage(self, positions, file):
+    def evolveAndSaveFirstPassage(self, positions: Sequence[int], file: str):
         """
         Evolve the system forward and save the time when the maximum particle has
         reached a specified distance. Really only useful for when doing discrete
@@ -702,34 +713,16 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
                 writer.writerow(row)
                 f.flush()
                 idx += 1
+        f.close()
 
-    def evolveAndSaveFirstPassageQuantile(self, positions, quantiles):
-        """
-        Evolve the system forward and save the time when the specifid quantile
-        has reached a specified distance.
-
-        Parameters
-        ----------
-        positions : list or numpy array
-            Positions to record the first passage time for
-
-        quantiles : list or numpy array
-            Quantiles to record the positions for
-
-        file : str
-            File to save the first passage time to
-        """
-
-        return super().evolveAndSaveFirstPassageQuantile(positions, quantiles)
-
-    def ProbBiggerX(self, vs, timesteps):
+    def ProbBiggerX(self, vs: np.ndarray, timesteps: int):
         """
         Troubleshooting function to make sure that pGreaterThanX function
         works properly.
 
         Parameters
         ----------
-        vs : list or numpy array
+        vs : numpy array
             Velocities to print out
 
         timesteps : int
@@ -762,8 +755,3 @@ class DiffusionPDF(diffusionPDF.DiffusionPDF):
         print("Occupancy:", np.array(self.getOccupancy())[nonzeros])
         print("Prob: ", np.array(Ns) / self.getNParticles())
 
-
-if __name__ == "__main__":
-    d = DiffusionPDF(10, np.inf, 1000, ProbDistFlag=False)
-    d.evolveAndSaveFirstPassage([1, 2, 3], "Times.txt")
-    print(np.loadtxt("Times.txt"))
