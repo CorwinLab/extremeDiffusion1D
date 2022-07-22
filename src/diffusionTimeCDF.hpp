@@ -12,6 +12,7 @@
 #include <random>
 #include <utility>
 #include <vector>
+#include "diffusionCDFBase.hpp"
 #include "randomNumGenerator.hpp"
 
 typedef boost::multiprecision::float128 RealType;

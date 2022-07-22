@@ -1,5 +1,5 @@
 #include "diffusionCDFBase.hpp"
-#include "randomNumberGenerator.hpp"
+#include "randomNumGenerator.hpp"
 
 DiffusionCDF::DiffusionCDF(const double _beta, const unsigned long int _tMax) : RandomNumGenerator(_beta)
 {

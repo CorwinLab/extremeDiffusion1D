@@ -25,6 +25,7 @@ numpy_quad/
 # C extensions
 *.out
 *.so
+*.o
 *.gch
 *.output
 

@@ -37,119 +37,120 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 } // namespace detail
 } // namespace pybind11
 
-PYBIND11_MODULE(lifDiffusion, m)
+PYBIND11_MODULE(libDiffusion, m)
 {
-    py::class_<FirstPassagePDF, RandomNumGenerator>(m, "FirstPassagePDF")
-      .def(py::init<const double, const unsigned long int>(),
-           py::arg("beta"),
-           py::arg("maxPosition"))
-      .def("getBeta", &FirstPassagePDF::getBeta)
-      .def("setBeta", &FirstPassagePDF::setBeta)
-      .def("getTime", &FirstPassagePDF::getTime)
-      .def("setTime", &FirstPassagePDF::setTime)
-      .def("getPDF", &FirstPassagePDF::getPDF)
-      .def("setPDF", &FirstPassagePDF::setPDF)
-      .def("getMaxPosition", &FirstPassagePDF::getMaxPosition)
-      .def("setMaxPosition", &FirstPassagePDF::setMaxPosition)
-      .def("iterateTimeStep", &FirstPassagePDF::iterateTimeStep)
-      .def("getFirstPassageProbability",
-           &FirstPassagePDF::getFirstPassageProbability)
-      .def("evolveToCutoff", &FirstPassagePDF::evolveToCutoff);
+     m.doc() = "Random walk library";
+     py::class_<FirstPassagePDF, RandomNumGenerator>(m, "FirstPassagePDF")
+          .def(py::init<const double, const unsigned long int>(),
+               py::arg("beta"),
+               py::arg("maxPosition"))
+          .def("getBeta", &FirstPassagePDF::getBeta)
+          .def("setBeta", &FirstPassagePDF::setBeta)
+          .def("getTime", &FirstPassagePDF::getTime)
+          .def("setTime", &FirstPassagePDF::setTime)
+          .def("getPDF", &FirstPassagePDF::getPDF)
+          .def("setPDF", &FirstPassagePDF::setPDF)
+          .def("getMaxPosition", &FirstPassagePDF::getMaxPosition)
+          .def("setMaxPosition", &FirstPassagePDF::setMaxPosition)
+          .def("iterateTimeStep", &FirstPassagePDF::iterateTimeStep)
+          .def("getFirstPassageProbability",
+               &FirstPassagePDF::getFirstPassageProbability)
+          .def("evolveToCutoff", &FirstPassagePDF::evolveToCutoff);
 
-    py::class_<DiffusionPDF, RandomNumGenerator>(m, "DiffusionPDF")
-      .def(py::init<const RealType,
-                    const double,
-                    const unsigned long int,
-                    const bool>(),
-           py::arg("numberOfParticles"),
-           py::arg("beta"),
-           py::arg("occupancySize"),
-           py::arg("ProbDistFlag") = true)
-      .def("getOccupancy", &DiffusionPDF::getOccupancy)
-      .def("setOccupancy", &DiffusionPDF::setOccupancy, py::arg("occupancy"))
-      .def("getOccupancySize", &DiffusionPDF::getOccupancySize)
-      .def("getSaveOccupancy", &DiffusionPDF::getSaveOccupancy)
-      .def("getSaveEdges", &DiffusionPDF::getSaveEdges)
-      .def("resizeOccupancyAndEdges",
-           &DiffusionPDF::resizeOccupancyAndEdges,
-           py::arg("size"))
-      .def("getNParticles", &DiffusionPDF::getNParticles)
-      .def("getBeta", &DiffusionPDF::getBeta)
-      .def("setProbDistFlag",
-           &DiffusionPDF::setProbDistFlag,
-           py::arg("ProbDistFlag"))
-      .def("getProbDistFlag", &DiffusionPDF::getProbDistFlag)
-      .def("getSmallCutoff", &DiffusionPDF::getSmallCutoff)
-      .def("setSmallCutoff",
-           &DiffusionPDF::setSmallCutoff,
-           py::arg("smallCutoff"))
-      .def("getLargeCutoff", &DiffusionPDF::getLargeCutoff)
-      .def("setLargeCutoff",
-           &DiffusionPDF::setLargeCutoff,
-           py::arg("largeCutoff"))
-      .def("getEdges", &DiffusionPDF::getEdges)
-      .def("setEdges", &DiffusionPDF::setEdges)
-      .def("getMaxIdx", &DiffusionPDF::getMaxIdx)
-      .def("getMinIdx", &DiffusionPDF::getMinIdx)
-      .def("getTime", &DiffusionPDF::getTime)
-      .def("setTime", &DiffusionPDF::setTime)
-      .def("iterateTimestep", &DiffusionPDF::iterateTimestep)
-      .def("findQuantile", &DiffusionPDF::findQuantile, py::arg("quantile"))
-      .def("findQuantiles", &DiffusionPDF::findQuantiles, py::arg("quantiles"))
-      .def("pGreaterThanX", &DiffusionPDF::pGreaterThanX, py::arg("idx"))
-      .def("calcVsAndPb", &DiffusionPDF::calcVsAndPb, py::arg("num"))
-      .def("VsAndPb", &DiffusionPDF::VsAndPb, py::arg("v"))
-      .def("getGumbelVariance",
-           &DiffusionPDF::getGumbelVariance,
-           py::arg("nParticles"))
-      .def("getCDF", &DiffusionPDF::getCDF);
-    py::class_<DiffusionCDF, RandomNumGenerator>(m, "DiffusionCDF")
-      .def(py::init<const double, const unsigned long int>(),
-           py::arg("beta"),
-           py::arg("tMax"))
-      .def("getBeta", &DiffusionCDF::getBeta)
-      .def("getCDF", &DiffusionCDF::getCDF)
-      .def("setCDF", &DiffusionCDF::setCDF, py::arg("CDF"))
-      .def("gettMax", &DiffusionCDF::gettMax)
-      .def("settMax", &DiffusionCDF::settMax)
-      .def("setBetaSeed", &DiffusionCDF::setBetaSeed, py::arg("seed"));
+     py::class_<DiffusionPDF, RandomNumGenerator>(m, "DiffusionPDF")
+          .def(py::init<const RealType,
+                         const double,
+                         const unsigned long int,
+                         const bool>(),
+               py::arg("numberOfParticles"),
+               py::arg("beta"),
+               py::arg("occupancySize"),
+               py::arg("ProbDistFlag") = true)
+          .def("getOccupancy", &DiffusionPDF::getOccupancy)
+          .def("setOccupancy", &DiffusionPDF::setOccupancy, py::arg("occupancy"))
+          .def("getOccupancySize", &DiffusionPDF::getOccupancySize)
+          .def("getSaveOccupancy", &DiffusionPDF::getSaveOccupancy)
+          .def("getSaveEdges", &DiffusionPDF::getSaveEdges)
+          .def("resizeOccupancyAndEdges",
+               &DiffusionPDF::resizeOccupancyAndEdges,
+               py::arg("size"))
+          .def("getNParticles", &DiffusionPDF::getNParticles)
+          .def("getBeta", &DiffusionPDF::getBeta)
+          .def("setProbDistFlag",
+               &DiffusionPDF::setProbDistFlag,
+               py::arg("ProbDistFlag"))
+          .def("getProbDistFlag", &DiffusionPDF::getProbDistFlag)
+          .def("getSmallCutoff", &DiffusionPDF::getSmallCutoff)
+          .def("setSmallCutoff",
+               &DiffusionPDF::setSmallCutoff,
+               py::arg("smallCutoff"))
+          .def("getLargeCutoff", &DiffusionPDF::getLargeCutoff)
+          .def("setLargeCutoff",
+               &DiffusionPDF::setLargeCutoff,
+               py::arg("largeCutoff"))
+          .def("getEdges", &DiffusionPDF::getEdges)
+          .def("setEdges", &DiffusionPDF::setEdges)
+          .def("getMaxIdx", &DiffusionPDF::getMaxIdx)
+          .def("getMinIdx", &DiffusionPDF::getMinIdx)
+          .def("getTime", &DiffusionPDF::getTime)
+          .def("setTime", &DiffusionPDF::setTime)
+          .def("iterateTimestep", &DiffusionPDF::iterateTimestep)
+          .def("findQuantile", &DiffusionPDF::findQuantile, py::arg("quantile"))
+          .def("findQuantiles", &DiffusionPDF::findQuantiles, py::arg("quantiles"))
+          .def("pGreaterThanX", &DiffusionPDF::pGreaterThanX, py::arg("idx"))
+          .def("calcVsAndPb", &DiffusionPDF::calcVsAndPb, py::arg("num"))
+          .def("VsAndPb", &DiffusionPDF::VsAndPb, py::arg("v"))
+          .def("getGumbelVariance",
+               &DiffusionPDF::getGumbelVariance,
+               py::arg("nParticles"))
+          .def("getCDF", &DiffusionPDF::getCDF);
+     py::class_<DiffusionCDF, RandomNumGenerator>(m, "DiffusionCDF")
+          .def(py::init<const double, const unsigned long int>(),
+               py::arg("beta"),
+               py::arg("tMax"))
+          .def("getBeta", &DiffusionCDF::getBeta)
+          .def("getCDF", &DiffusionCDF::getCDF)
+          .def("setCDF", &DiffusionCDF::setCDF, py::arg("CDF"))
+          .def("gettMax", &DiffusionCDF::gettMax)
+          .def("settMax", &DiffusionCDF::settMax)
+          .def("setBetaSeed", &DiffusionCDF::setBetaSeed, py::arg("seed"));
 
-    py::class_<DiffusionTimeCDF, DiffusionCDF>(m, "DiffusionTimeCDF")
-      .def(py::init<const double, const unsigned long int>(),
-           py::arg("beta"),
-           py::arg("tMax"))
-      .def("getGumbelVariance",
-           static_cast<RealType (DiffusionTimeCDF::*)(RealType)>(
-               &DiffusionTimeCDF::getGumbelVariance),
-           py::arg("nParticles"))
-      .def("getGumbelVariance",
-           static_cast<std::vector<RealType> (DiffusionTimeCDF::*)(
-               std::vector<RealType>)>(&DiffusionTimeCDF::getGumbelVariance),
-           py::arg("nParticles"))
-      .def("getTime", &DiffusionTimeCDF::getTime)
-      .def("setTime", &DiffusionTimeCDF::setTime)
-      .def("iterateTimeStep", &DiffusionTimeCDF::iterateTimeStep)
-      .def("findQuantile", &DiffusionTimeCDF::findQuantile, py::arg("quantile"))
-      .def("findQuantiles",
-           &DiffusionTimeCDF::findQuantiles,
-           py::arg("quantiles"))
-      .def("findLowerQuantile",
-           &DiffusionTimeCDF::findLowerQuantile,
-           py::arg("quantile"))
-      .def("getSaveCDF", &DiffusionTimeCDF::getSaveCDF)
-      .def("getxvals", &DiffusionTimeCDF::getxvals)
-      .def("getProbandV", &DiffusionTimeCDF::getProbandV, py::arg("quantile"))
-      .def("generateBeta", &DiffusionTimeCDF::generateBeta);
+     py::class_<DiffusionTimeCDF, DiffusionCDF>(m, "DiffusionTimeCDF")
+          .def(py::init<const double, const unsigned long int>(),
+               py::arg("beta"),
+               py::arg("tMax"))
+          .def("getGumbelVariance",
+               static_cast<RealType (DiffusionTimeCDF::*)(RealType)>(
+                    &DiffusionTimeCDF::getGumbelVariance),
+               py::arg("nParticles"))
+          .def("getGumbelVariance",
+               static_cast<std::vector<RealType> (DiffusionTimeCDF::*)(
+                    std::vector<RealType>)>(&DiffusionTimeCDF::getGumbelVariance),
+               py::arg("nParticles"))
+          .def("getTime", &DiffusionTimeCDF::getTime)
+          .def("setTime", &DiffusionTimeCDF::setTime)
+          .def("iterateTimeStep", &DiffusionTimeCDF::iterateTimeStep)
+          .def("findQuantile", &DiffusionTimeCDF::findQuantile, py::arg("quantile"))
+          .def("findQuantiles",
+               &DiffusionTimeCDF::findQuantiles,
+               py::arg("quantiles"))
+          .def("findLowerQuantile",
+               &DiffusionTimeCDF::findLowerQuantile,
+               py::arg("quantile"))
+          .def("getSaveCDF", &DiffusionTimeCDF::getSaveCDF)
+          .def("getxvals", &DiffusionTimeCDF::getxvals)
+          .def("getProbandV", &DiffusionTimeCDF::getProbandV, py::arg("quantile"))
+          .def("generateBeta", &DiffusionTimeCDF::generateBeta);
 
-    py::class_<DiffusionPositionCDF, DiffusionCDF>(m, "DiffusionPositionCDF")
-      .def(py::init<const double,
-                    const unsigned long int,
-                    std::vector<RealType>>(),
-           py::arg("beta"),
-           py::arg("tMax"),
-           py::arg("quantiles"))
-      .def("getPosition", &DiffusionPositionCDF::getPosition)
-      .def("getQuantilePositions", &DiffusionPositionCDF::getQuantilePositions)
-      .def("getQuantiles", &DiffusionPositionCDF::getQuantiles)
-      .def("stepPosition", &DiffusionPositionCDF::stepPosition);
+     py::class_<DiffusionPositionCDF, DiffusionCDF>(m, "DiffusionPositionCDF")
+          .def(py::init<const double,
+                         const unsigned long int,
+                         std::vector<RealType>>(),
+               py::arg("beta"),
+               py::arg("tMax"),
+               py::arg("quantiles"))
+          .def("getPosition", &DiffusionPositionCDF::getPosition)
+          .def("getQuantilePositions", &DiffusionPositionCDF::getQuantilePositions)
+          .def("getQuantiles", &DiffusionPositionCDF::getQuantiles)
+          .def("stepPosition", &DiffusionPositionCDF::stepPosition);
 }

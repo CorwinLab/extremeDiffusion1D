@@ -5,7 +5,6 @@
 #include <limits>
 
 #include "firstPassagePDF.hpp"
-#include "pybind11_numpy_scalar.h"
 #include "randomNumGenerator.hpp"
 
 using RealType = boost::multiprecision::float128;
