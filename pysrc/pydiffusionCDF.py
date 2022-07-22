@@ -495,10 +495,10 @@ class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
     Class to iterate through the position of the CDF.
     """
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"DiffusionCDF(beta={self.beta}, time={self.position})"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
     @property
@@ -539,7 +539,7 @@ class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
 
         super().stepPosition()
 
-    def evolveToPosition(self, n):
+    def evolveToPosition(self, n: int):
         """
         Move the system forward to a specified position.
 
@@ -552,7 +552,7 @@ class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
         while self.position < n:
             self.stepPosition()
 
-    def evolvePositions(self, num_positions):
+    def evolvePositions(self, num_positions: int):
         """
         Move the system forward a fixed number of positions.
         """
