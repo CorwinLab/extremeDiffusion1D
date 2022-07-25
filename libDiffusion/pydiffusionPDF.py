@@ -4,18 +4,14 @@ import os
 import time
 import json
 import signal
-
-# Need to link to diffusionPDF library (PyBind11 code)
-path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "DiffusionPDF")
-sys.path.append(path)
-
-import diffusionPDF
 import csv
 import npquad
-import fileIO
 from typing import Tuple, List, Sequence
 
-class DiffusionPDF(diffusionPDF.DiffusionPDF):
+from lDiffusionLink import libDiffusion
+import fileIO
+
+class DiffusionPDF(libDiffusion.DiffusionPDF):
     """
     Helper class for C++ Diffusion object. Allows simulating random walks with
     biases drawn from a beta distribution. Includes multiple helper functions to

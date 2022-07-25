@@ -1,21 +1,17 @@
 import sys
 import os
-
-# Need to link to diffusionPDF library (PyBind11 code)
-path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "DiffusionCDF")
-sys.path.append(path)
-
-import diffusionCDF
 import numpy as np
 import npquad
-import csv
-import fileIO
 import json
 import time
 from typing import Sequence, Tuple, List
+import csv
+
+from lDiffusionLink import libDiffusion
+import fileIO
 
 
-class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
+class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
     """
     Create a class that iterates through the time of the CDF. Can also be used to
     get the discrete variance.
@@ -490,7 +486,7 @@ class DiffusionTimeCDF(diffusionCDF.DiffusionTimeCDF):
             idx += 1
 
 
-class DiffusionPositionCDF(diffusionCDF.DiffusionPositionCDF):
+class DiffusionPositionCDF(libDiffusion.DiffusionPositionCDF):
     """
     Class to iterate through the position of the CDF.
     """

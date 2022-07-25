@@ -40,6 +40,13 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 PYBIND11_MODULE(libDiffusion, m)
 {
      m.doc() = "Random walk library";
+     py::class_<RandomNumGenerator>(m, "RandomNumGenerator")
+          .def(py::init<const double>())
+          .def("getBeta", &RandomNumGenerator::getBeta)
+          .def("setBeta", &RandomNumGenerator::setBeta)
+          .def("generateBeta", &RandomNumGenerator::generateBeta)
+          .def("setBetaSeed", &RandomNumGenerator::setBetaSeed);
+          
      py::class_<FirstPassagePDF, RandomNumGenerator>(m, "FirstPassagePDF")
           .def(py::init<const double, const unsigned long int>(),
                py::arg("beta"),
