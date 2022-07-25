@@ -16,9 +16,10 @@ static_assert(sizeof(RealType) == 16, "Bad size");
 DiffusionPDF::DiffusionPDF(const RealType _nParticles,
                            const double _beta,
                            const unsigned long int _occupancySize,
-                           const bool _ProbDistFlag) 
+                           const bool _ProbDistFlag,
+                           const bool _staticEnvironment) 
       : RandomNumGenerator(_beta), nParticles(_nParticles), occupancySize(_occupancySize),
-      ProbDistFlag(_ProbDistFlag)
+      ProbDistFlag(_ProbDistFlag), staticEnvironment(_staticEnvironment)
 {
   if (isnan(nParticles) || isinf(nParticles)) {
     throw std::runtime_error("Number of particles initialized to NaN");
@@ -29,6 +30,8 @@ DiffusionPDF::DiffusionPDF(const RealType _nParticles,
 
   occupancy.resize(_occupancySize + 1);
   occupancy[0] = nParticles;
+
+  transitionProbabilities.resize(_occupancySize +1, -1);
 
   time = 0;
 }
@@ -129,7 +132,16 @@ void DiffusionPDF::iterateTimestep()
 
     RealType bias = 0;
     if (*occ != 0) {
-      bias = RealType(DiffusionPDF::generateBeta());
+      if (!staticEnvironment){
+        bias = RealType(DiffusionPDF::generateBeta());
+      }
+      else {
+        if (transitionProbabilities[i] == -1){
+          transitionProbabilities[i] = generateBeta();
+        }
+        bias = transitionProbabilities[i];
+      }
+      
       toNextSite = DiffusionPDF::toNextSite(*occ, bias);
       if (!ProbDistFlag) {
         toNextSite = round(toNextSite);

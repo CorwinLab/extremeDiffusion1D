@@ -70,14 +70,17 @@ PYBIND11_MODULE(libDiffusion, m)
           .def(py::init<const RealType,
                          const double,
                          const unsigned long int,
+                         const bool,
                          const bool>(),
                py::arg("numberOfParticles"),
                py::arg("beta"),
                py::arg("occupancySize"),
-               py::arg("ProbDistFlag") = true)
+               py::arg("ProbDistFlag") = true,
+               py::arg("staticEnvironment") = false)
           .def("getOccupancy", &DiffusionPDF::getOccupancy)
           .def("setOccupancy", &DiffusionPDF::setOccupancy, py::arg("occupancy"))
           .def("getOccupancySize", &DiffusionPDF::getOccupancySize)
+          .def("getTransitionProbabilities", &DiffusionPDF::getTransitionProbabilities)
           .def("getSaveOccupancy", &DiffusionPDF::getSaveOccupancy)
           .def("getSaveEdges", &DiffusionPDF::getSaveEdges)
           .def("resizeOccupancyAndEdges",

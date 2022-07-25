@@ -22,6 +22,8 @@ private:
   RealType nParticles;
   unsigned long int occupancySize;
   bool ProbDistFlag;
+  bool staticEnvironment;
+  std::vector<double> transitionProbabilities;
   double smallCutoff = pow(2, 31) - 2;
   double largeCutoff = 1e64;
 
@@ -38,7 +40,8 @@ public:
   DiffusionPDF(const RealType _nParticles,
                const double _beta,
                const unsigned long int _occupancySize,
-               const bool _probDistFlag = true);
+               const bool _probDistFlag = true,
+               const bool _staticEnvironment = false);
   ~DiffusionPDF(){};
 
   RealType getNParticles() { return nParticles; };
@@ -52,6 +55,8 @@ public:
   };
   std::vector<RealType> getOccupancy() { return occupancy; };
   unsigned long int getOccupancySize() { return occupancySize; };
+
+  std::vector<double> getTransitionProbabilities() { return transitionProbabilities; };
 
   std::vector<RealType> getSaveOccupancy();
   std::pair<std::vector<unsigned long int>, std::vector<unsigned long int>>

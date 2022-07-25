@@ -34,6 +34,10 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         round the particles shifting and if False then rounds the particles so
         there is always a whole number of particles.
 
+    staticEnvironment : bool (false)
+        Whether or not to keep the environment, or transition probabilities, 
+        constant in time.
+
     Attributes
     ----------
     time : numpy array
@@ -86,8 +90,8 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         again.
     """
 
-    def __init__(self, nParticles: np.quad, beta: float, occupancySize: int, ProbDistFlag: bool=True):
-        super().__init__(nParticles, beta, occupancySize, ProbDistFlag)
+    def __init__(self, nParticles: np.quad, beta: float, occupancySize: int, ProbDistFlag: bool=True, staticEnvironment: bool=False):
+        super().__init__(nParticles, beta, occupancySize, ProbDistFlag, staticEnvironment)
         self._last_saved_time = time.process_time()  # seconds
         self._save_interval = 3600 * 6  # Set to save occupancy every 2 hours.
         self.id = None  # Need to also get SLURM ID
