@@ -1,13 +1,13 @@
 #it's somewhat important that you run this script from the pyCudaPacking
 #directory
 
-pyCudaPath=${PWD}
+pyDiffusionPath=${PWD}
 
 #first we need to ask where you want to put pybind11
 while true; do
-    read -rep $'Please input the path where you would like pybind11. Leave blank to put in the same directory as pyCudaPacking.\n' pyBindPath
+    read -rep $'Please input the path where you would like pybind11. Leave blank to put in the same directory as pyDiffusionPath.\n' pyBindPath
     if [ "$pyBindPath" = "" ]; then
-	pyBindPath=$(echo $pyCudaPath | sed "s|/pyCudaPacking||")
+	pyBindPath=$(echo $pyDiffusionPath | sed "s|/pyDiffusionPath||")
 	echo $pyBindPath
     fi
     break
@@ -15,9 +15,9 @@ done
 
 #then np_quad:
 while true; do
-    read -rep $'Please input the path where you would like np_quad. Leave blank to put in the same directory as pyCudaPacking.\n' npQuadPath
+    read -rep $'Please input the path where you would like np_quad. Leave blank to put in the same directory as pyDiffusionPath.\n' npQuadPath
     if [ "$npQuadPath" = "" ]; then
-	npQuadPath=$(echo $pyCudaPath | sed "s|/pyCudaPacking||")
+	npQuadPath=$(echo $pyDiffusionPath | sed "s|/pyDiffusionPath||")
 	echo $npQuadPath
     fi
     break
@@ -34,5 +34,11 @@ cd numpy_quad/
 echo "Now setup your numpy_quad"
 python3 setup.py develop --user
 
+# compile the C++ library
 cd ../src/
-c++ -O3 -march=native -Wall -shared -std=gnu++11 -fPIC $(python3-config --includes) libDiffusion.cpp -I/c/modular-boost -lquadmath -o libDiffusion.so -I"$pyBindPath/pybind11/include"
+./compile.sh
+
+# now export pyDiffusion to python path
+dirPath="$pyDiffusionPath/pyDiffusion"
+exportString='export PYTHONPATH=$PYTHONPATH:'
+echo "$exportString$dirPath" >> ~/.bashrc
