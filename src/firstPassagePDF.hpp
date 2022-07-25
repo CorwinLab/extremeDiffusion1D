@@ -43,10 +43,7 @@ public:
 
   RealType getFirstPassageProbability() { return firstPassageProbability; };
 
-  std::tuple<std::vector<unsigned int long>,
-             std::vector<RealType>,
-             std::vector<RealType>,
-             std::vector<RealType>>
+  std::tuple<unsigned int long, RealType>
   evolveToCutoff(RealType prob_cutOff, RealType nParticles);
 };
 

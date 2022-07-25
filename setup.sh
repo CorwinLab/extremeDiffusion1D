@@ -39,6 +39,6 @@ cd ../src/
 ./compile.sh
 
 # now export pyDiffusion to python path
-dirPath="$pyDiffusionPath/pyDiffusion"
+dirPath="$pyDiffusionPath"
 exportString='export PYTHONPATH=$PYTHONPATH:'
 echo "$exportString$dirPath" >> ~/.bashrc

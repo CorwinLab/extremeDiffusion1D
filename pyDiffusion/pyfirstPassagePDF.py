@@ -2,7 +2,7 @@ import sys
 import os
 import numpy as np
 import npquad
-from typing import Iterable
+from typing import Iterable, Tuple
 
 from .fileIO import saveArrayQuad
 from .lDiffusionLink import libDiffusion
@@ -98,7 +98,7 @@ class FirstPassagePDF(libDiffusion.FirstPassagePDF):
             pdf[i] = self.firstPassageProbability
         saveArrayQuad(file, np.array([times, pdf]).T)
 
-    def evolveToCutoff(self, cutoff: float, nParticles: np.quad) -> np.ndarray:
+    def evolveToCutoff(self, cutoff: float, nParticles: np.quad) -> Tuple[int, np.quad]:
         """Evolve the system until it reaches a threshold for the 
         cumulative distribution function of the Nth particle.
 
@@ -116,8 +116,10 @@ class FirstPassagePDF(libDiffusion.FirstPassagePDF):
 
         Returns
         -------
-        np.array
-            Array with columns: (distance, pdf, cdf, cdf of N particles)
+        tuple (int, np.quad)
+            First value is the N-quantile of first passage time for a single particle.
+            The second value is the variance of the first passage time for a N-particle
+            system.
         
         Examples
         --------
@@ -125,11 +127,8 @@ class FirstPassagePDF(libDiffusion.FirstPassagePDF):
         >>> maxPosition = 500 
         >>> beta = np.inf
         >>> pdf = FirstPassagePDF(beta, maxPosition)
-        >>> data = pdf.evolveToCutoff(0.99, 10**24)
-        >>> fig, ax = plt.subplots()
-        >>> ax.plot(data[:, 0], data[:, 2], c='k', label='Single Particle')
-        >>> ax.plot(data[:, 0], data[:, 3], c='b', label='N=10^24 Particles')
-        >>> ax.legend()
-        >>> fig.savefig("PDFtest.png")
+        >>> data = pdf.evolveToCutoff(1, 10**24)
+        >>> print(data)
+        (2360 2796.11819544274829798130996166195575)
         """
-        return np.array(super().evolveToCutoff(cutoff, nParticles)).T
+        return super().evolveToCutoff(cutoff, nParticles)
