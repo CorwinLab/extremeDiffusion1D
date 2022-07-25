@@ -23,6 +23,13 @@ def calculateMeanAndVariance(x, pdf):
     return mean, var
 
 def runExperiment(beta, d, cutoff, N_min, N_max, number_of_Ns, save_file):
+    beta = float(beta)
+    d = int(d)
+    cutoff=float(cutoff)
+    N_min = int(N_min)
+    N_max = int(N_max)
+    number_of_Ns = int(number_of_Ns)
+
     f = open(save_file, "a")
     writer = csv.writer(f)
     writer.writerow(['distance', 'mean', 'var', 'quantile'])
@@ -40,7 +47,7 @@ def runExperiment(beta, d, cutoff, N_min, N_max, number_of_Ns, save_file):
         Ncdf, Npdf = sampleCDF(cdf, N)
         mean_val, var_val = calculateMeanAndVariance(times[1:], Npdf)
 
-        writer.writerow([d, mean_val, var_val, quantile_time])
+        writer.writerow([N_exp, mean_val, var_val, quantile_time])
         f.flush()
 
     f.close()

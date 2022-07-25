@@ -8,14 +8,15 @@
 #SBATCH --output=/home/jhass2/jamming/JacobData/logs/NFirstPassCDF/%A-%a.out
 #SBATCH --account=jamming
 #SBATCH --partition=preempt
+#SBATCH --nice=1000
 
 TOPDIR=/home/jhass2/jamming/JacobData/NFirstPassCDF/
 BETA=1
 DISTANCE=700
 N_MIN=10
 N_MAX=300
-NUMBER_OF_NS=15
-
+NUMBER_OF_NS=50
+CUTOFF=1
 mkdir -p $TOPDIR
 
 for i in {0..10}

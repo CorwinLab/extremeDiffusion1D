@@ -1,18 +1,11 @@
-import sys
-import os
-
-src_path = os.path.join(os.path.dirname(__file__), "..", "src")
-sys.path.append(src_path)
-
-from pydiffusionPDF import DiffusionPDF
-import quadMath
-import fileIO
+from pyDiffusion import DiffusionPDF, quadMath, fileIO
 import numpy as np
 import npquad
 from datetime import date
 from experimentUtils import saveVars
 from sys import exit
-
+import sys
+import os
 
 def runExperiment(
     beta,
@@ -24,6 +17,7 @@ def runExperiment(
     probDistFlag,
     max_distance,
     tMax,
+    staticEnvironment,
 ):
     """
     Run simulation to get first passage time for some distances.
@@ -33,6 +27,7 @@ def runExperiment(
     tMax = int(tMax)
     num_of_save_distances = int(num_of_save_distances)
     probDistFlag = bool(int(probDistFlag))
+    staticEnvironment = bool(int(staticEnvironment))
     max_distance = int(max_distance)
 
     logN = np.log(N).astype(float)
@@ -47,12 +42,11 @@ def runExperiment(
     #    save_times = save_times[save_times > d.currentTime]
     #    append = True
     # else:
-    d = DiffusionPDF(N, beta=beta, occupancySize=tMax, ProbDistFlag=probDistFlag)
+    d = DiffusionPDF(N, beta=beta, occupancySize=tMax, ProbDistFlag=probDistFlag, staticEnvironment=staticEnvironment)
 
     d.save_dir = save_dir
     d.id = sysID
     append = False
-
     d.evolveAndSaveFirstPassage(distances, save_file)
 
     fileIO.saveArrayQuad(save_occ, d.occupancy)
@@ -67,6 +61,7 @@ if __name__ == "__main__":
         num_of_save_distances,
         probDistFlag,
         tMax,
+        staticEnvironment,
     ) = sys.argv[1:]
 
     save_dir = f"{topDir}"
@@ -90,6 +85,7 @@ if __name__ == "__main__":
         "save_occ": save_occ,
         "max_distance": max_distance,
         "tMax": tMax,
+        "staticEnvironment": staticEnvironment
     }
     vars_file = os.path.join(save_dir, "variables.json")
     today = date.today()

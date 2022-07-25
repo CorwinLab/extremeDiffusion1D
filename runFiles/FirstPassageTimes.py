@@ -30,12 +30,13 @@ def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file):
     dmax = float(dmax)
     cutoff = float(cutoff)
     N = np.quad(f"1e{N_exp}")
-    distances = np.arange(dmin, dmax).astype(int)
+    distances = np.geomspace(dmin, dmax, num=500).astype(int)
+    distances = np.unique(distances)
 
     f = open(save_file, "a")
     writer = csv.writer(f)
     writer.writerow(['distance', 'mean', 'var', 'quantile'])
-
+    f.flush()
     for i, d in enumerate(distances):
         pdf = FirstPassagePDF(beta, d)
         data = pdf.evolveToCutoff(cutoff, N)
@@ -49,7 +50,6 @@ def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file):
 
         writer.writerow([d, mean_val, var_val, quantile_time])
         f.flush()
-
     f.close()
 
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     save_dir = f"{topDir}"
     save_file = os.path.join(save_dir, f"FirstPassageTimes{sysID}.txt")
     save_file = os.path.abspath(save_file)
-
+    dmax = 1000 * np.log(np.quad(f"1e{N_exp}")).astype(float)
     vars = {
         "beta": beta,
         "N_exp": N_exp,
