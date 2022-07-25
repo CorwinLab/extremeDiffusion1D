@@ -48,15 +48,17 @@ PYBIND11_MODULE(libDiffusion, m)
           .def("setBetaSeed", &RandomNumGenerator::setBetaSeed);
           
      py::class_<FirstPassagePDF, RandomNumGenerator>(m, "FirstPassagePDF")
-          .def(py::init<const double, const unsigned long int>(),
+          .def(py::init<const double, const unsigned long int, const bool>(),
                py::arg("beta"),
-               py::arg("maxPosition"))
+               py::arg("maxPosition"),
+               py::arg("staticEnvironment"))
           .def("getBeta", &FirstPassagePDF::getBeta)
           .def("setBeta", &FirstPassagePDF::setBeta)
           .def("getTime", &FirstPassagePDF::getTime)
           .def("setTime", &FirstPassagePDF::setTime)
           .def("getPDF", &FirstPassagePDF::getPDF)
           .def("setPDF", &FirstPassagePDF::setPDF)
+          .def("getTransitionProbabilities", &FirstPassagePDF::getTransitionProbabilities)
           .def("getMaxPosition", &FirstPassagePDF::getMaxPosition)
           .def("setMaxPosition", &FirstPassagePDF::setMaxPosition)
           .def("iterateTimeStep", &FirstPassagePDF::iterateTimeStep)

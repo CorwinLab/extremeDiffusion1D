@@ -22,9 +22,11 @@ protected:
   unsigned long int maxPosition;
   unsigned long int t = 0;
   RealType firstPassageProbability;
+  std::vector<double> transitionProbabilities;
+  bool staticEnvironment;
 
 public:
-  FirstPassagePDF(const double _beta, const unsigned long int _maxPosition);
+  FirstPassagePDF(const double _beta, const unsigned long int _maxPosition, const bool _staticEnvironment);
   ~FirstPassagePDF(){};
 
   unsigned long int getTime() { return t; };
@@ -32,6 +34,8 @@ public:
 
   std::vector<RealType> getPDF() { return PDF; };
   void setPDF(std::vector<RealType> _PDF) { PDF = _PDF; };
+
+  std::vector<double> getTransitionProbabilities() { return transitionProbabilities; };
 
   unsigned long int getMaxPosition() { return maxPosition; };
   void setMaxPosition(unsigned long int _maxPosition)

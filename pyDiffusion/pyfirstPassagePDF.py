@@ -20,10 +20,14 @@ class FirstPassagePDF(libDiffusion.FirstPassagePDF):
 
     maxPosition : int
         Maximum position to run the system out to.
+
+    staticEnvironment : bool (False)
+        Whether or not to keep the environment, or transition probabilities, 
+        constant in time.
     """
 
-    def __init__(self, beta: float, maxPosition: int):
-        super().__init__(beta, maxPosition)
+    def __init__(self, beta: float, maxPosition: int, staticEnvironment: bool=False):
+        super().__init__(beta, maxPosition, staticEnvironment)
 
     @property
     def currentTime(self):

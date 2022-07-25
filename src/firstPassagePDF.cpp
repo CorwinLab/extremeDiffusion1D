@@ -12,29 +12,37 @@ using RealType = boost::multiprecision::float128;
 static_assert(sizeof(RealType) == 16, "Bad size");
 
 FirstPassagePDF::FirstPassagePDF(const double _beta,
-                                 const unsigned long int _maxPosition)
-                                : RandomNumGenerator(_beta)
+                                 const unsigned long int _maxPosition,
+                                 const bool _staticEnvironment)
+                                 : RandomNumGenerator(_beta)
 {
+  staticEnvironment = _staticEnvironment;
   maxPosition = _maxPosition;
   PDF.resize(2 * maxPosition + 1);
 
   // Set middle element of array to 1
   PDF[maxPosition] = 1;
+  transitionProbabilities.resize(PDF.size(), 0);
+  // If we are using a static environment generate transition probabilities
+  if (staticEnvironment){
+    for (unsigned int i=0; i < transitionProbabilities.size(); i++){
+      transitionProbabilities.at(i) = generateBeta();
+    }
+  }
 }
 
 void FirstPassagePDF::iterateTimeStep()
 {
   std::vector<RealType> newPDF(PDF.size(), 0);
 
-  // Need to keep track of the transition probabilities to make sure
-  // that the PDF stays normalized.
-  std::vector<double> transitionProbabilities(PDF.size(), 0);
-  for (unsigned int i = 0; i < transitionProbabilities.size(); i++) {
-    if (PDF[i] != 0) {
-      transitionProbabilities[i] = generateBeta();
+  if (!staticEnvironment){
+    for (unsigned int i = 0; i < transitionProbabilities.size(); i++) {
+      if (PDF.at(i) != 0) {
+        transitionProbabilities.at(i) = generateBeta();
+      }
     }
   }
-
+  
   for (unsigned int i = 0; i < PDF.size(); i++) {
     if (i == 0) {
       newPDF.at(0) = PDF.at(0) + transitionProbabilities[1] * PDF.at(1);
@@ -56,8 +64,8 @@ void FirstPassagePDF::iterateTimeStep()
   }
 
   firstPassageProbability =
-      transitionProbabilities[1] * PDF.at(1) +
-      (1 - transitionProbabilities[PDF.size() - 2]) * PDF.at(PDF.size() - 2);
+      transitionProbabilities.at(1) * PDF.at(1) +
+      (1 - transitionProbabilities.at(PDF.size() - 2)) * PDF.at(PDF.size() - 2);
   PDF = newPDF;
   t += 1;
 }
