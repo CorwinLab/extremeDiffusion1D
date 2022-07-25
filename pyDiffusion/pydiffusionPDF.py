@@ -8,8 +8,8 @@ import csv
 import npquad
 from typing import Tuple, List, Sequence
 
-from lDiffusionLink import libDiffusion
-import fileIO
+from .lDiffusionLink import libDiffusion
+from . import fileIO
 
 class DiffusionPDF(libDiffusion.DiffusionPDF):
     """

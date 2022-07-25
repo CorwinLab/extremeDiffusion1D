@@ -4,8 +4,8 @@ import numpy as np
 import npquad
 from typing import Iterable
 
-from fileIO import saveArrayQuad
-from lDiffusionLink import libDiffusion
+from .fileIO import saveArrayQuad
+from .lDiffusionLink import libDiffusion
 
 class FirstPassagePDF(libDiffusion.FirstPassagePDF):
     """Object to simulate the probability distribution of the

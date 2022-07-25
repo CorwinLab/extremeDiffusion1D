@@ -7,8 +7,8 @@ import time
 from typing import Sequence, Tuple, List
 import csv
 
-from lDiffusionLink import libDiffusion
-import fileIO
+from .lDiffusionLink import libDiffusion
+from . import fileIO
 
 
 class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
