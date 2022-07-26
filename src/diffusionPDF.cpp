@@ -31,8 +31,7 @@ DiffusionPDF::DiffusionPDF(const RealType _nParticles,
   occupancy.resize(_occupancySize + 1);
   occupancy[0] = nParticles;
 
-  transitionProbabilities.resize(_occupancySize +1, -1);
-
+  transitionProbabilities.resize(2*_occupancySize +1, -1);
   time = 0;
 }
 
@@ -136,10 +135,13 @@ void DiffusionPDF::iterateTimestep()
         bias = RealType(DiffusionPDF::generateBeta());
       }
       else {
-        if (transitionProbabilities[i] == -1){
-          transitionProbabilities[i] = generateBeta();
+        unsigned int index = 2 * i - time + transitionProbabilities.size()/2;
+        if (transitionProbabilities[index] == -1){
+          // The issue is here. Since the actual values of the index don't match 
+          // the x-values just doing [i] isn't correct
+          transitionProbabilities[index] = RealType(DiffusionPDF::generateBeta());  
         }
-        bias = transitionProbabilities[i];
+        bias = transitionProbabilities[index];
       }
       
       toNextSite = DiffusionPDF::toNextSite(*occ, bias);

@@ -23,7 +23,7 @@ private:
   unsigned long int occupancySize;
   bool ProbDistFlag;
   bool staticEnvironment;
-  std::vector<double> transitionProbabilities;
+  std::vector<RealType> transitionProbabilities;
   double smallCutoff = pow(2, 31) - 2;
   double largeCutoff = 1e64;
 
@@ -56,7 +56,7 @@ public:
   std::vector<RealType> getOccupancy() { return occupancy; };
   unsigned long int getOccupancySize() { return occupancySize; };
 
-  std::vector<double> getTransitionProbabilities() { return transitionProbabilities; };
+  std::vector<RealType> getTransitionProbabilities() { return transitionProbabilities; };
 
   std::vector<RealType> getSaveOccupancy();
   std::pair<std::vector<unsigned long int>, std::vector<unsigned long int>>
