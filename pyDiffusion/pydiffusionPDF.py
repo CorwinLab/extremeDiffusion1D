@@ -119,6 +119,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             and self.edges == other.edges
             and self.id == other.id
             and self.save_dir == other.save_dir
+            and self.staticEnvironment == other.staticEnvironment
         ):
             return True
 
@@ -198,6 +199,14 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
     def edges(self, edges):
         self.setEdges(edges)
 
+    @property 
+    def staticEnvironment(self):
+        self.getStaticEnvironment()
+
+    @staticEnvironment.setter
+    def staticEnvironment(self, staticEnvironment):
+        self.setStaticEnvironment(staticEnvironment)
+
     def setup(self):
         """
         Used to catch errors that are thrown to terimnate the object. This will
@@ -262,6 +271,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             "occupancySize": self.getOccupancySize() + 1,
             "id": self.id,
             "save_dir": self.save_dir,
+            "staticEnvironment": self.staticEnvironment,
         }
 
         with open(scalars_file, "w+") as file:
@@ -296,6 +306,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             vars["beta"],
             vars["occupancySize"],
             vars["probDistFlag"],
+            vars['staticEnvironment'],
         )
 
         occupancyLoadLength = vars["maxIdx"] - vars["minIdx"] + 1
@@ -670,7 +681,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             save_array[row_num, :] = row
         np.savetxt(file, save_array)
 
-    def evolveAndSaveFirstPassage(self, positions: Sequence[int], file: str):
+    def evolveAndSaveFirstPassage(self, positions: Sequence[int], file: str, append: bool=False):
         """
         Evolve the system forward and save the time when the maximum particle has
         reached a specified distance. Really only useful for when doing discrete
@@ -684,6 +695,10 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         file : str
             File to save the first passage time to
 
+        append : bool (False)
+            Whether or not to append distances to the file or not. Essentially,
+            just a flag to see whether to write the header or not. 
+
         Examples
         --------
         >>> d = DiffusionPDF(1, np.inf, 6, ProbDistFlag=True)
@@ -695,9 +710,10 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         idx = 0
         f = open(file, "a")
         writer = csv.writer(f)
-        header = ["Distance", "Time"]
-        writer.writerow(header)
-        f.flush()
+        if not append: 
+            header = ["Distance", "Time"]
+            writer.writerow(header)
+            f.flush()
         while idx < len(positions):
             self.iterateTimestep()
             maxIdx = self.getMaxIdx()
@@ -754,4 +770,3 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         print("Indices: ", idx)
         print("Occupancy:", np.array(self.getOccupancy())[nonzeros])
         print("Prob: ", np.array(Ns) / self.getNParticles())
-

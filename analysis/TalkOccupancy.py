@@ -1,8 +1,6 @@
 import sys
 
-sys.path.append("../src/")
-from pydiffusionPDF import DiffusionPDF
-from theory import quantileMean, quantileVar
+from pyDiffusion import DiffusionPDF
 import matplotlib
 
 matplotlib.use("Agg")
@@ -14,7 +12,7 @@ import copy
 N = 100_000
 numSteps = 1000
 numSteps = int(numSteps)
-d = DiffusionPDF(N, 1, numSteps, ProbDistFlag=False)
+d = DiffusionPDF(N, 1, numSteps, ProbDistFlag=False, staticEnvironment=False)
 allOcc = np.zeros(shape=(numSteps + 1, numSteps + 1))
 
 for i in range(numSteps):
@@ -30,7 +28,7 @@ for i in range(allOcc.shape[0]):
     allOcc[i, :] = occ
 
 
-d = DiffusionPDF(N, float("inf"), numSteps, ProbDistFlag=False)
+d = DiffusionPDF(N, float("inf"), numSteps, ProbDistFlag=False, staticEnvironment=False)
 allOccE = np.zeros(shape=(numSteps + 1, numSteps + 1))
 
 for i in range(numSteps):

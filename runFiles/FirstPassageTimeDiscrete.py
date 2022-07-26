@@ -37,17 +37,19 @@ def runExperiment(
     occupancy_file = os.path.join(save_dir, f"Occupancy{sysID}.txt")
     scalars_file = os.path.join(save_dir, f"Scalars{sysID}.json")
 
-    # if os.path.exists(occupancy_file) and os.path.exists(scalars_file):
-    #    d = DiffusionPDF.fromFiles(scalars_file, occupancy_file)
-    #    save_times = save_times[save_times > d.currentTime]
-    #    append = True
-    # else:
-    d = DiffusionPDF(N, beta=beta, occupancySize=tMax, ProbDistFlag=probDistFlag, staticEnvironment=staticEnvironment)
-
-    d.save_dir = save_dir
-    d.id = sysID
-    append = False
-    d.evolveAndSaveFirstPassage(distances, save_file)
+    if os.path.exists(occupancy_file) and os.path.exists(scalars_file):
+        d = DiffusionPDF.fromFiles(scalars_file, occupancy_file)
+        quartiles = np.loadtxt(save_file, skiprows=1, delimiter=',')
+        current_distance = quartiles[-1, 0]
+        distances = distances[distances > current_distance]
+        append = True
+    else:
+        d = DiffusionPDF(N, beta=beta, occupancySize=tMax, ProbDistFlag=probDistFlag, staticEnvironment=staticEnvironment)
+        d.save_dir = save_dir
+        d.id = sysID
+        append = False
+    
+    d.evolveAndSaveFirstPassage(distances, save_file, append)
 
     fileIO.saveArrayQuad(save_occ, d.occupancy)
 

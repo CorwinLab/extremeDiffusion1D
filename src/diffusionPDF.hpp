@@ -49,6 +49,9 @@ public:
   void setProbDistFlag(bool _probDistFlag) { ProbDistFlag = _probDistFlag; };
   bool getProbDistFlag() { return ProbDistFlag; };
 
+  void setStaticEnvironment(bool _staticEnvironment) { staticEnvironment = _staticEnvironment; };
+  bool getStaticEnvironment() { return staticEnvironment; };
+
   void setOccupancy(const std::vector<RealType> _occupancy)
   {
     occupancy = _occupancy;
