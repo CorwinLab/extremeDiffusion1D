@@ -29,7 +29,7 @@ private:
 
   boost::random::binomial_distribution<> binomial;
 
-  std::pair<std::vector<unsigned long int>, std::vector<unsigned long int>>
+  std::pair<unsigned long int, unsigned long int>
       edges;
   unsigned long int time;
 
@@ -62,14 +62,10 @@ public:
   std::vector<RealType> getTransitionProbabilities() { return transitionProbabilities; };
 
   std::vector<RealType> getSaveOccupancy();
-  std::pair<std::vector<unsigned long int>, std::vector<unsigned long int>>
-  getSaveEdges();
 
-  void resizeOccupancyAndEdges(unsigned long int size)
+  void resizeOccupancy(unsigned long int size)
   {
     occupancy.insert(occupancy.end(), size, RealType(0));
-    edges.first.insert(edges.first.end(), size, 0);
-    edges.second.insert(edges.second.end(), size, 0);
     occupancySize += size;
   };
 
@@ -77,20 +73,20 @@ public:
 
   void setTime(const unsigned long int _time) { time = _time; };
 
-  std::pair<std::vector<unsigned long int>, std::vector<unsigned long int>>
+  std::pair<unsigned long int, unsigned long int>
   getEdges()
   {
     return edges;
   };
 
-  void setEdges(std::pair<std::vector<unsigned long int>,
-                          std::vector<unsigned long int>> _edges)
+  void setEdges(std::pair<unsigned long int,
+                          unsigned long int> _edges)
   {
     edges = _edges;
   }
 
-  unsigned long int getMaxIdx() { return edges.second[time]; };
-  unsigned long int getMinIdx() { return edges.first[time]; };
+  unsigned long int getMaxIdx() { return edges.second; };
+  unsigned long int getMinIdx() { return edges.first; };
 
   double getSmallCutoff() { return smallCutoff; };
   void setSmallCutoff(const double _smallCutoff)

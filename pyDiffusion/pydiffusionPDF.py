@@ -49,13 +49,6 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
     center : numpy array
         Center of the occupancy over time. This is time / 2.
 
-    minDistance : numpy array
-        The distance from the left side of the occupancy over time.
-
-    maxDistance : numpy array
-        The distance from the right side of the occupancy over time. This
-        is generally the one we care about.
-
     occupancy : numpy array (dtype = np.quad)
         Number of particles at each position in the system. More formally, this
         is referred to as the partition function.
@@ -142,16 +135,6 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         return self.time * 0.5
 
     @property
-    def minDistance(self):
-        minEdge = np.array(self.getSaveEdges()[0])
-        return minEdge - self.center
-
-    @property
-    def maxDistance(self):
-        maxEdge = np.array(self.getSaveEdges()[1])
-        return maxEdge - self.center
-
-    @property
     def occupancy(self):
         return np.array(self.getOccupancy(), dtype=np.quad)
 
@@ -225,7 +208,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         self.saveState()
         sys.exit(0)
 
-    def resizeOccupancyAndEdges(self, size: int):
+    def resizeOccupancy(self, size: int):
         """
         Add elements to the end of the occupancy vector.
 
@@ -235,7 +218,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             Number of elements to add to occupancy
         """
 
-        super().resizeOccupancyAndEdges(size)
+        super().resizeOccupancy(size)
 
     def saveState(self):
         """
@@ -254,13 +237,10 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         scalars_file = os.path.join(self.save_dir, f"Scalars{self.id}.json")
 
         fileIO.saveArrayQuad(occupancy_file, self.getSaveOccupancy())
-        minEdge, maxEdge = self.getSaveEdges()
-        minIdx, maxIdx = minEdge[-1], maxEdge[-1]
+        minIdx, maxIdx = self.edges
 
         vars = {
             "time": self.currentTime,
-            "minEdges": minEdge,
-            "maxEdges": maxEdge,
             "minIdx": minIdx,
             "maxIdx": maxIdx,
             "nParticles": str(self.nParticles),
@@ -314,10 +294,8 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         occupancy = np.zeros(vars["occupancySize"], dtype=np.quad)
         occupancy[vars["minIdx"] : vars["maxIdx"] + 1] = loadOccupancy
 
-        zerosConcate = np.zeros(vars["occupancySize"] - len(vars["minEdges"]))
-        minEdges = np.concatenate([vars["minEdges"], zerosConcate])
-        maxEdges = np.concatenate([vars["maxEdges"], zerosConcate])
-        edges = (minEdges.astype(int), maxEdges.astype(int))
+        zerosConcate = np.zeros(vars["occupancySize"] - vars["time"])
+        edges = (vars["minIdx"], vars["maxIdx"])
 
         d.occupancy = occupancy
         d.smallCutoff = vars["smallCutoff"]
@@ -358,8 +336,9 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             self._last_saved_time = time.process_time()
 
         # Need to throw error if trying to go past the edges
-        if self.currentTime + 1 > self.getOccupancySize():
+        if self.getMaxIdx() >= self.getOccupancySize():
             raise RuntimeError("Cannot iterate past the size of the edges")
+
         super().iterateTimestep()
 
     def findQuantile(self, quantile: np.quad) -> np.ndarray:
@@ -676,7 +655,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             quantiles.sort()
             NthQuantile = self.findQuantiles(quantiles)
 
-            maxEdge = self.maxDistance
+            maxEdge = self.getMaxIdx() - self.currentTime / 2
             row = [self.getTime(), maxEdge] + NthQuantile
             save_array[row_num, :] = row
         np.savetxt(file, save_array)

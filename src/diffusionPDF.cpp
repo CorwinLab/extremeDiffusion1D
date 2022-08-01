@@ -24,9 +24,7 @@ DiffusionPDF::DiffusionPDF(const RealType _nParticles,
   if (isnan(nParticles) || isinf(nParticles)) {
     throw std::runtime_error("Number of particles initialized to NaN");
   }
-  edges.first.resize(_occupancySize + 1),
-      edges.second.resize(_occupancySize + 1);
-  edges.first[0] = 0, edges.second[0] = 0;
+  edges.first = 0, edges.second = 0;
 
   occupancy.resize(_occupancySize + 1);
   occupancy[0] = nParticles;
@@ -37,15 +35,7 @@ DiffusionPDF::DiffusionPDF(const RealType _nParticles,
 
 std::vector<RealType> DiffusionPDF::getSaveOccupancy()
 {
-  return slice(occupancy, edges.first[time], edges.second[time]);
-}
-
-std::pair<std::vector<unsigned long int>, std::vector<unsigned long int>>
-DiffusionPDF::getSaveEdges()
-{
-  std::vector<unsigned long int> minEdge = slice(edges.first, 0, time);
-  std::vector<unsigned long int> maxEdge = slice(edges.second, 0, time);
-  return std::make_pair(minEdge, maxEdge);
+  return slice(occupancy, edges.first, edges.second);
 }
 
 RealType DiffusionPDF::toNextSite(RealType currentSite, RealType bias)
@@ -103,8 +93,8 @@ double DiffusionPDF::generateBeta()
 
 void DiffusionPDF::iterateTimestep()
 {
-  unsigned long int prevMinIndex = edges.first[time];
-  unsigned long int prevMaxIndex = edges.second[time];
+  unsigned long int prevMinIndex = edges.first;
+  unsigned long int prevMaxIndex = edges.second;
   if (prevMinIndex > prevMaxIndex) {
     throw std::runtime_error(
         "Minimum edge must be greater than maximum edge: (" +
@@ -175,8 +165,8 @@ void DiffusionPDF::iterateTimestep()
     }
   }
 
-  edges.first[time + 1] = minEdge;
-  edges.second[time + 1] = maxEdge;
+  edges.first = minEdge;
+  edges.second = maxEdge;
   time += 1;
 }
 
@@ -187,7 +177,7 @@ sum > nParticles / quantile.
 */
 double DiffusionPDF::findQuantile(const RealType quantile)
 {
-  unsigned long int maxIdx = edges.second[time];
+  unsigned long int maxIdx = edges.second;
   double centerIdx = time * 0.5;
 
   double dist = maxIdx - centerIdx;
@@ -213,7 +203,7 @@ std::vector<double> DiffusionPDF::findQuantiles(std::vector<RealType> quantiles)
 
   std::vector<double> dists(quantiles.size());
 
-  unsigned long int maxIdx = edges.second[time];
+  unsigned long int maxIdx = edges.second;
   double centerIdx = time * 0.5;
   double dist = maxIdx - centerIdx;
   RealType sum = occupancy.at(maxIdx);
@@ -245,7 +235,7 @@ DiffusionPDF::calcVsAndPb(const unsigned long int num)
 {
   std::vector<double> vs;
   std::vector<RealType> Pbs;
-  unsigned long int maxIdx = edges.second[time];
+  unsigned long int maxIdx = edges.second;
   RealType Nabove = 0.0;
   for (unsigned long int i = maxIdx; i > (maxIdx - num); i--) {
     Nabove += occupancy.at(i);
@@ -263,7 +253,7 @@ DiffusionPDF::VsAndPb(const double v)
 {
   std::vector<double> vs;
   std::vector<RealType> Pbs;
-  unsigned long int idx = edges.second[time];
+  unsigned long int idx = edges.second;
   RealType Nabove = 0.0;
   double currentV = (2. * idx - time) / time;
   while (currentV >= v) {
@@ -282,8 +272,8 @@ DiffusionPDF::VsAndPb(const double v)
 std::pair<std::vector<long int>, std::vector<RealType>>
 DiffusionPDF::getxvals_and_pdf()
 {
-  unsigned long int minIdx = edges.first[time];
-  unsigned long int maxIdx = edges.second[time];
+  unsigned long int minIdx = edges.first;
+  unsigned long int maxIdx = edges.second;
 
   if (minIdx == 0) {
     minIdx += 1;

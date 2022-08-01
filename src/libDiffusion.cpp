@@ -82,11 +82,10 @@ PYBIND11_MODULE(libDiffusion, m)
           .def("getOccupancySize", &DiffusionPDF::getOccupancySize)
           .def("getTransitionProbabilities", &DiffusionPDF::getTransitionProbabilities)
           .def("getSaveOccupancy", &DiffusionPDF::getSaveOccupancy)
-          .def("getSaveEdges", &DiffusionPDF::getSaveEdges)
           .def("getStaticEnvironment", &DiffusionPDF::getStaticEnvironment)
           .def("setStaticEnvironment", &DiffusionPDF::setStaticEnvironment)
-          .def("resizeOccupancyAndEdges",
-               &DiffusionPDF::resizeOccupancyAndEdges,
+          .def("resizeOccupancy",
+               &DiffusionPDF::resizeOccupancy,
                py::arg("size"))
           .def("getNParticles", &DiffusionPDF::getNParticles)
           .def("getBeta", &DiffusionPDF::getBeta)
