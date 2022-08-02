@@ -1,7 +1,9 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <vector>
 
+#include "firstPassagePDFBase.hpp"
 #include "firstPassagePDF.hpp"
 #include "randomNumGenerator.hpp"
 #include "diffusionCDFBase.hpp"
@@ -47,25 +49,29 @@ PYBIND11_MODULE(libDiffusion, m)
           .def("generateBeta", &RandomNumGenerator::generateBeta)
           .def("setBetaSeed", &RandomNumGenerator::setBetaSeed);
           
-     py::class_<FirstPassagePDF, RandomNumGenerator>(m, "FirstPassagePDF")
-          .def(py::init<const double, const unsigned long int, const bool>(),
-               py::arg("beta"),
-               py::arg("maxPosition"),
-               py::arg("staticEnvironment"))
-          .def("getBeta", &FirstPassagePDF::getBeta)
-          .def("setBeta", &FirstPassagePDF::setBeta)
-          .def("getTime", &FirstPassagePDF::getTime)
-          .def("setTime", &FirstPassagePDF::setTime)
-          .def("getPDF", &FirstPassagePDF::getPDF)
-          .def("setPDF", &FirstPassagePDF::setPDF)
-          .def("getTransitionProbabilities", &FirstPassagePDF::getTransitionProbabilities)
-          .def("getMaxPosition", &FirstPassagePDF::getMaxPosition)
-          .def("setMaxPosition", &FirstPassagePDF::setMaxPosition)
-          .def("iterateTimeStep", &FirstPassagePDF::iterateTimeStep)
+     py::class_<FirstPassagePDFBase>(m, "FirstPassagePDFBase")
+          .def(py::init<const unsigned long int>(),
+               py::arg("maxPosition"))
+          .def("getPDF", &FirstPassagePDFBase::getPDF)
+          .def("setPDF", &FirstPassagePDFBase::setPDF)
+          .def("getMaxPosition", &FirstPassagePDFBase::getMaxPosition)
+          .def("setMaxPosition", &FirstPassagePDFBase::setMaxPosition)
           .def("getFirstPassageProbability",
-               &FirstPassagePDF::getFirstPassageProbability)
-          .def("evolveToCutoff", &FirstPassagePDF::evolveToCutoff);
+               &FirstPassagePDFBase::getFirstPassageProbability);
 
+     py::class_<FirstPassagePDFMain, RandomNumGenerator>(m, "FirstPassagePDFMain")
+          .def(py::init<const double, std::vector<unsigned long int>>())
+          .def("getPDFs", &FirstPassagePDFMain::getPDFs)
+          .def("setPDFs", &FirstPassagePDFMain::setPDFs)
+          .def("getTime", &FirstPassagePDFMain::getTime)
+          .def("setTime", &FirstPassagePDFMain::setTime)
+          .def("getTransitionProbabilities", &FirstPassagePDFMain::getTransitionProbabilities)
+          .def("getMaxPositions", &FirstPassagePDFMain::getMaxPositions)
+          .def("setMaxPositions", &FirstPassagePDFMain::setMaxPositions)
+          .def("iteratePDF", &FirstPassagePDFMain::iteratePDF)
+          .def("generateTransitionProbabilities", &FirstPassagePDFMain::generateTransitionProbabilities)
+          .def("iterateTimeStep", &FirstPassagePDFMain::iterateTimeStep);
+          
      py::class_<DiffusionPDF, RandomNumGenerator>(m, "DiffusionPDF")
           .def(py::init<const RealType,
                          const double,

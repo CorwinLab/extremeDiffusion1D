@@ -1,123 +1,89 @@
-#include <math.h>
-#include <algorithm>
+#include <assert.h>
+#include <boost/math/distributions.hpp>
 #include <boost/multiprecision/float128.hpp>
-#include <cmath>
-#include <limits>
+#include <boost/random.hpp>
+#include <boost/random/beta_distribution.hpp>
+#include <boost/random/binomial_distribution.hpp>
+#include <boost/random/normal_distribution.hpp>
+#include <math.h>
+#include <random>
+#include <utility>
+#include <vector>
 
 #include "firstPassagePDF.hpp"
 #include "randomNumGenerator.hpp"
-#include "stat.h"
 
-using RealType = boost::multiprecision::float128;
-static_assert(sizeof(RealType) == 16, "Bad size");
-
-FirstPassagePDF::FirstPassagePDF(const double _beta,
-                                 const unsigned long int _maxPosition,
-                                 const bool _staticEnvironment)
-                                 : RandomNumGenerator(_beta)
+FirstPassagePDFMain::FirstPassagePDFMain(
+    const double _beta,
+    std::vector<unsigned long int> _maxPositions)
+    : RandomNumGenerator(_beta), maxPositions(_maxPositions)
 {
-  staticEnvironment = _staticEnvironment;
-  maxPosition = _maxPosition;
-  PDF.resize(2 * maxPosition + 1);
-
-  // Set middle element of array to 1
-  PDF[maxPosition] = 1;
-  transitionProbabilities.resize(PDF.size(), 0);
-  // If we are using a static environment generate transition probabilities
-  if (staticEnvironment){
-    for (unsigned int i=0; i < transitionProbabilities.size(); i++){
-      transitionProbabilities.at(i) = generateBeta();
-    }
+  sort(maxPositions.begin(), maxPositions.end());
+  for (unsigned int i = 0; i < maxPositions.size(); i++) {
+    pdfs.push_back(FirstPassagePDFBase(maxPositions[i]));
   }
+  t = 0;
 }
 
-void FirstPassagePDF::iterateTimeStep()
+std::vector<RealType>
+FirstPassagePDFMain::iteratePDF(std::vector<RealType> PDF,
+                                std::vector<double> transitionProbabilities, 
+                                int transitionProbIndex)
 {
+
   std::vector<RealType> newPDF(PDF.size(), 0);
 
-  if (!staticEnvironment){
-    for (unsigned int i = 0; i < transitionProbabilities.size(); i++) {
-      if (PDF.at(i) != 0) {
-        transitionProbabilities.at(i) = generateBeta();
-      }
-    }
-  }
-  
   for (unsigned int i = 0; i < PDF.size(); i++) {
     if (i == 0) {
-      newPDF.at(0) = PDF.at(0) + transitionProbabilities[1] * PDF.at(1);
+      newPDF.at(0) = PDF.at(0) + transitionProbabilities[1 + transitionProbIndex] * PDF.at(1);
     }
     else if (i == 1) {
-      newPDF.at(1) = transitionProbabilities[2] * PDF.at(2);
+      newPDF.at(1) = transitionProbabilities[2+ transitionProbIndex] * PDF.at(2);
     }
     else if (i == PDF.size() - 1) {
       newPDF.at(i) =
-          PDF.at(i) + (1 - transitionProbabilities[i - 1]) * PDF.at(i - 1);
+          PDF.at(i) + (1 - transitionProbabilities[i - 1+ transitionProbIndex]) * PDF.at(i - 1);
     }
     else if (i == PDF.size() - 2) {
-      newPDF.at(i) = (1 - transitionProbabilities[i - 1]) * PDF.at(i - 1);
+      newPDF.at(i) = (1 - transitionProbabilities[i - 1+ transitionProbIndex]) * PDF.at(i - 1);
     }
     else {
-      newPDF.at(i) = (1 - transitionProbabilities[i - 1]) * PDF.at(i - 1) +
-                     transitionProbabilities[i + 1] * PDF.at(i + 1);
+      newPDF.at(i) = (1 - transitionProbabilities[i - 1+ transitionProbIndex]) * PDF.at(i - 1) +
+                     transitionProbabilities[i + 1+ transitionProbIndex] * PDF.at(i + 1);
     }
   }
-
-  firstPassageProbability =
-      transitionProbabilities.at(1) * PDF.at(1) +
-      (1 - transitionProbabilities.at(PDF.size() - 2)) * PDF.at(PDF.size() - 2);
-  PDF = newPDF;
-  t += 1;
+  return newPDF;
 }
 
-std::tuple<unsigned int long, RealType>
-FirstPassagePDF::evolveToCutoff(RealType cutOff, RealType nParticles)
+std::vector<double> FirstPassagePDFMain::generateTransitionProbabilities()
 {
-  std::vector<RealType> pdf;
-  std::vector<RealType> cdf;
-  std::vector<RealType> cdfN;
-  std::vector<unsigned int long> times;
-
-  // Not sure how big these arrays will need to be but they should be at least
-  // the size of maxPosition So I'll allocate that much memory
-  pdf.reserve(maxPosition);
-  cdf.reserve(maxPosition);
-  cdfN.reserve(maxPosition);
-  times.reserve(maxPosition);
-
-  RealType cdf_sum = 0;
-  RealType cdf_sumN = 0;
-
-  while ((cdf_sumN < cutOff) || (cdf_sum < 1/nParticles)) {
-    iterateTimeStep();
-    pdf.push_back(firstPassageProbability);
-
-    cdf_sum += firstPassageProbability;
-    cdf.push_back(cdf_sum);
-    
-    cdf_sumN = 1 - exp(-cdf_sum * nParticles);
-    cdfN.push_back(cdf_sumN);
-    
-    times.push_back(t);
+  std::vector<RealType> pdf = pdfs.back().getPDF();
+  std::vector<double> _transitionProbabilities(pdf.size(), 0);
+  for (unsigned int i = 0; i < _transitionProbabilities.size(); i++) {
+      if (pdf.at(i) != 0){
+        _transitionProbabilities.at(i) = generateBeta();
+      }
   }
-  
-  // Find the lower Nth quantile of the system
-  unsigned int long quantileTime;
-  for (unsigned int i=0; i<cdf.size(); i++){
-    if (cdf[i] >= 1/nParticles){
-      quantileTime = times[i];
-      break;
-    }
-  }
+  return _transitionProbabilities;
+}
 
-  // Find the variance from the CDF of nParticles
-  // First get the PDF of the system
-  std::vector<RealType> pdfN(cdfN.size()-1);
-  for (unsigned int i=0; i < cdfN.size()-1; i++){
-    pdfN[i] = cdfN[i+1] - cdfN[i];
-  }
-  std::vector<unsigned int long> pdfTimes = slice(times, 0, pdf.size()-2);
-  RealType var = calculateVarianceFromPDF(pdfTimes, pdfN);
+void FirstPassagePDFMain::iterateTimeStep()
+{
+  std::vector<RealType> newPDF;
+  std::vector<double> _transitionProbabilities =
+      generateTransitionProbabilities();
+  transitionProbabilities = _transitionProbabilities;
 
-  return std::make_tuple(quantileTime, var);
+  for (unsigned long int i = 0; i < pdfs.size(); i++) {
+    unsigned int maxSize = pdfs.back().getMaxPosition();
+    unsigned int currentSize = pdfs[i].getMaxPosition();
+    newPDF = iteratePDF(pdfs[i].getPDF(), transitionProbabilities, maxSize - currentSize);
+    pdfs[i].setPDF(newPDF);
+    RealType firstPassageProbability =
+        transitionProbabilities.at(1) * newPDF.at(1) +
+        (1 - transitionProbabilities.at(newPDF.size() - 2)) *
+            newPDF.at(newPDF.size() - 2);
+    pdfs[i].setFirstPassageProbability(firstPassageProbability);
+  }
+  t += 1;
 }

@@ -7,7 +7,6 @@
 #include <boost/multiprecision/float128.hpp>
 #include <cmath>
 #include <limits>
-#include <math.h>
 
 using RealType = boost::multiprecision::float128;
 static_assert(sizeof(RealType) == 16, "Bad size");

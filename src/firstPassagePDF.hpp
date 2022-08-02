@@ -12,43 +12,35 @@
 #include <random>
 #include <utility>
 #include <vector>
+
+#include "firstPassagePDFBase.hpp"
 #include "randomNumGenerator.hpp"
 
-typedef boost::multiprecision::float128 RealType;
-
-class FirstPassagePDF : public RandomNumGenerator {
-protected:
-  std::vector<RealType> PDF;
-  unsigned long int maxPosition;
-  unsigned long int t = 0;
-  RealType firstPassageProbability;
-  std::vector<double> transitionProbabilities;
-  bool staticEnvironment;
+class FirstPassagePDFMain : public RandomNumGenerator {
+private:
+    std::vector<FirstPassagePDFBase> pdfs;
+    std::vector<unsigned long int> maxPositions;
+    std::vector<double> transitionProbabilities;
+    unsigned long int t;
 
 public:
-  FirstPassagePDF(const double _beta, const unsigned long int _maxPosition, const bool _staticEnvironment);
-  ~FirstPassagePDF(){};
+    FirstPassagePDFMain(const double _beta, std::vector<unsigned long int> _maxPosition);
+    ~FirstPassagePDFMain(){};
 
-  unsigned long int getTime() { return t; };
-  void setTime(unsigned long int _t) { t = _t; };
+    std::vector<FirstPassagePDFBase> getPDFs() { return pdfs; };
+    void setPDFs(std::vector<FirstPassagePDFBase> _pdfs) { pdfs = _pdfs; };
 
-  std::vector<RealType> getPDF() { return PDF; };
-  void setPDF(std::vector<RealType> _PDF) { PDF = _PDF; };
+    unsigned long int getTime(){ return t; };
+    void setTime(unsigned long int _t){ t = _t; };
 
-  std::vector<double> getTransitionProbabilities() { return transitionProbabilities; };
+    std::vector<double> getTransitionProbabilities() { return transitionProbabilities; };
+    std::vector<double> generateTransitionProbabilities();
 
-  unsigned long int getMaxPosition() { return maxPosition; };
-  void setMaxPosition(unsigned long int _maxPosition)
-  {
-    maxPosition = _maxPosition;
-  };
+    std::vector<unsigned long int> getMaxPositions() { return maxPositions; };
+    void setMaxPositions(std::vector<unsigned long int> _maxPositions){ maxPositions = _maxPositions; };
 
-  void iterateTimeStep();
-
-  RealType getFirstPassageProbability() { return firstPassageProbability; };
-
-  std::tuple<unsigned int long, RealType>
-  evolveToCutoff(RealType prob_cutOff, RealType nParticles);
+    std::vector<RealType> iteratePDF(std::vector<RealType> pdf, std::vector<double> transitionProbabilities, int transitionProbIndex);
+    void iterateTimeStep();
 };
 
-#endif /* FISRTPASSAGEPDF_HPP_ */
+#endif /* FIRSTPASSAGEPDF_HPP_ */ 
