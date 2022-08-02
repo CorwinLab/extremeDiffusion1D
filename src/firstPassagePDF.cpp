@@ -121,3 +121,32 @@ FirstPassagePDF::evolveToCutoff(RealType cutOff, RealType nParticles)
 
   return std::make_tuple(quantileTime, var);
 }
+
+
+std::tuple<std::vector<unsigned long int>, std::vector<RealType>>  
+FirstPassagePDF::evolveToCutoffMultiple(RealType cutoff, std::vector<RealType> nParticles){
+
+  std::vector<unsigned long int> quantiles;
+  std::vector<RealType> variance;
+  
+  std::vector<std::vector<RealType> > cdfN;
+  std::vector<std::vector<unsigned int long> >  times;
+
+  std::vector<unsigned int> particleIndex(nParticles.size());
+  for (unsigned long int i=0; i < nParticles, i++){
+    particleIndex[i] = i;
+  }
+
+  RealType cdf_sumN;
+  while (!particleIndex.empty()){
+    iterateTimeStep();
+    for (unsigned int i=0; i < particleIndex.size(); i++){
+      cdf_sumN = 1 - exp(-cdf_sum * nParticles);
+      cdfN.push_back(cdf_sumN);
+      times.push_back(t);
+      
+      if (cdf_sumN >= cutoff && )
+    }
+  }
+
+}
