@@ -445,7 +445,8 @@ def log_moving_average(time, data, N, window_size=10):
     return np.array(new_times), np.array(mean_data)
 
 
-if __name__ == '__main__':
+def quantileVarWrittenOut(t, N): 
+    """
     from matplotlib import pyplot as plt
     fig, ax = plt.subplots()
     ax.set_xscale("log")
@@ -454,13 +455,13 @@ if __name__ == '__main__':
     ax.set_ylabel(r"$Var^{asy}(Env)$")
     N = np.quad("1e24")
     logN = np.log(N).astype(float)
-    t = np.logspace(2, 6, 5000)
+    t = np.linspace(logN, 10000, num=1000)
     var = quantileVarShortTime(N, t)
-    ax.plot(t / logN, var, label='Paper Theory')
-
-    times = np.loadtxt("times.txt")
-    vals = np.loadtxt("values.txt")
-
-    ax.plot(times / logN , vals, label='Jacob Approximation')
+    ax.plot(t / logN, var, label='Short Time')
+    written_out = quantileVarWrittenOut(t, N)
+    ax.plot(t / logN , written_out, label='Written Out', ls='--')
     ax.legend()
     fig.savefig("Test.png")
+    """
+    logN = np.log(N).astype(float)
+    return 2**(2/3) * TW_var * (logN**(4/3)/t**(2/3)) * (1-logN/t)**(4/3) / (1-(1-logN/t)**2)

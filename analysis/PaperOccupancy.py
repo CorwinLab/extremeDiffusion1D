@@ -38,7 +38,7 @@ for i in range(allOcc.shape[0]):
 
 # Plot the raw Occupancy
 color = "tab:red"
-cmap = copy.copy(matplotlib.cm.get_cmap("rainbow"))
+cmap = copy.copy(matplotlib.cm.get_cmap("Greys_r"))
 cmap.set_under(color="white")
 cmap.set_bad(color="white")
 vmax = N

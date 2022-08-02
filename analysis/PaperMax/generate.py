@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append("../../src")
+sys.path.append("../../dataAnalysis")
 
 from overalldatabase import Database
 from matplotlib import pyplot as plt

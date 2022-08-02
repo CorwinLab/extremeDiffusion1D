@@ -1,10 +1,9 @@
 import json
 import os
-import quadMath
+from pyDiffusion import quadMath, fileIO
 import numpy as np
 import npquad
 import glob
-import fileIO
 import pandas as pd
 
 
