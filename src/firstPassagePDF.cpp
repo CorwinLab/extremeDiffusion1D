@@ -20,6 +20,8 @@ FirstPassagePDF::FirstPassagePDF(const double _beta,
   maxPosition = _maxPosition;
   PDF.resize(2 * maxPosition + 1);
 
+  firstPassageCDF = 0;
+
   // Set middle element of array to 1
   PDF[maxPosition] = 1;
   transitionProbabilities.resize(PDF.size(), 0);
@@ -67,6 +69,7 @@ void FirstPassagePDF::iterateTimeStep()
       transitionProbabilities.at(1) * PDF.at(1) +
       (1 - transitionProbabilities.at(PDF.size() - 2)) * PDF.at(PDF.size() - 2);
   PDF = newPDF;
+  firstPassageCDF += firstPassageProbability;
   t += 1;
 }
 
@@ -123,30 +126,75 @@ FirstPassagePDF::evolveToCutoff(RealType cutOff, RealType nParticles)
 }
 
 
-std::tuple<std::vector<unsigned long int>, std::vector<RealType>>  
-FirstPassagePDF::evolveToCutoffMultiple(RealType cutoff, std::vector<RealType> nParticles){
+std::tuple<std::vector<unsigned long int>, std::vector<RealType>, std::vector<RealType>>  
+FirstPassagePDF::evolveToCutoffMultiple(RealType cutoff,
+                                        std::vector<RealType> nParticles)
+{
 
   std::vector<unsigned long int> quantiles;
   std::vector<RealType> variance;
-  
-  std::vector<std::vector<RealType> > cdfN;
-  std::vector<std::vector<unsigned int long> >  times;
+  std::vector<RealType> setNParticles;
 
-  std::vector<unsigned int> particleIndex(nParticles.size());
-  for (unsigned long int i=0; i < nParticles, i++){
-    particleIndex[i] = i;
+  std::vector<ParticleData> particlesData(nParticles.size());
+  for (unsigned int i = 0; i < particlesData.size(); i++) {
+    particlesData[i] = ParticleData(nParticles[i]);
   }
 
-  RealType cdf_sumN;
-  while (!particleIndex.empty()){
+  // Okay so this isn't going to work because you can't erase 
+  // elements of an array while looping over it. 
+  // Could try a while loop but I'm not sure that's the best way forward. 
+  while (!particlesData.empty()) {
     iterateTimeStep();
-    for (unsigned int i=0; i < particleIndex.size(); i++){
-      cdf_sumN = 1 - exp(-cdf_sum * nParticles);
-      cdfN.push_back(cdf_sumN);
-      times.push_back(t);
+    it = particlesData.begin();
+    while (it != particlesData.end()) {
       
-      if (cdf_sumN >= cutoff && )
+      // Get the measurement of the quantile position
+      if ((firstPassageCDF >= 1 / *it.nParticles) && (!(*it.quantileSet))) {
+          *it.quantileTime = t;
+          *it.quantileSet = true;
+      }
+      
+      // Calculate the nParticle variance
+      if (!(*it.varianceSet)) {
+        *it.push_back_cdf(firstPassageCDF);
+        if (*data.cdf.back() == 1) {
+          // calculate variance here 
+          *it.variance = 1;
+          *it.varianceSet = true;
+        }
+      }
+
+      // Now set quantile and variance if
+      if (*it.varianceSet && *it.quantileSet) {
+        quantiles.push_back(*it.quantileTime);
+        variance.push_back(*it.variance);
+        setNParticles.push_back(*it.nParticles);
+        // Need to erase data if quantile and variance have been saved
+        particlesData.erase(it); 
+      }
+      it++;
     }
   }
-
+  return std::make_tuple(quantiles, variance, setNParticles);
 }
+
+class ParticleData {
+public: 
+    ParticleData(const RealType _nParticles)
+    {
+      nParticles = _nParticles;
+      quantileSet = false;
+    };
+    ~ParticleData(){};
+
+    RealType nParticles;
+    std::vector<RealType> cdf;
+    long int quantileTime;
+    RealType variance;
+    bool quantileSet;
+    void push_back_cdf(RealType singleParticleCDF)
+    {
+      cdf.push_back(1 - exp(-singleParticleCDF * nParticles));
+    }
+
+};
