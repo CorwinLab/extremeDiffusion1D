@@ -22,9 +22,10 @@ private:
     std::vector<unsigned long int> maxPositions;
     std::vector<double> transitionProbabilities;
     unsigned long int t;
+    RealType nParticles;
 
 public:
-    FirstPassagePDFMain(const double _beta, std::vector<unsigned long int> _maxPosition);
+    FirstPassagePDFMain(const double _beta, std::vector<unsigned long int> _maxPosition, RealType nParticles);
     ~FirstPassagePDFMain(){};
 
     std::vector<FirstPassagePDFBase> getPDFs() { return pdfs; };
@@ -41,6 +42,8 @@ public:
 
     std::vector<RealType> iteratePDF(std::vector<RealType> pdf, std::vector<double> transitionProbabilities, int transitionProbIndex);
     void iterateTimeStep();
+
+    std::tuple<std::vector<unsigned long int>, std::vector<RealType> > evolveToCutoff(RealType cutoff, RealType nParticles);
 };
 
 #endif /* FIRSTPASSAGEPDF_HPP_ */ 

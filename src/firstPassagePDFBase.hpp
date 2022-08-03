@@ -21,6 +21,7 @@ protected:
   std::vector<RealType> PDF;
   unsigned long int maxPosition;
   RealType firstPassageProbability;
+  double cdfSum;
 
 public:
   FirstPassagePDFBase(const unsigned long int _maxPosition);
@@ -34,6 +35,9 @@ public:
   {
     maxPosition = _maxPosition;
   };
+
+  double getCDFSum(){ return cdfSum;};
+  void setCDFSum(double _cdfSum){ cdfSum = _cdfSum;};
 
   RealType getFirstPassageProbability() { return firstPassageProbability; };
   void setFirstPassageProbability(RealType _firstPassageProbability) { firstPassageProbability = _firstPassageProbability; };
