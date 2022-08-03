@@ -51,7 +51,7 @@ public:
   std::tuple<unsigned int long, RealType>
   evolveToCutoff(RealType prob_cutOff, RealType nParticles);
 
-  std::tuple<std::vector<std::vector<unsigned int long>, std::vector<RealType>, std::vector<RealType>>
+  std::tuple<std::vector<unsigned int long>, std::vector<RealType>, std::vector<RealType>>
   evolveToCutoffMultiple(RealType prob_cutOff, std::vector<RealType> nParticles);
 };
 

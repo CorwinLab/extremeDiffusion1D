@@ -11,6 +11,42 @@
 using RealType = boost::multiprecision::float128;
 static_assert(sizeof(RealType) == 16, "Bad size");
 
+class ParticleData {
+public: 
+    ParticleData(const RealType _nParticles)
+    {
+      nParticles = _nParticles;
+      quantileSet = false;
+      varianceSet = false;
+    };
+    ~ParticleData(){};
+
+    RealType nParticles;
+    std::vector<RealType> cdf;
+    long int quantileTime;
+    RealType variance;
+    bool quantileSet;
+    bool varianceSet;
+    void push_back_cdf(RealType singleParticleCDF)
+    {
+      cdf.push_back(1 - exp(-singleParticleCDF * nParticles));
+    }
+    
+    RealType calculateVariance(unsigned int long t){
+      std::vector<unsigned int long> times(t);
+      for (unsigned int i=1; i<=t; i++){
+        times.at(i-1) = i;
+      }
+      std::vector<RealType> pdf(cdf.size()-1);
+      for (unsigned int i=0; i < cdf.size()-1; i++){
+        pdf[i] = cdf[i+1] - cdf[i];
+      }
+      std::vector<unsigned int long> pdfTimes = slice(times, 0, pdf.size()-1);
+      RealType var = calculateVarianceFromPDF(pdfTimes, pdf);
+      return var;
+    }
+};
+
 FirstPassagePDF::FirstPassagePDF(const double _beta,
                                  const unsigned long int _maxPosition,
                                  const bool _staticEnvironment)
@@ -125,7 +161,7 @@ FirstPassagePDF::evolveToCutoff(RealType cutOff, RealType nParticles)
   return std::make_tuple(quantileTime, var);
 }
 
-
+// Could always require number of particles input to constructor. 
 std::tuple<std::vector<unsigned long int>, std::vector<RealType>, std::vector<RealType>>  
 FirstPassagePDF::evolveToCutoffMultiple(RealType cutoff,
                                         std::vector<RealType> nParticles)
@@ -135,66 +171,44 @@ FirstPassagePDF::evolveToCutoffMultiple(RealType cutoff,
   std::vector<RealType> variance;
   std::vector<RealType> setNParticles;
 
-  std::vector<ParticleData> particlesData(nParticles.size());
-  for (unsigned int i = 0; i < particlesData.size(); i++) {
-    particlesData[i] = ParticleData(nParticles[i]);
+  std::vector<ParticleData> particlesData;
+  for (unsigned int i = 0; i < nParticles.size(); i++) {
+    particlesData.push_back(ParticleData(nParticles[i]));
   }
 
-  // Okay so this isn't going to work because you can't erase 
-  // elements of an array while looping over it. 
-  // Could try a while loop but I'm not sure that's the best way forward. 
   while (!particlesData.empty()) {
-    iterateTimeStep();
-    it = particlesData.begin();
-    while (it != particlesData.end()) {
+    iterateTimeStep(); // Okay this is all good
+    for (auto it= particlesData.begin(); it != particlesData.end(); it++) {
       
       // Get the measurement of the quantile position
-      if ((firstPassageCDF >= 1 / *it.nParticles) && (!(*it.quantileSet))) {
-          *it.quantileTime = t;
-          *it.quantileSet = true;
+      if ((firstPassageCDF >= 1 / it->nParticles) && (!(it->quantileSet))) {
+          // std::cout << "trying to set quantile time" << std::endl;
+          it->quantileTime = t;
+          it->quantileSet = true;
+          // std::cout << "set quantile time" << std::endl;
       }
       
       // Calculate the nParticle variance
-      if (!(*it.varianceSet)) {
-        *it.push_back_cdf(firstPassageCDF);
-        if (*data.cdf.back() == 1) {
-          // calculate variance here 
-          *it.variance = 1;
-          *it.varianceSet = true;
+      if (!(it->varianceSet)) {
+        // std::cout << "trying to set variance" << std::endl;
+        it->push_back_cdf(firstPassageCDF);
+        if (it->cdf.back() == 1) {
+          // calculate variance here
+          RealType var = it->calculateVariance(t);
+          it->variance = var;
+          it->varianceSet = true;
         }
       }
 
       // Now set quantile and variance if
-      if (*it.varianceSet && *it.quantileSet) {
-        quantiles.push_back(*it.quantileTime);
-        variance.push_back(*it.variance);
-        setNParticles.push_back(*it.nParticles);
+      if (it->varianceSet && it->quantileSet) {
+        quantiles.push_back(it->quantileTime);
+        variance.push_back(it->variance);
+        setNParticles.push_back(it->nParticles);
         // Need to erase data if quantile and variance have been saved
-        particlesData.erase(it); 
+        particlesData.erase(it--); 
       }
-      it++;
     }
   }
   return std::make_tuple(quantiles, variance, setNParticles);
 }
-
-class ParticleData {
-public: 
-    ParticleData(const RealType _nParticles)
-    {
-      nParticles = _nParticles;
-      quantileSet = false;
-    };
-    ~ParticleData(){};
-
-    RealType nParticles;
-    std::vector<RealType> cdf;
-    long int quantileTime;
-    RealType variance;
-    bool quantileSet;
-    void push_back_cdf(RealType singleParticleCDF)
-    {
-      cdf.push_back(1 - exp(-singleParticleCDF * nParticles));
-    }
-
-};

@@ -64,7 +64,8 @@ PYBIND11_MODULE(libDiffusion, m)
           .def("iterateTimeStep", &FirstPassagePDF::iterateTimeStep)
           .def("getFirstPassageProbability",
                &FirstPassagePDF::getFirstPassageProbability)
-          .def("evolveToCutoff", &FirstPassagePDF::evolveToCutoff);
+          .def("evolveToCutoff", &FirstPassagePDF::evolveToCutoff)
+          .def("evolveToCutoffMultiple", &FirstPassagePDF::evolveToCutoffMultiple);
 
      py::class_<DiffusionPDF, RandomNumGenerator>(m, "DiffusionPDF")
           .def(py::init<const RealType,
