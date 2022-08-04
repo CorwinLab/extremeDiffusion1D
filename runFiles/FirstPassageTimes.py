@@ -4,25 +4,8 @@ import sys
 import os
 from datetime import date
 import csv
-
-src_path = os.path.join(os.path.dirname(__file__), "..", "src")
-sys.path.append(src_path)
-
-from pyfirstPassagePDF import FirstPassagePDF
+from pyDiffusion import FirstPassagePDF
 from experimentUtils import saveVars
-
-
-def sampleCDF(cdf, N):
-    Ncdf = 1 - np.exp(-cdf * N)
-    Npdf = np.diff(Ncdf)
-    return Ncdf, Npdf
-
-
-def calculateMeanAndVariance(x, pdf):
-    mean = sum(x * pdf)
-    var = sum(x ** 2 * pdf) - mean ** 2
-    return mean, var
-
 
 def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file):
     beta = float(beta)
@@ -35,21 +18,14 @@ def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file):
 
     f = open(save_file, "a")
     writer = csv.writer(f)
-    writer.writerow(['distance', 'mean', 'var', 'quantile'])
+    writer.writerow(['distance', 'var', 'quantile'])
     f.flush()
     for i, d in enumerate(distances):
         pdf = FirstPassagePDF(beta, d)
-        data = pdf.evolveToCutoff(cutoff, N)
-        times = data[:, 0]
-        pdf = data[:, 1]
-        cdf = data[:, 2]
-        quantile = np.argmax(cdf > 1 / N)
-        quantile_time = times[quantile]
-        Ncdf, Npdf = sampleCDF(cdf, N)
-        mean_val, var_val = calculateMeanAndVariance(times[1:], Npdf)
-
-        writer.writerow([d, mean_val, var_val, quantile_time])
+        quantile, variance, Ns = pdf.evolveToCutoffMultiple(cutoff, [N])
+        writer.writerow([d, variance, quantile])
         f.flush()
+        
     f.close()
 
 
@@ -59,7 +35,7 @@ if __name__ == "__main__":
     save_dir = f"{topDir}"
     save_file = os.path.join(save_dir, f"FirstPassageTimes{sysID}.txt")
     save_file = os.path.abspath(save_file)
-    dmax = 1000 * np.log(np.quad(f"1e{N_exp}")).astype(float)
+    dmax = 500 * np.log(np.quad(f"1e{N_exp}")).astype(float)
     vars = {
         "beta": beta,
         "N_exp": N_exp,
