@@ -22,8 +22,8 @@ def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file):
     f.flush()
     for i, d in enumerate(distances):
         pdf = FirstPassagePDF(beta, d)
-        quantile, variance, Ns = pdf.evolveToCutoffMultiple(cutoff, [N])
-        writer.writerow([d, variance, quantile])
+        quantile, variance, Ns = pdf.evolveToCutoffMultiple([N], cutoff)
+        writer.writerow([d, variance[0], quantile[0]])
         f.flush()
         
     f.close()
