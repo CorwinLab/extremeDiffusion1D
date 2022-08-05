@@ -18,9 +18,16 @@ def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file):
 
     f = open(save_file, "a")
     writer = csv.writer(f)
-    writer.writerow(['distance', 'var', 'quantile'])
-    f.flush()
-    for i, d in enumerate(distances):
+
+    if os.path.isfile(save_file):
+        data = np.loadtxt(save_file, skiprows=1, delimiter=',')
+        maxDistance = data[-1, 0]
+        distances = distances[distances > maxDistance]
+    else: 
+        writer.writerow(['distance', 'var', 'quantile'])
+        f.flush()
+
+    for d in distances:
         pdf = FirstPassagePDF(beta, d)
         quantile, variance, Ns = pdf.evolveToCutoffMultiple([N], cutoff)
         writer.writerow([d, variance[0], quantile[0]])
