@@ -4,9 +4,9 @@
 #SBATCH --error=/home/jhass2/CleanData/logs/LongFirstPassCDF/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --array=0-39
+#SBATCH --array=0-499
 #SBATCH --output=/home/jhass2/CleanData/logs/LongFirstPassCDF/%A-%a.out
-#SBATCH --nice=1500
+#SBATCH --nice=2000
 
 BETA=1
 NEXP=24
@@ -17,8 +17,4 @@ TOPDIR=/home/jhass2/CleanData/LongFirstPassCDF/$NEXP
 
 mkdir -p $TOPDIR
 
-for i in {0..12}
-do
-    id=$((SLURM_ARRAY_TASK_ID*12 + i + SLURM_ARRAY_TASK_ID))
-    python3 FirstPassageTimes.py $TOPDIR $BETA $NEXP $id $DMIN $DMAX $CUTOFF
-done
+python3 FirstPassageTimes.py $TOPDIR $BETA $NEXP $SLURM_ARRAY_TASK_ID $DMIN $DMAX $CUTOFF

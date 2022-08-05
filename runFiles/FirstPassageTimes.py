@@ -16,14 +16,19 @@ def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file):
     distances = np.geomspace(dmin, dmax, num=500).astype(int)
     distances = np.unique(distances)
 
-    f = open(save_file, "a")
-    writer = csv.writer(f)
-
-    if os.path.isfile(save_file):
+    if os.path.isfile(save_file) and os.stat(save_file).st_size != 0:
         data = np.loadtxt(save_file, skiprows=1, delimiter=',')
         maxDistance = data[-1, 0]
         distances = distances[distances > maxDistance]
-    else: 
+        write_header = False
+
+    else:
+        write_header = True
+
+    f = open(save_file, "a")
+    writer = csv.writer(f)
+
+    if write_header:
         writer.writerow(['distance', 'var', 'quantile'])
         f.flush()
 
