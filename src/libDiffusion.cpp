@@ -59,11 +59,10 @@ PYBIND11_MODULE(libDiffusion, m)
           .def("getPDF", &FirstPassagePDF::getPDF)
           .def("setPDF", &FirstPassagePDF::setPDF)
           .def("getTransitionProbabilities", &FirstPassagePDF::getTransitionProbabilities)
+          .def("getFirstPassageCDF", &FirstPassagePDF::getFirstPassageCDF)
           .def("getMaxPosition", &FirstPassagePDF::getMaxPosition)
           .def("setMaxPosition", &FirstPassagePDF::setMaxPosition)
           .def("iterateTimeStep", &FirstPassagePDF::iterateTimeStep)
-          .def("getFirstPassageProbability",
-               &FirstPassagePDF::getFirstPassageProbability)
           .def("evolveToCutoff", &FirstPassagePDF::evolveToCutoff)
           .def("evolveToCutoffMultiple", &FirstPassagePDF::evolveToCutoffMultiple);
 

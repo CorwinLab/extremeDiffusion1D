@@ -21,7 +21,6 @@ protected:
   std::vector<RealType> PDF;
   unsigned long int maxPosition;
   unsigned long int t = 0;
-  RealType firstPassageProbability;
   std::vector<double> transitionProbabilities;
   bool staticEnvironment;
   RealType firstPassageCDF;
@@ -46,7 +45,7 @@ public:
 
   void iterateTimeStep();
 
-  RealType getFirstPassageProbability() { return firstPassageProbability; };
+  RealType getFirstPassageCDF() { return firstPassageCDF; };
 
   std::tuple<unsigned int long, RealType>
   evolveToCutoff(RealType prob_cutOff, RealType nParticles);

@@ -55,7 +55,7 @@ FirstPassagePDF::FirstPassagePDF(const double _beta,
 {
   staticEnvironment = _staticEnvironment;
   maxPosition = _maxPosition;
-  PDF.resize(maxPosition+2);
+  PDF.resize(maxPosition + 2);
 
   firstPassageCDF = 0;
 
@@ -74,12 +74,19 @@ void FirstPassagePDF::iterateTimeStep()
 {
   std::vector<RealType> pdf_new(PDF.size());
   RealType bias;
+  firstPassageCDF = 0; // Rest to zero
 
   if (t <= maxPosition) {
     for (unsigned int i = 0; i < PDF.size() - 1; i++) {
       bias = generateBeta();
       pdf_new.at(i) += PDF.at(i) * bias;
-      pdf_new.at(i + 1) += PDF.at(i) * (1-bias);
+      pdf_new.at(i + 1) += PDF.at(i) * (1 - bias);
+    }
+    if (t == maxPosition){
+      firstPassageCDF += pdf_new.at(0) + pdf_new.back();
+    }
+    else if (t == maxPosition - 1){
+      firstPassageCDF += pdf_new.at(0) + pdf_new.at(pdf_new.size()-2);
     }
   }
 
@@ -95,7 +102,7 @@ void FirstPassagePDF::iterateTimeStep()
         else {
           bias = generateBeta();
           pdf_new.at(i) += PDF.at(i) * bias;
-          pdf_new.at(i - 1) += PDF.at(i) * (1-bias);
+          pdf_new.at(i - 1) += PDF.at(i) * (1 - bias);
         }
       }
       else {
@@ -108,13 +115,20 @@ void FirstPassagePDF::iterateTimeStep()
         else {
           bias = generateBeta();
           pdf_new.at(i) += PDF.at(i) * bias;
-          pdf_new.at(i + 1) += PDF.at(i) * (1-bias);
+          pdf_new.at(i + 1) += PDF.at(i) * (1 - bias);
         }
       }
     }
+    firstPassageCDF += pdf_new.at(0);
+    if (pdf_new.back() == 0) {
+      firstPassageCDF += pdf_new.at(pdf_new.size() - 2);
+    }
+    else {
+      firstPassageCDF += pdf_new.back();
+    }
   }
-  PDF = pdf_new; 
-  t+=1;
+  PDF = pdf_new;
+  t += 1;
 }
 
 std::tuple<unsigned int long, RealType>
@@ -127,7 +141,6 @@ FirstPassagePDF::evolveToCutoff(RealType cutOff, RealType nParticles)
 
   // Not sure how big these arrays will need to be but they should be at least
   // the size of maxPosition So I'll allocate that much memory
-  pdf.reserve(maxPosition);
   cdf.reserve(maxPosition);
   cdfN.reserve(maxPosition);
   times.reserve(maxPosition);
@@ -137,9 +150,8 @@ FirstPassagePDF::evolveToCutoff(RealType cutOff, RealType nParticles)
 
   while ((cdf_sumN < cutOff) || (cdf_sum < 1 / nParticles)) {
     iterateTimeStep();
-    pdf.push_back(firstPassageProbability);
 
-    cdf_sum += firstPassageProbability;
+    cdf_sum = firstPassageCDF;
     cdf.push_back(cdf_sum);
 
     cdf_sumN = 1 - exp(-cdf_sum * nParticles);
