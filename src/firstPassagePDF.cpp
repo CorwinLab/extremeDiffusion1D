@@ -77,7 +77,7 @@ void FirstPassagePDF::iterateTimeStep()
   firstPassageCDF = 0; // Rest to zero
 
   if (t <= maxPosition) {
-    for (unsigned int i = 0; i < PDF.size() - 1; i++) {
+    for (unsigned int i = 0; i <= t; i++) {
       bias = generateBeta();
       pdf_new.at(i) += PDF.at(i) * bias;
       pdf_new.at(i + 1) += PDF.at(i) * (1 - bias);
