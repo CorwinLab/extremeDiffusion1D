@@ -55,12 +55,12 @@ FirstPassagePDF::FirstPassagePDF(const double _beta,
 {
   staticEnvironment = _staticEnvironment;
   maxPosition = _maxPosition;
-  PDF.resize(2 * maxPosition + 1);
+  PDF.resize(maxPosition+2);
 
   firstPassageCDF = 0;
 
-  // Set middle element of array to 1
-  PDF[maxPosition] = 1;
+  // Set first element of array to 1
+  PDF[0] = 1;
   transitionProbabilities.resize(PDF.size(), 0);
   // If we are using a static environment generate transition probabilities
   if (staticEnvironment) {
@@ -72,42 +72,49 @@ FirstPassagePDF::FirstPassagePDF(const double _beta,
 
 void FirstPassagePDF::iterateTimeStep()
 {
-  std::vector<RealType> newPDF(PDF.size(), 0);
+  std::vector<RealType> pdf_new(PDF.size());
+  RealType bias;
 
-  if (!staticEnvironment) {
-    for (unsigned int i = 0; i < transitionProbabilities.size(); i++) {
-      if (PDF.at(i) != 0) {
-        transitionProbabilities.at(i) = generateBeta();
+  if (t <= maxPosition) {
+    for (unsigned int i = 0; i < PDF.size() - 1; i++) {
+      bias = generateBeta();
+      pdf_new.at(i) += PDF.at(i) * bias;
+      pdf_new.at(i + 1) += PDF.at(i) * (1-bias);
+    }
+  }
+
+  else {
+    for (unsigned int i = 0; i < PDF.size(); i++) {
+      if (i == 0) {
+        pdf_new.at(i) += PDF.at(i);
+      }
+      else if (PDF.back() != 0) {
+        if (i == (PDF.size() - 1)) {
+          pdf_new.at(i - 1) += PDF.at(i);
+        }
+        else {
+          bias = generateBeta();
+          pdf_new.at(i) += PDF.at(i) * bias;
+          pdf_new.at(i - 1) += PDF.at(i) * (1-bias);
+        }
+      }
+      else {
+        if (i == (PDF.size() - 1)) {
+          continue;
+        }
+        else if (i == (PDF.size() - 2)) {
+          pdf_new.at(i + 1) += PDF.at(i);
+        }
+        else {
+          bias = generateBeta();
+          pdf_new.at(i) += PDF.at(i) * bias;
+          pdf_new.at(i + 1) += PDF.at(i) * (1-bias);
+        }
       }
     }
   }
-
-  for (unsigned int i = 0; i < PDF.size(); i++) {
-    if (i == 0) {
-      newPDF.at(0) = PDF.at(0) + transitionProbabilities[1] * PDF.at(1);
-    }
-    else if (i == 1) {
-      newPDF.at(1) = transitionProbabilities[2] * PDF.at(2);
-    }
-    else if (i == PDF.size() - 1) {
-      newPDF.at(i) =
-          PDF.at(i) + (1 - transitionProbabilities[i - 1]) * PDF.at(i - 1);
-    }
-    else if (i == PDF.size() - 2) {
-      newPDF.at(i) = (1 - transitionProbabilities[i - 1]) * PDF.at(i - 1);
-    }
-    else {
-      newPDF.at(i) = (1 - transitionProbabilities[i - 1]) * PDF.at(i - 1) +
-                     transitionProbabilities[i + 1] * PDF.at(i + 1);
-    }
-  }
-
-  firstPassageProbability =
-      transitionProbabilities.at(1) * PDF.at(1) +
-      (1 - transitionProbabilities.at(PDF.size() - 2)) * PDF.at(PDF.size() - 2);
-  PDF = newPDF;
-  firstPassageCDF += firstPassageProbability;
-  t += 1;
+  PDF = pdf_new; 
+  t+=1;
 }
 
 std::tuple<unsigned int long, RealType>

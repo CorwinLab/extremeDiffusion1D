@@ -1,13 +1,13 @@
 import numpy as np
 import npquad 
-from libDiffusion import iteratePDF
+from libDiffusion import FirstPassagePDF
 
-x = 3 
-pdf = np.zeros(shape=x+2)
-pdf[0] = 1
-t = 0
+x = 3
+beta = 1
+staticEnivornment = False 
+fpdf = FirstPassagePDF(beta, x, staticEnivornment)
 
-for _ in range(10):
-    pdf = iteratePDF(pdf, x, t)
-    t+=1 
-    print(pdf, sum(pdf))
+tMax = 10
+for _ in range(tMax):
+    fpdf.iterateTimeStep()
+    print(fpdf.getPDF(), sum(fpdf.getPDF()))
