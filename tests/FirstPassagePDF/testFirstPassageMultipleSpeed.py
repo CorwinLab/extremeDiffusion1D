@@ -1,5 +1,5 @@
 from regex import F
-from libDiffusion import FirstPassagePDF
+from pyDiffusion import FirstPassagePDF
 from pyDiffusion.quadMath import prettifyQuad
 import numpy as np
 import npquad
@@ -27,7 +27,7 @@ def singleParticle(nParticles, cutoff, distances):
 def multipleParticles(nParticles, cutoff, distances):
     for d in distances:
         pdf = FirstPassagePDF(np.inf, d, False)
-        quantiles, variance, Ns = pdf.evolveToCutoffMultiple(cutoff, nParticles)
+        quantiles, variance, Ns = pdf.evolveToCutoffMultiple(nParticles, cutoff)
 
 mean, var = timeFunc(singleParticle, [nParticles, cutoff, distances])
 print(f"Single Particle: {mean} +/- {var}")

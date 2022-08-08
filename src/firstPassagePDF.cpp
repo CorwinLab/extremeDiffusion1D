@@ -134,7 +134,6 @@ void FirstPassagePDF::iterateTimeStep()
 std::tuple<unsigned int long, RealType>
 FirstPassagePDF::evolveToCutoff(RealType cutOff, RealType nParticles)
 {
-  std::vector<RealType> pdf;
   std::vector<RealType> cdf;
   std::vector<RealType> cdfN;
   std::vector<unsigned int long> times;
@@ -175,7 +174,7 @@ FirstPassagePDF::evolveToCutoff(RealType cutOff, RealType nParticles)
   for (unsigned int i = 0; i < cdfN.size() - 1; i++) {
     pdfN[i] = cdfN[i + 1] - cdfN[i];
   }
-  std::vector<unsigned int long> pdfTimes = slice(times, 0, pdf.size() - 2);
+  std::vector<unsigned int long> pdfTimes = slice(times, 0, times.size() - 2);
   RealType var = calculateVarianceFromPDF(pdfTimes, pdfN);
 
   return std::make_tuple(quantileTime, var);
