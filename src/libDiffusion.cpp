@@ -37,9 +37,53 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 } // namespace detail
 } // namespace pybind11
 
+std::vector<RealType> iterateTimestep(std::vector<RealType> pdf, unsigned int maxPosition, unsigned int t)
+{
+  std::vector<RealType> pdf_new(pdf.size());
+  // Okay this stuff is good
+  if (t <= maxPosition) {
+    for (unsigned int i = 0; i < pdf.size() - 1; i++) {
+      pdf_new.at(i) += pdf.at(i) * 1 / 2;
+      pdf_new.at(i + 1) += pdf.at(i) * 1 / 2;
+    }
+  }
+
+  // This stuff needs the work
+  else {
+    for (unsigned int i = 0; i < pdf.size(); i++) {
+      if (i == 0) {
+        pdf_new.at(i) += pdf.at(i);
+      }
+      else if (pdf.back() != 0) {
+        if (i == (pdf.size() - 1)) {
+          pdf_new.at(i - 1) += pdf.at(i);
+        }
+        else {
+          pdf_new.at(i) += pdf.at(i) * 1 / 2;
+          pdf_new.at(i - 1) += pdf.at(i) * 1 / 2;
+        }
+      }
+      else {
+        if (i == (pdf.size() - 1)) {
+          continue;
+        }
+        else if (i == (pdf.size() - 2)) {
+          pdf_new.at(i + 1) += pdf.at(i);
+        }
+        else {
+          pdf_new.at(i) += pdf.at(i) * 1 / 2;
+          pdf_new.at(i + 1) += pdf.at(i) * 1 / 2;
+        }
+      }
+    }
+  }
+  return pdf_new;
+}
+
 PYBIND11_MODULE(libDiffusion, m)
 {
      m.doc() = "Random walk library";
+     m.def("iteratePDF", iterateTimestep);
      py::class_<RandomNumGenerator>(m, "RandomNumGenerator")
           .def(py::init<const double>())
           .def("getBeta", &RandomNumGenerator::getBeta)
