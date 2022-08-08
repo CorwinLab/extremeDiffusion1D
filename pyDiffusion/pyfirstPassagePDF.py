@@ -63,8 +63,8 @@ class FirstPassagePDF(libDiffusion.FirstPassagePDF):
         self.setMaxPosition(maxPosition)
 
     @property
-    def firstPassageProbability(self):
-        return self.getFirstPassageProbability()
+    def firstPassageCDF(self):
+        return self.getFirstPassageCDF
 
     def iterateTimeStep(self):
         super().iterateTimeStep()
@@ -73,7 +73,7 @@ class FirstPassagePDF(libDiffusion.FirstPassagePDF):
         while self.currentTime < time:
             self.iterateTimeStep()
 
-    def evolveAndSaveFirstPassagePDF(self, times: Iterable[int], file: str):
+    def evolveAndSaveFirstPassageCDF(self, times: Iterable[int], file: str):
         """Evolve and save the first passage time pdf
 
         Parameters
@@ -91,17 +91,17 @@ class FirstPassagePDF(libDiffusion.FirstPassagePDF):
         >>> file = 'Data.txt'
         >>> times = np.arange(1, 10000)
         >>> pdf = FirstPassagePDF(beta, maxPosition)
-        >>> pdf.evolveAndSaveFirstPassagePDF(times, file)
+        >>> pdf.evolveAndSaveFirstPassageCDF(times, file)
         >>> data = np.loadtxt(file)
         >>> fig, ax = plt.subplots()
         >>> ax.plot(data[:, 0][1::2], data[:, 1][1::2])
-        >>> fig.savefig("PDF.png")
+        >>> fig.savefig("CDF.png")
         """
-        pdf = np.zeros(len(times), dtype=np.quad)
+        cdf = np.zeros(len(times), dtype=np.quad)
         for i, t in enumerate(times):
             self.evolveToTime(t)
-            pdf[i] = self.firstPassageProbability
-        saveArrayQuad(file, np.array([times, pdf]).T)
+            cdf[i] = self.firstPassageCDF
+        saveArrayQuad(file, np.array([times, cdf]).T)
 
     def evolveToCutoff(self, cutoff: float, nParticles: np.quad) -> Tuple[int, np.quad]:
         """Evolve the system until it reaches a threshold for the
