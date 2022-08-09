@@ -75,19 +75,17 @@ void FirstPassagePDF::iterateTimeStep()
 {
   std::vector<RealType> pdf_new(PDF.size());
   RealType bias;
-  firstPassageCDF = 0; // Rest to zero
+  RealType newfirstPassageCDF = 0; // Rest to zero
 
-  if (t <= maxPosition) {
+  // Okay this stuff is workign as expected
+  if (t < maxPosition) {
     for (unsigned int i = 0; i <= t; i++) {
       bias = generateBeta();
       pdf_new.at(i) += PDF.at(i) * bias;
       pdf_new.at(i + 1) += PDF.at(i) * (1 - bias);
     }
-    if (t == maxPosition){
-      firstPassageCDF += pdf_new.at(0) + pdf_new.back();
-    }
-    else if (t == maxPosition - 1){
-      firstPassageCDF += pdf_new.at(0) + pdf_new.at(pdf_new.size()-2);
+    if(t == maxPosition - 1){
+      newfirstPassageCDF += pdf_new.at(0) + pdf_new.at(pdf_new.size()-2);
     }
   }
 
@@ -102,8 +100,8 @@ void FirstPassagePDF::iterateTimeStep()
         }
         else {
           bias = generateBeta();
-          pdf_new.at(i) += PDF.at(i) * bias;
-          pdf_new.at(i - 1) += PDF.at(i) * (1 - bias);
+          pdf_new.at(i) += PDF.at(i) * (1-bias);
+          pdf_new.at(i - 1) += PDF.at(i) *  bias;
         }
       }
       else {
@@ -116,18 +114,22 @@ void FirstPassagePDF::iterateTimeStep()
         else {
           bias = generateBeta();
           pdf_new.at(i) += PDF.at(i) * bias;
-          pdf_new.at(i + 1) += PDF.at(i) * (1 - bias);
+          pdf_new.at(i + 1) += PDF.at(i) * (1-bias);
         }
       }
     }
-    firstPassageCDF += pdf_new.at(0);
+    newfirstPassageCDF += pdf_new.at(0);
     if (pdf_new.back() == 0) {
-      firstPassageCDF += pdf_new.at(pdf_new.size() - 2);
+      newfirstPassageCDF += pdf_new.at(pdf_new.size() - 2);
     }
     else {
-      firstPassageCDF += pdf_new.back();
+      newfirstPassageCDF += pdf_new.back();
     }
   }
+  if (firstPassageCDF > newfirstPassageCDF){
+    throw std::runtime_error("Trying to set first passage cdf to value smaller than previous first passage cdf");
+  }
+  firstPassageCDF = newfirstPassageCDF;
   PDF = pdf_new;
   t += 1;
 }

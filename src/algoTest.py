@@ -13,9 +13,9 @@ fpdf.setBetaSeed(0)
 quantile, var, N = fpdf.evolveToCutoffMultiple(1, [N])
 print(quantile, var, N)
 
-fpdf = FirstPassagePDF(beta, 5, staticEnvironment)
+fpdf = FirstPassagePDF(beta, 3, staticEnvironment)
 fpdf.setBetaSeed(0)
 maxTime = 20
 for _ in range(maxTime):
     fpdf.iterateTimeStep()
-    print(fpdf.getPDF(), fpdf.getFirstPassageCDF())
+    print(np.array(fpdf.getPDF()).astype(float), fpdf.getTime(), fpdf.getFirstPassageCDF(), sum(fpdf.getPDF()))
