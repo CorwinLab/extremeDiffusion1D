@@ -100,12 +100,16 @@ if __name__ == '__main__':
     print(f"{np.exp(intercept)} * x^{slope}")
     '''
 
+    theoretical_distances_max = np.loadtxt("distances.txt")
+    theoretical_variance_max = np.loadtxt("varianceMax.txt")
+
     #ax.plot(RWRESam[:, 0][-500:] / logN, theoretical_var, label=r'$x^{3.8}$', ls='--')
     ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 2], label=r'$\mathrm{Var}(\tau_{sam})$', alpha=alpha, c=sam_color)
     ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 4], label=r'$\mathrm{Var}(\tau_{env})$', alpha=alpha, c=env_color)
     #ax.plot(RWRESam[:, 0] / logN, RWRESam[:, 4] + RWRESam[:, 2], label=r'$\mathrm{Var}(\mathrm{Env}_x^N) + \mathrm{Var}(\mathrm{Sam}_x^N)$', alpha=alpha)
     ax.plot(theoretical_distances / logN, theoretical_variance, label=r'"Theoretical" $\mathrm{Var}(\tau_{env})$', ls='--', c=theory_color)
     ax.plot(theoretical_distances / logN, theoretical_variance_2, label=r'"Theoretical KPZ" $\mathrm{Var}(\tau_{env})$', ls='--', c='saddlebrown')
+    ax.plot(theoretical_distances_max / logN, theoretical_variance_max, label=r'"Theoretical Max"', ls='-.', c='k')
     xvals = np.array([50, 90])
     xvals2 = np.array([5, 20])
     yvals = xvals ** 4
