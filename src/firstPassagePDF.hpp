@@ -16,17 +16,15 @@
 
 typedef boost::multiprecision::float128 RealType;
 
-class FirstPassagePDF : public RandomNumGenerator {
+class FirstPassagePDF {
 protected:
   std::vector<RealType> PDF;
   unsigned long int maxPosition;
   unsigned long int t = 0;
-  std::vector<double> transitionProbabilities;
-  bool staticEnvironment;
   RealType firstPassageCDF;
 
 public:
-  FirstPassagePDF(const double _beta, const unsigned long int _maxPosition, const bool _staticEnvironment);
+  FirstPassagePDF(const unsigned long int _maxPosition);
   ~FirstPassagePDF(){};
 
   unsigned long int getTime() { return t; };
@@ -35,23 +33,22 @@ public:
   std::vector<RealType> getPDF() { return PDF; };
   void setPDF(std::vector<RealType> _PDF) { PDF = _PDF; };
 
-  std::vector<double> getTransitionProbabilities() { return transitionProbabilities; };
-
   unsigned long int getMaxPosition() { return maxPosition; };
   void setMaxPosition(unsigned long int _maxPosition)
   {
     maxPosition = _maxPosition;
   };
 
-  void iterateTimeStep();
+  void iterateTimeStep(std::vector<RealType> biases);
 
   RealType getFirstPassageCDF() { return firstPassageCDF; };
 
+  /*
   std::tuple<unsigned int long, RealType>
   evolveToCutoff(RealType prob_cutOff, RealType nParticles);
 
   std::tuple<std::vector<unsigned int long>, std::vector<RealType>, std::vector<RealType>>
-  evolveToCutoffMultiple(RealType prob_cutOff, std::vector<RealType> nParticles);
+  evolveToCutoffMultiple(RealType prob_cutOff, std::vector<RealType> nParticles); */
 };
 
 #endif /* FISRTPASSAGEPDF_HPP_ */

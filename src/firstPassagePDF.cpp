@@ -49,12 +49,8 @@ public:
   }
 };
 
-FirstPassagePDF::FirstPassagePDF(const double _beta,
-                                 const unsigned long int _maxPosition,
-                                 const bool _staticEnvironment)
-    : RandomNumGenerator(_beta)
+FirstPassagePDF::FirstPassagePDF(const unsigned long int _maxPosition)
 {
-  staticEnvironment = _staticEnvironment;
   maxPosition = _maxPosition;
   PDF.resize(maxPosition + 2);
 
@@ -62,16 +58,9 @@ FirstPassagePDF::FirstPassagePDF(const double _beta,
 
   // Set first element of array to 1
   PDF[0] = 1;
-  transitionProbabilities.resize(PDF.size(), 0);
-  // If we are using a static environment generate transition probabilities
-  if (staticEnvironment) {
-    for (unsigned int i = 0; i < transitionProbabilities.size(); i++) {
-      transitionProbabilities.at(i) = generateBeta();
-    }
-  }
 }
 
-void FirstPassagePDF::iterateTimeStep()
+void FirstPassagePDF::iterateTimeStep(std::vector<RealType> biases)
 {
   std::vector<RealType> pdf_new(PDF.size());
   RealType bias;
@@ -80,7 +69,7 @@ void FirstPassagePDF::iterateTimeStep()
   // Okay this stuff is workign as expected
   if (t < maxPosition) {
     for (unsigned int i = 0; i <= t; i++) {
-      bias = generateBeta();
+      bias = biases[i];
       pdf_new.at(i) += PDF.at(i) * bias;
       pdf_new.at(i + 1) += PDF.at(i) * (1 - bias);
     }
@@ -99,7 +88,7 @@ void FirstPassagePDF::iterateTimeStep()
           pdf_new.at(i - 1) += PDF.at(i);
         }
         else {
-          bias = generateBeta();
+          bias = biases[i];
           pdf_new.at(i) += PDF.at(i) * (1-bias);
           pdf_new.at(i - 1) += PDF.at(i) *  bias;
         }
@@ -112,7 +101,7 @@ void FirstPassagePDF::iterateTimeStep()
           pdf_new.at(i + 1) += PDF.at(i);
         }
         else {
-          bias = generateBeta();
+          bias = biases[i];
           pdf_new.at(i) += PDF.at(i) * bias;
           pdf_new.at(i + 1) += PDF.at(i) * (1-bias);
         }
@@ -134,6 +123,7 @@ void FirstPassagePDF::iterateTimeStep()
   t += 1;
 }
 
+/*
 std::tuple<unsigned int long, RealType>
 FirstPassagePDF::evolveToCutoff(RealType cutOff, RealType nParticles)
 {
@@ -236,4 +226,4 @@ FirstPassagePDF::evolveToCutoffMultiple(RealType cutoff,
     }
   }
   return std::make_tuple(quantiles, variance, setNParticles);
-}
+} */
