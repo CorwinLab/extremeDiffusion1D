@@ -20,4 +20,4 @@ cdf = 0
 for _ in range(maxTime):
     fpdf.iterateTimeStep()
     cdf += fpdf.getFirstPassageProbability()
-    print(np.array(fpdf.getPDF()).astype(float), cdf)
+    print(list(np.array(fpdf.getPDF()).astype(np.float)), cdf, sum(fpdf.getPDF()))

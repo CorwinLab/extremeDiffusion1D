@@ -74,7 +74,7 @@ void FirstPassagePDF::iterateTimeStep()
   std::vector<RealType> newPDF(PDF.size(), 0);
 
   if (!staticEnvironment){
-    for (unsigned int i = 0; i < transitionProbabilities.size(); i++) {
+    for (unsigned int i = 1; i < transitionProbabilities.size()-1; i++) {
       if (PDF.at(i) != 0) {
         transitionProbabilities.at(i) = generateBeta();
       }
