@@ -23,6 +23,7 @@ public:
 
   RealType nParticles;
   std::vector<RealType> cdf;
+  std::vector<unsigned long int> times;
   long int quantileTime;
   RealType variance;
   bool quantileSet;
@@ -32,12 +33,12 @@ public:
     cdf.push_back(1 - exp(-singleParticleCDF * nParticles));
   }
 
+  void push_back_times(unsigned long int time){
+    times.push_back(time);
+  }
+
   RealType calculateVariance(unsigned int long t)
   {
-    std::vector<unsigned int long> times(t);
-    for (unsigned int i = 1; i <= t; i++) {
-      times.at(i - 1) = i;
-    }
     std::vector<RealType> pdf(cdf.size() - 1);
     for (unsigned int i = 0; i < cdf.size() - 1; i++) {
       pdf[i] = cdf[i + 1] - cdf[i];
@@ -213,6 +214,7 @@ FirstPassagePDF::evolveToCutoffMultiple(RealType cutoff,
       if (!(it->varianceSet)) {
         // std::cout << "trying to set variance" << std::endl;
         it->push_back_cdf(firstPassageCDF);
+        it->push_back_times(t);
         if (it->cdf.back() == 1) {
           // calculate variance here
           RealType var = it->calculateVariance(t);

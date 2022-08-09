@@ -60,5 +60,9 @@ N = np.quad("1e24")
 logN = np.log(N).astype(float)
 ax.plot(distance / logN, var, alpha=alpha, label=prettifyQuad(N))
 
+xvals = np.array([90, 400])
+yvals = xvals ** 4
+ax.plot(xvals, yvals, c='k', ls='--', label=r"$t^{4}$")
+
 ax.legend()
 fig.savefig("Variance.pdf")
