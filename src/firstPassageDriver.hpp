@@ -1,23 +1,26 @@
 #ifndef FISRTPASSAGEDRIVER_HPP_
 #define FISRTPASSAGEDRIVER_HPP_
 
-#include "firstPassagePDF.hpp"
+#include "firstPassageBase.hpp"
 #include "randomNumGenerator.hpp"
 #include <vector>
 
 class FirstPassageDriver : public RandomNumGenerator {
 protected:
-  std::vector<FirstPassagePDF> pdfs;
+  std::vector<FirstPassageBase> pdfs;
   unsigned int t;
   std::vector<unsigned int long> maxPositions;
 
 public:
   FirstPassageDriver(const double _beta,
-                     std::vector<unsigned int long> maxPositions);
+                     std::vector<unsigned int long> _maxPositions);
   ~FirstPassageDriver(){};
 
-  std::vector<FirstPassagePDF> getPDFs() { return pdfs; };
-  void setPDFs(std::vector<FirstPassagePDF> _pdfs) { pdfs = _pdfs; };
+  std::vector<FirstPassageBase> getPDFs() { return pdfs; };
+  void setPDFs(std::vector<FirstPassageBase> _pdfs) { pdfs = _pdfs; };
+
+  unsigned int getTime() { return t; };
+  void setTime(unsigned int _t) { t=_t; };
 
   void iterateTimeStep();
   std::vector<RealType> getBiases();

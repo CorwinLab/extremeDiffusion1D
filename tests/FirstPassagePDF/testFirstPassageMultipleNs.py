@@ -1,5 +1,5 @@
 from regex import F
-from libDiffusion import FirstPassagePDF
+from pyDiffusion import FirstPassagePDF
 from pyDiffusion.quadMath import prettifyQuad
 import numpy as np
 import npquad

@@ -1,7 +1,7 @@
 #include <vector>
 
 #include "firstPassageDriver.hpp"
-#include "firstPassagePDF.hpp"
+#include "firstPassageBase.hpp"
 #include "particleData.hpp"
 #include "randomNumGenerator.hpp"
 
@@ -14,17 +14,25 @@ FirstPassageDriver::FirstPassageDriver(
   std::sort(maxPositions.begin(), maxPositions.end());
 
   for (unsigned int i = 0; i < maxPositions.size(); i++) {
-    pdfs.push_back(FirstPassagePDF(maxPositions[i]));
+    pdfs.push_back(FirstPassageBase(maxPositions[i]));
   }
 }
 
 std::vector<RealType> FirstPassageDriver::getBiases()
 {
   unsigned int long x = maxPositions.back();
-  std::vector<RealType> biases(x, 0);
+  std::vector<RealType> biases;
+  unsigned int numberToGenerate;
 
-  for (unsigned int i = 0; i < biases.size(); i++) {
-    biases.at(i) = generateBeta();
+  if (t < x){
+    numberToGenerate = t+2;
+  }
+  else{
+    numberToGenerate = x + 2;
+  }
+
+  for (unsigned int i = 0; i < numberToGenerate; i++) {
+    biases.push_back(generateBeta());
   }
 
   return biases;
@@ -33,7 +41,6 @@ std::vector<RealType> FirstPassageDriver::getBiases()
 void FirstPassageDriver::iterateTimeStep()
 {
   std::vector<RealType> biases = getBiases();
-
   for (unsigned int i = 0; i < pdfs.size(); i++) {
     pdfs[i].iterateTimeStep(biases);
   }
@@ -54,14 +61,13 @@ FirstPassageDriver::evolveToCutoff(RealType nParticles, RealType cutoff)
   }
   unsigned int index;
   RealType firstPassageCDF;
-
   while (!particlesData.empty()) {
     iterateTimeStep();
     // Each ParticleData object corresponds to a different pdf.
     for (auto it = particlesData.begin(); it != particlesData.end(); it++) {
       // Get the measurement of the quantile position
       index = it - particlesData.begin();
-      FirstPassagePDF pdf = pdfs.at(index);
+      FirstPassageBase pdf = pdfs.at(index);
       firstPassageCDF = pdf.getFirstPassageCDF();
 
       // Get the measurement of the quantile position
@@ -76,7 +82,7 @@ FirstPassageDriver::evolveToCutoff(RealType nParticles, RealType cutoff)
         it->push_back_times(t);
         if (it->cdf.back() == 1) {
           // calculate variance here
-          RealType var = it->calculateVariance(t);
+          RealType var = it->calculateVariance();
           it->variance = var;
           it->varianceSet = true;
         }

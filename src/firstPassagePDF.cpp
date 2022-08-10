@@ -12,8 +12,12 @@
 using RealType = boost::multiprecision::float128;
 static_assert(sizeof(RealType) == 16, "Bad size");
 
-FirstPassagePDF::FirstPassagePDF(const unsigned long int _maxPosition)
+FirstPassagePDF::FirstPassagePDF(const double _beta,
+                                 const unsigned long int _maxPosition,
+                                 const bool _staticEnvironment)
+    : RandomNumGenerator(_beta)
 {
+  staticEnvironment = _staticEnvironment;
   maxPosition = _maxPosition;
   PDF.resize(maxPosition + 2);
 
@@ -21,9 +25,16 @@ FirstPassagePDF::FirstPassagePDF(const unsigned long int _maxPosition)
 
   // Set first element of array to 1
   PDF[0] = 1;
+  transitionProbabilities.resize(PDF.size(), 0);
+  // If we are using a static environment generate transition probabilities
+  if (staticEnvironment) {
+    for (unsigned int i = 0; i < transitionProbabilities.size(); i++) {
+      transitionProbabilities.at(i) = generateBeta();
+    }
+  }
 }
 
-void FirstPassagePDF::iterateTimeStep(std::vector<RealType> biases)
+void FirstPassagePDF::iterateTimeStep()
 {
   std::vector<RealType> pdf_new(PDF.size());
   RealType bias;
@@ -32,7 +43,7 @@ void FirstPassagePDF::iterateTimeStep(std::vector<RealType> biases)
   // Okay this stuff is workign as expected
   if (t < maxPosition) {
     for (unsigned int i = 0; i <= t; i++) {
-      bias = biases[i];
+      bias = generateBeta();
       pdf_new.at(i) += PDF.at(i) * bias;
       pdf_new.at(i + 1) += PDF.at(i) * (1 - bias);
     }
@@ -51,7 +62,7 @@ void FirstPassagePDF::iterateTimeStep(std::vector<RealType> biases)
           pdf_new.at(i - 1) += PDF.at(i);
         }
         else {
-          bias = biases[i];
+          bias = generateBeta();
           pdf_new.at(i) += PDF.at(i) * (1-bias);
           pdf_new.at(i - 1) += PDF.at(i) *  bias;
         }
@@ -64,7 +75,7 @@ void FirstPassagePDF::iterateTimeStep(std::vector<RealType> biases)
           pdf_new.at(i + 1) += PDF.at(i);
         }
         else {
-          bias = biases[i];
+          bias = generateBeta();
           pdf_new.at(i) += PDF.at(i) * bias;
           pdf_new.at(i + 1) += PDF.at(i) * (1-bias);
         }
@@ -86,7 +97,6 @@ void FirstPassagePDF::iterateTimeStep(std::vector<RealType> biases)
   t += 1;
 }
 
-/*
 std::tuple<unsigned int long, RealType>
 FirstPassagePDF::evolveToCutoff(RealType cutOff, RealType nParticles)
 {
@@ -152,11 +162,9 @@ FirstPassagePDF::evolveToCutoffMultiple(RealType cutoff,
   for (unsigned int i = 0; i < nParticles.size(); i++) {
     particlesData.push_back(ParticleData(nParticles[i]));
   }
-
   while (!particlesData.empty()) {
     iterateTimeStep(); // Okay this is all good
     for (auto it = particlesData.begin(); it != particlesData.end(); it++) {
-
       // Get the measurement of the quantile position
       if ((firstPassageCDF >= 1 / it->nParticles) && (!(it->quantileSet))) {
         // std::cout << "trying to set quantile time" << std::endl;
@@ -172,7 +180,7 @@ FirstPassagePDF::evolveToCutoffMultiple(RealType cutoff,
         it->push_back_times(t);
         if (it->cdf.back() == 1) {
           // calculate variance here
-          RealType var = it->calculateVariance(t);
+          RealType var = it->calculateVariance();
           it->variance = var;
           it->varianceSet = true;
         }
@@ -189,4 +197,4 @@ FirstPassagePDF::evolveToCutoffMultiple(RealType cutoff,
     }
   }
   return std::make_tuple(quantiles, variance, setNParticles);
-}*/
+}

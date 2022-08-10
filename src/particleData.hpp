@@ -35,7 +35,7 @@ public:
     times.push_back(time);
   }
 
-  RealType calculateVariance(unsigned int long t)
+  RealType calculateVariance()
   {
     std::vector<RealType> pdf(cdf.size() - 1);
     for (unsigned int i = 0; i < cdf.size() - 1; i++) {

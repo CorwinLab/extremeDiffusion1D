@@ -2,8 +2,9 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "firstPassagePDF.hpp"
+#include "firstPassageBase.hpp"
 #include "firstPassageDriver.hpp"
+#include "firstPassagePDF.hpp"
 #include "randomNumGenerator.hpp"
 #include "diffusionCDFBase.hpp"
 #include "diffusionTimeCDF.hpp"
@@ -48,29 +49,46 @@ PYBIND11_MODULE(libDiffusion, m)
           .def("generateBeta", &RandomNumGenerator::generateBeta)
           .def("setBetaSeed", &RandomNumGenerator::setBetaSeed);
           
-     py::class_<FirstPassagePDF>(m, "FirstPassagePDF")
+     py::class_<FirstPassageBase>(m, "FirstPassageBase")
           .def(py::init<const unsigned long int>(),
                py::arg("maxPosition"))
-          .def("getTime", &FirstPassagePDF::getTime)
-          .def("setTime", &FirstPassagePDF::setTime)
-          .def("getPDF", &FirstPassagePDF::getPDF)
-          .def("setPDF", &FirstPassagePDF::setPDF)
-          .def("getFirstPassageCDF", &FirstPassagePDF::getFirstPassageCDF)
-          .def("getMaxPosition", &FirstPassagePDF::getMaxPosition)
-          .def("setMaxPosition", &FirstPassagePDF::setMaxPosition)
-          .def("iterateTimeStep", &FirstPassagePDF::iterateTimeStep);
-
-          // Need to remove these for now. 
-          // .def("evolveToCutoff", &FirstPassagePDF::evolveToCutoff)
-          // .def("evolveToCutoffMultiple", &FirstPassagePDF::evolveToCutoffMultiple);
+          .def("getTime", &FirstPassageBase::getTime)
+          .def("setTime", &FirstPassageBase::setTime)
+          .def("getPDF", &FirstPassageBase::getPDF)
+          .def("setPDF", &FirstPassageBase::setPDF)
+          .def("getFirstPassageCDF", &FirstPassageBase::getFirstPassageCDF)
+          .def("getMaxPosition", &FirstPassageBase::getMaxPosition)
+          .def("setMaxPosition", &FirstPassageBase::setMaxPosition)
+          .def("iterateTimeStep", &FirstPassageBase::iterateTimeStep);
 
      py::class_<FirstPassageDriver, RandomNumGenerator>(m, "FirstPassageDriver")
           .def(py::init<const double, std::vector<unsigned int long> >())
           .def("iterateTimeStep", &FirstPassageDriver::iterateTimeStep)
           .def("getBiases", &FirstPassageDriver::getBiases)
+          .def("getTime", &FirstPassageDriver::getTime)
+          .def("setTime", &FirstPassageDriver::setTime)
           .def("getPDFs", &FirstPassageDriver::getPDFs)
           .def("setPDFs", &FirstPassageDriver::setPDFs)
           .def("evolveToCutoff", &FirstPassageDriver::evolveToCutoff);
+
+     py::class_<FirstPassagePDF, RandomNumGenerator>(m, "FirstPassagePDF")
+          .def(py::init<const double, const unsigned long int, const bool>(),
+               py::arg("beta"),
+               py::arg("maxPosition"),
+               py::arg("staticEnvironment"))
+          .def("getBeta", &FirstPassagePDF::getBeta)
+          .def("setBeta", &FirstPassagePDF::setBeta)
+          .def("getTime", &FirstPassagePDF::getTime)
+          .def("setTime", &FirstPassagePDF::setTime)
+          .def("getPDF", &FirstPassagePDF::getPDF)
+          .def("setPDF", &FirstPassagePDF::setPDF)
+          .def("getTransitionProbabilities", &FirstPassagePDF::getTransitionProbabilities)
+          .def("getFirstPassageCDF", &FirstPassagePDF::getFirstPassageCDF)
+          .def("getMaxPosition", &FirstPassagePDF::getMaxPosition)
+          .def("setMaxPosition", &FirstPassagePDF::setMaxPosition)
+          .def("iterateTimeStep", &FirstPassagePDF::iterateTimeStep)
+          .def("evolveToCutoff", &FirstPassagePDF::evolveToCutoff)
+          .def("evolveToCutoffMultiple", &FirstPassagePDF::evolveToCutoffMultiple);
 
      py::class_<DiffusionPDF, RandomNumGenerator>(m, "DiffusionPDF")
           .def(py::init<const RealType,
