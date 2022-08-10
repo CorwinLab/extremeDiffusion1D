@@ -1,9 +1,15 @@
+#include <boost/multiprecision/float128.hpp>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
 #include <vector>
 
-#include "firstPassageDriver.hpp"
 #include "firstPassageBase.hpp"
+#include "firstPassageDriver.hpp"
 #include "particleData.hpp"
 #include "randomNumGenerator.hpp"
+
+using RealType = boost::multiprecision::float128;
 
 FirstPassageDriver::FirstPassageDriver(
     const double _beta, std::vector<unsigned int long> _maxPositions)
@@ -24,10 +30,10 @@ std::vector<RealType> FirstPassageDriver::getBiases()
   std::vector<RealType> biases;
   unsigned int numberToGenerate;
 
-  if (t < x){
-    numberToGenerate = t+2;
+  if (t < x) {
+    numberToGenerate = t + 2;
   }
-  else{
+  else {
     numberToGenerate = x + 2;
   }
 
@@ -50,7 +56,9 @@ void FirstPassageDriver::iterateTimeStep()
 std::tuple<std::vector<unsigned int long>,
            std::vector<RealType>,
            std::vector<unsigned int long>>
-FirstPassageDriver::evolveToCutoff(RealType nParticles, RealType cutoff)
+FirstPassageDriver::evolveToCutoff(RealType nParticles,
+                                   RealType cutoff,
+                                   bool writeHeader)
 {
   std::vector<unsigned int long> quantileTimes;
   std::vector<RealType> variance;
@@ -61,6 +69,16 @@ FirstPassageDriver::evolveToCutoff(RealType nParticles, RealType cutoff)
   }
   unsigned int index;
   RealType firstPassageCDF;
+
+  // Set up file writing
+  std::ofstream myfile;
+  myfile.open("test.csv", std::ios::app);
+  myfile << std::fixed
+         << std::setprecision(std::numeric_limits<RealType>::max_digits10);
+  if (writeHeader) {
+    myfile << "distance,quantile,variance\n";
+  }
+
   while (!particlesData.empty()) {
     iterateTimeStep();
     // Each ParticleData object corresponds to a different pdf.
@@ -93,6 +111,8 @@ FirstPassageDriver::evolveToCutoff(RealType nParticles, RealType cutoff)
         quantileTimes.push_back(it->quantileTime);
         variance.push_back(it->variance);
         positions.push_back(pdf.getMaxPosition());
+        myfile << pdf.getMaxPosition() << "," << it->quantileTime << ","
+               << it->variance << "\n";
 
         // now need to erase elements in particlesData and pdfs
         particlesData.erase(it--);
@@ -100,5 +120,6 @@ FirstPassageDriver::evolveToCutoff(RealType nParticles, RealType cutoff)
       }
     }
   }
+  myfile.close();
   return std::make_tuple(quantileTimes, variance, positions);
 }

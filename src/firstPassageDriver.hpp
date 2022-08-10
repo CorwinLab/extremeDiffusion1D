@@ -27,7 +27,7 @@ public:
   std::tuple<std::vector<unsigned int long>,
              std::vector<RealType>,
              std::vector<unsigned int long>>
-  evolveToCutoff(RealType nParticles, RealType cutoff);
+  evolveToCutoff(RealType nParticles, RealType cutoff, bool writeHeader);
 };
 
 #endif /* FISRTPASSAGEDRIVER_HPP_ */
