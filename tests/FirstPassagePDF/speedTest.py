@@ -2,8 +2,7 @@ from distutils.sysconfig import customize_compiler
 import numpy as np
 import npquad 
 import sys 
-sys.path.append("../../src")
-from pyfirstPassagePDF import FirstPassagePDF
+from pyDiffusion import FirstPassagePDF
 import csv
 
 def sampleCDF(cdf, N):

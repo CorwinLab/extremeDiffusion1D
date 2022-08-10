@@ -2,6 +2,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "firstPassageBase.hpp"
+#include "firstPassageDriver.hpp"
 #include "firstPassagePDF.hpp"
 #include "randomNumGenerator.hpp"
 #include "diffusionCDFBase.hpp"
@@ -47,6 +49,28 @@ PYBIND11_MODULE(libDiffusion, m)
           .def("generateBeta", &RandomNumGenerator::generateBeta)
           .def("setBetaSeed", &RandomNumGenerator::setBetaSeed);
           
+     py::class_<FirstPassageBase>(m, "FirstPassageBase")
+          .def(py::init<const unsigned long int>(),
+               py::arg("maxPosition"))
+          .def("getTime", &FirstPassageBase::getTime)
+          .def("setTime", &FirstPassageBase::setTime)
+          .def("getPDF", &FirstPassageBase::getPDF)
+          .def("setPDF", &FirstPassageBase::setPDF)
+          .def("getFirstPassageCDF", &FirstPassageBase::getFirstPassageCDF)
+          .def("getMaxPosition", &FirstPassageBase::getMaxPosition)
+          .def("setMaxPosition", &FirstPassageBase::setMaxPosition)
+          .def("iterateTimeStep", &FirstPassageBase::iterateTimeStep);
+
+     py::class_<FirstPassageDriver, RandomNumGenerator>(m, "FirstPassageDriver")
+          .def(py::init<const double, std::vector<unsigned int long> >())
+          .def("iterateTimeStep", &FirstPassageDriver::iterateTimeStep)
+          .def("getBiases", &FirstPassageDriver::getBiases)
+          .def("getTime", &FirstPassageDriver::getTime)
+          .def("setTime", &FirstPassageDriver::setTime)
+          .def("getPDFs", &FirstPassageDriver::getPDFs)
+          .def("setPDFs", &FirstPassageDriver::setPDFs)
+          .def("evolveToCutoff", &FirstPassageDriver::evolveToCutoff);
+
      py::class_<FirstPassagePDF, RandomNumGenerator>(m, "FirstPassagePDF")
           .def(py::init<const double, const unsigned long int, const bool>(),
                py::arg("beta"),
