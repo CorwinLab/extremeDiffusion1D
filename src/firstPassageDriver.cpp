@@ -58,6 +58,7 @@ std::tuple<std::vector<unsigned int long>,
            std::vector<unsigned int long>>
 FirstPassageDriver::evolveToCutoff(RealType nParticles,
                                    RealType cutoff,
+                                   std::string filePath,
                                    bool writeHeader)
 {
   std::vector<unsigned int long> quantileTimes;
@@ -72,7 +73,7 @@ FirstPassageDriver::evolveToCutoff(RealType nParticles,
 
   // Set up file writing
   std::ofstream myfile;
-  myfile.open("test.csv", std::ios::app);
+  myfile.open(filePath, std::ios::app);
   myfile << std::fixed
          << std::setprecision(std::numeric_limits<RealType>::max_digits10);
   if (writeHeader) {
