@@ -69,7 +69,8 @@ PYBIND11_MODULE(libDiffusion, m)
           .def("iterateTimeStep", &FirstPassageDriver::iterateTimeStep)
           .def("getBiases", &FirstPassageDriver::getBiases)
           .def("getPDFs", &FirstPassageDriver::getPDFs)
-          .def("setPDFs", &FirstPassageDriver::setPDFs);
+          .def("setPDFs", &FirstPassageDriver::setPDFs)
+          .def("evolveToCutoff", &FirstPassageDriver::evolveToCutoff);
 
      py::class_<DiffusionPDF, RandomNumGenerator>(m, "DiffusionPDF")
           .def(py::init<const RealType,

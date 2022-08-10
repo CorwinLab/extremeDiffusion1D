@@ -1,6 +1,6 @@
 #include "diffusionPDF.hpp"
 #include "randomNumGenerator.hpp"
-#include "stat.h"
+#include "stat.hpp"
 
 #include <math.h>
 #include <algorithm>

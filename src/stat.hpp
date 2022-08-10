@@ -1,3 +1,6 @@
+#ifndef STAT_HPP_
+#define STAT_HPP_
+
 #include <cmath>
 #include <vector>
 #include <iostream>
@@ -119,3 +122,5 @@ RealType getGumbelVariancePDF(std::vector<x_numeric> xvals, std::vector<RealType
   std::vector<RealType> comp_cdf = pdf_to_comp_cdf(pdf, norm);
   return getGumbelVarianceCDF(xvals, comp_cdf, nParticles);
 }
+
+#endif /* STAT_HPP_ */

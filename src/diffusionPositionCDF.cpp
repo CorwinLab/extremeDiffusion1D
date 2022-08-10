@@ -5,7 +5,7 @@
 #include <limits>
 #include <math.h>
 
-#include "stat.h"
+#include "stat.hpp"
 #include "diffusionPositionCDF.hpp"
 #include "diffusionCDFBase.hpp"
 
