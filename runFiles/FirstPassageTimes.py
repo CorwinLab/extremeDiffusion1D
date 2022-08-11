@@ -25,15 +25,17 @@ def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file):
         write_header = True
 
     pdf = FirstPassageDriver(beta, distances)
-    _ = pdf.evolveToCutoff(N, save_file, cutoff, write_header)   
+    _ = pdf.evolveToCutoff(N, save_file, cutoff, write_header)
 
 if __name__ == "__main__":
-    (topDir, beta, N_exp, sysID, dmin, dmax, cutoff) = sys.argv[1:]
+    # Testing line 
+    topDir = '.'; beta=1; N_exp=24; sysID=0; dmin=10; dmax=500; cutoff=1; 
+    #(topDir, beta, N_exp, sysID, dmin, dmax, cutoff) = sys.argv[1:]
 
     save_dir = f"{topDir}"
     save_file = os.path.join(save_dir, f"FirstPassageTimes{sysID}.txt")
     save_file = os.path.abspath(save_file)
-    dmax = 500 * np.log(np.quad(f"1e{N_exp}")).astype(float)
+    dmax = 500*np.log(np.quad(f"1e{N_exp}")).astype(float)
     vars = {
         "beta": beta,
         "N_exp": N_exp,

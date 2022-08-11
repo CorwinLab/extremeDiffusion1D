@@ -17,6 +17,8 @@ public:
     nParticles = _nParticles;
     quantileSet = false;
     varianceSet = false;
+    variance = -1; 
+    quantileTime = -1;
     cdfPrev = 0;
   };
   ~ParticleData(){};

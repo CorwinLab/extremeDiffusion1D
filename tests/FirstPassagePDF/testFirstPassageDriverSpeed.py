@@ -1,6 +1,5 @@
 import sys 
-sys.path.append("../../src")
-from libDiffusion import FirstPassagePDF, FirstPassageDriver
+from pyDiffusion import FirstPassagePDF, FirstPassageDriver
 import time 
 import numpy as np
 import npquad
@@ -23,14 +22,14 @@ def timeFunc(func, args, samples=10):
 def multipleParticles(nParticles, cutoff, distances, beta):
     for d in distances:
         pdf = FirstPassagePDF(beta, d, False)
-        quantiles, variance, Ns = pdf.evolveToCutoffMultiple(cutoff, nParticles)
+        quantiles, variance, Ns = pdf.evolveToCutoffMultiple(nParticles, cutoff)
 
 def singleObject(nParticles, cutoff, distances, beta):
     pdf = FirstPassageDriver(beta, distances)
-    pdf.evolveToCutoff(nParticles, cutoff)
+    pdf.evolveToCutoff(nParticles, 'test.csv', cutoff, writeHeader=False)
 
-mean, var = timeFunc(multipleParticles, [[nParticles], cutoff, distances, beta], samples=1)
+mean, var = timeFunc(multipleParticles, [[nParticles], cutoff, distances, beta], samples=5)
 print(f"Multiple Particle: {mean} +/- {var}")
 
-mean, var = timeFunc(singleObject, [nParticles, cutoff, distances, beta], samples=1)
+mean, var = timeFunc(singleObject, [nParticles, cutoff, distances, beta], samples=5)
 print(f"Single Object: {mean} +/- {var}")

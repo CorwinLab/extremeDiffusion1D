@@ -18,7 +18,6 @@ FirstPassageDriver::FirstPassageDriver(
   t = 0;
   maxPositions = _maxPositions;
   std::sort(maxPositions.begin(), maxPositions.end());
-
   for (unsigned int i = 0; i < maxPositions.size(); i++) {
     pdfs.push_back(FirstPassageBase(maxPositions[i]));
   }
@@ -47,6 +46,9 @@ void FirstPassageDriver::iterateTimeStep()
 {
   std::vector<RealType> biases = getBiases();
   for (unsigned int i = 0; i < pdfs.size(); i++) {
+    if (pdfs.at(i).haltingFlag){
+      continue;
+    }
     pdfs[i].iterateTimeStep(biases);
   }
   t += 1;
@@ -67,28 +69,30 @@ FirstPassageDriver::evolveToCutoff(RealType nParticles,
   for (unsigned int i = 0; i < maxPositions.size(); i++) {
     particlesData.push_back(ParticleData(nParticles));
   }
-  unsigned int index;
   RealType firstPassageCDF;
 
   // Set up file writing
   std::ofstream myfile;
   myfile.open(filePath, std::ios::app);
-  // This saves the data to double precision. 
+
+  // This saves the data to double precision.
   // Could change to RealType but that gives too much info
   myfile << std::fixed
          << std::setprecision(std::numeric_limits<double>::max_digits10);
   if (writeHeader) {
     myfile << "distance,quantile,variance\n";
+    myfile.flush();
   }
 
-  while (!particlesData.empty()) {
+  unsigned int numberHalted = 0;
+  while (numberHalted < pdfs.size()) {
     iterateTimeStep();
     // Each ParticleData object corresponds to a different pdf.
-    for (auto it = particlesData.begin(); it != particlesData.end(); it++) {
+    for (unsigned int i = 0; i < pdfs.size(); i++) {
       // Get the measurement of the quantile position
-      index = it - particlesData.begin();
-      FirstPassageBase pdf = pdfs.at(index);
-      firstPassageCDF = pdf.getFirstPassageCDF();
+      FirstPassageBase* pdf = &pdfs.at(i);
+      ParticleData* it = &particlesData.at(i);
+      firstPassageCDF = pdf->getFirstPassageCDF();
 
       // Get the measurement of the quantile position
       if ((firstPassageCDF >= 1 / nParticles) && (!(it->quantileSet))) {
@@ -108,16 +112,17 @@ FirstPassageDriver::evolveToCutoff(RealType nParticles,
       }
 
       // Now set quantile & variance plus delete elements
-      if (it->varianceSet && it->quantileSet) {
+      if (it->varianceSet && it->quantileSet && !pdf->haltingFlag) {
         quantileTimes.push_back(it->quantileTime);
         variance.push_back(it->variance);
-        positions.push_back(pdf.getMaxPosition());
-        myfile << pdf.getMaxPosition() << "," << it->quantileTime << ","
+        positions.push_back(pdf->getMaxPosition());
+        myfile << pdf->getMaxPosition() << "," << it->quantileTime << ","
                << it->variance << "\n";
+        myfile.flush();
 
-        // now need to erase elements in particlesData and pdfs
-        particlesData.erase(it--);
-        pdfs.erase(pdfs.begin() + index);
+        // now set flags to false
+        pdf->haltingFlag = true;
+        numberHalted += 1;
       }
     }
   }

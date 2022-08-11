@@ -21,6 +21,7 @@ FirstPassageBase::FirstPassageBase(const unsigned long int _maxPosition)
 
   // Set first element of array to 1
   PDF[0] = 1;
+  haltingFlag = false;
 }
 
 void FirstPassageBase::iterateTimeStep(std::vector<RealType> biases)

@@ -25,6 +25,8 @@ protected:
 public:
   FirstPassageBase(const unsigned long int _maxPosition);
   ~FirstPassageBase(){};
+  
+  bool haltingFlag;
 
   unsigned long int getTime() { return t; };
   void setTime(unsigned long int _t) { t = _t; };
