@@ -4,6 +4,7 @@
 #include <boost/multiprecision/float128.hpp>
 #include <vector>
 #include <cmath>
+#include <iomanip>
 #include "stat.hpp"
 
 using RealType = boost::multiprecision::float128;
@@ -16,34 +17,35 @@ public:
     nParticles = _nParticles;
     quantileSet = false;
     varianceSet = false;
+    cdfPrev = 0;
   };
   ~ParticleData(){};
 
   RealType nParticles;
-  std::vector<RealType> cdf;
-  std::vector<unsigned long int> times;
+  
+  // Parameters we want to set
   long int quantileTime;
   RealType variance;
   bool quantileSet;
   bool varianceSet;
-  void push_back_cdf(RealType singleParticleCDF)
-  {
-    cdf.push_back(1 - exp(-singleParticleCDF * nParticles));
-  }
 
-  void push_back_times(unsigned long int time){
-    times.push_back(time);
+  RealType cdfPrev;
+  RealType runningSumSquared;
+  RealType runningSum;
+
+  void push_back_cdf(RealType singleParticleCDF, unsigned long int time)
+  {
+    RealType currentCDF = 1 - exp(-singleParticleCDF * nParticles);
+    RealType pdf = currentCDF - cdfPrev;
+    runningSumSquared += pdf * pow(time, 2);
+    runningSum += pdf * time;
+    cdfPrev = currentCDF;
   }
 
   RealType calculateVariance()
   {
-    std::vector<RealType> pdf(cdf.size() - 1);
-    for (unsigned int i = 0; i < cdf.size() - 1; i++) {
-      pdf[i] = cdf[i + 1] - cdf[i];
-    }
-    std::vector<unsigned int long> pdfTimes = slice(times, 0, pdf.size() - 1);
-    RealType var = calculateVarianceFromPDF(pdfTimes, pdf);
-    return var;
+    RealType otherVar = runningSumSquared - pow(runningSum, 2);
+    return otherVar;
   }
 };
 

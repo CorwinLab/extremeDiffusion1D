@@ -176,9 +176,8 @@ FirstPassagePDF::evolveToCutoffMultiple(RealType cutoff,
       // Calculate the nParticle variance
       if (!(it->varianceSet)) {
         // std::cout << "trying to set variance" << std::endl;
-        it->push_back_cdf(firstPassageCDF);
-        it->push_back_times(t);
-        if (it->cdf.back() == 1) {
+        it->push_back_cdf(firstPassageCDF, t);
+        if (it->cdfPrev == 1) {
           // calculate variance here
           RealType var = it->calculateVariance();
           it->variance = var;

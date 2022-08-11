@@ -36,11 +36,10 @@ std::vector<RealType> FirstPassageDriver::getBiases()
   else {
     numberToGenerate = x + 2;
   }
-
-  for (unsigned int i = 0; i < numberToGenerate; i++) {
-    biases.push_back(generateBeta());
+  biases.resize(numberToGenerate);
+  for (unsigned int i = 0; i < biases.size(); i++) {
+    biases.at(i) = generateBeta();
   }
-
   return biases;
 }
 
@@ -74,8 +73,10 @@ FirstPassageDriver::evolveToCutoff(RealType nParticles,
   // Set up file writing
   std::ofstream myfile;
   myfile.open(filePath, std::ios::app);
+  // This saves the data to double precision. 
+  // Could change to RealType but that gives too much info
   myfile << std::fixed
-         << std::setprecision(std::numeric_limits<RealType>::max_digits10);
+         << std::setprecision(std::numeric_limits<double>::max_digits10);
   if (writeHeader) {
     myfile << "distance,quantile,variance\n";
   }
@@ -97,9 +98,8 @@ FirstPassageDriver::evolveToCutoff(RealType nParticles,
 
       // Calculate the nParticle variance
       if (!(it->varianceSet)) {
-        it->push_back_cdf(firstPassageCDF);
-        it->push_back_times(t);
-        if (it->cdf.back() == 1) {
+        it->push_back_cdf(firstPassageCDF, t);
+        if (it->cdfPrev == 1) {
           // calculate variance here
           RealType var = it->calculateVariance();
           it->variance = var;
