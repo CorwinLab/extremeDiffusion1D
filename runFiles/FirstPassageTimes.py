@@ -3,8 +3,7 @@ import npquad
 import sys
 import os
 from datetime import date
-import csv
-from pyDiffusion import FirstPassagePDF
+from pyDiffusion import FirstPassageDriver
 from experimentUtils import saveVars
 
 def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file):
@@ -25,21 +24,8 @@ def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file):
     else:
         write_header = True
 
-    f = open(save_file, "a")
-    writer = csv.writer(f)
-
-    if write_header:
-        writer.writerow(['distance', 'var', 'quantile'])
-        f.flush()
-
-    for d in distances:
-        pdf = FirstPassagePDF(beta, d)
-        quantile, variance, Ns = pdf.evolveToCutoffMultiple([N], cutoff)
-        writer.writerow([d, variance[0], quantile[0]])
-        f.flush()
-        
-    f.close()
-
+    pdf = FirstPassageDriver(beta, distances)
+    _ = pdf.evolveToCutoff(N, save_file, cutoff, write_header)   
 
 if __name__ == "__main__":
     (topDir, beta, N_exp, sysID, dmin, dmax, cutoff) = sys.argv[1:]

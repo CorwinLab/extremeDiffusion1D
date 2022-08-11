@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --job-name=LCDF
-#SBATCH --time=14-00:00:00
-#SBATCH --error=/home/jhass2/CleanData/logs/LongFirstPassCDF/%A-%a.err
+#SBATCH --job-name=24LCDF
+#SBATCH --time=5-00:00:00
+#SBATCH --error=/home/jhass2/jamming/JacobData/logs/LongFirstPassCDF24/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --array=0-499
-#SBATCH --output=/home/jhass2/CleanData/logs/LongFirstPassCDF/%A-%a.out
+#SBATCH --output=/home/jhass2/jamming/JacobData/logs/LongFirstPassCDF/%A-%a.out
 #SBATCH --nice=2000
 
 BETA=1
@@ -13,7 +13,7 @@ NEXP=24
 DMIN=10
 DMAX=500
 CUTOFF=1
-TOPDIR=/home/jhass2/CleanData/LongFirstPassCDF/$NEXP
+TOPDIR=/home/jhass2/jamming/JacobData/LongFirstPassCDF24/$NEXP
 
 mkdir -p $TOPDIR
 

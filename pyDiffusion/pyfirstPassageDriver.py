@@ -1,6 +1,6 @@
 import numpy as np
 import npquad
-from typing import List
+from typing import List, Tuple
 
 from .lDiffusionLink import libDiffusion
 
@@ -30,5 +30,5 @@ class FirstPassageDriver(libDiffusion.FirstPassageDriver):
         super().setPDFs(pdfs)
 
 
-    def evolveToCutoff(self, nParticles: np.quad, filePath: str, cutoff: float=1, writeHeader: bool=True):
-        super().evolveToCutoff(nParticles, cutoff, filePath, writeHeader)
+    def evolveToCutoff(self, nParticles: np.quad, filePath: str, cutoff: float=1, writeHeader: bool=True) -> Tuple[List[int], List[np.quad], List[int]]:
+        return super().evolveToCutoff(nParticles, cutoff, filePath, writeHeader)
