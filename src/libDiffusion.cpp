@@ -1,16 +1,21 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <boost/multiprecision/float128.hpp>
 
 #include "firstPassageBase.hpp"
 #include "firstPassageDriver.hpp"
 #include "firstPassagePDF.hpp"
+#include "firstPassageEvolve.hpp"
+#include "particleData.hpp"
 #include "randomNumGenerator.hpp"
 #include "diffusionCDFBase.hpp"
 #include "diffusionTimeCDF.hpp"
 #include "diffusionPositionCDF.hpp"
 #include "diffusionPDF.hpp"
 #include "pybind11_numpy_scalar.h"
+
+typedef boost::multiprecision::float128 RealType;
 
 namespace py = pybind11;
 
@@ -42,6 +47,18 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 PYBIND11_MODULE(libDiffusion, m)
 {
      m.doc() = "Random walk library";
+     py::class_<ParticleData>(m, "ParticleData")
+          .def(py::init<const RealType>())
+          .def("push_back_cdf", &ParticleData::push_back_cdf)
+          .def("calculateVariance", &ParticleData::calculateVariance)
+          .def_readwrite("quantiletime", &ParticleData::quantileTime)
+          .def_readwrite("variance", &ParticleData::variance)
+          .def_readwrite("quantileSet", &ParticleData::quantileSet)
+          .def_readwrite("varianceSet", &ParticleData::varianceSet)
+          .def_readwrite("cdfPrev", &ParticleData::cdfPrev)
+          .def_readwrite("runningSumSquared", &ParticleData::runningSumSquared)
+          .def_readwrite("runningSum", &ParticleData::runningSum);
+
      py::class_<RandomNumGenerator>(m, "RandomNumGenerator")
           .def(py::init<const double>())
           .def("getBeta", &RandomNumGenerator::getBeta)
@@ -70,6 +87,17 @@ PYBIND11_MODULE(libDiffusion, m)
           .def("getPDFs", &FirstPassageDriver::getPDFs)
           .def("setPDFs", &FirstPassageDriver::setPDFs)
           .def("evolveToCutoff", &FirstPassageDriver::evolveToCutoff);
+
+     py::class_<FirstPassageEvolve, FirstPassageDriver>(m, "FirstPassageEvolve")
+          .def(py::init<const double, std::vector<unsigned int long>, RealType>())
+          .def("getParticleData", &FirstPassageEvolve::getParticleData)
+          .def("setParticleData", &FirstPassageEvolve::setParticleData)
+          .def("getNumberHalted", &FirstPassageEvolve::getNumberHalted)
+          .def("setNumberHalted", &FirstPassageEvolve::setNumberHalted)
+          .def("getNParticles", &FirstPassageEvolve::getNParticles)
+          .def("setNParticles", &FirstPassageEvolve::setNParticles)
+          .def("checkParticleData", &FirstPassageEvolve::checkParticleData)
+          .def("getNumberOfPositions", &FirstPassageEvolve::getNumberOfPositions);
 
      py::class_<FirstPassagePDF, RandomNumGenerator>(m, "FirstPassagePDF")
           .def(py::init<const double, const unsigned long int, const bool>(),

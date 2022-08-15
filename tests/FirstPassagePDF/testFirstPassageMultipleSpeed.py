@@ -1,4 +1,3 @@
-from regex import F
 from pyDiffusion import FirstPassagePDF
 from pyDiffusion.quadMath import prettifyQuad
 import numpy as np

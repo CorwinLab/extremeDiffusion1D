@@ -20,14 +20,17 @@ public:
   void setPDFs(std::vector<FirstPassageBase> _pdfs) { pdfs = _pdfs; };
 
   unsigned int getTime() { return t; };
-  void setTime(unsigned int _t) { t=_t; };
+  void setTime(unsigned int _t) { t = _t; };
 
   void iterateTimeStep();
   std::vector<RealType> getBiases();
   std::tuple<std::vector<unsigned int long>,
              std::vector<RealType>,
              std::vector<unsigned int long>>
-  evolveToCutoff(RealType nParticles, RealType cutoff, std::string filePath, bool writeHeader);
+  evolveToCutoff(RealType nParticles,
+                 RealType cutoff,
+                 std::string filePath,
+                 bool writeHeader);
 };
 
 #endif /* FISRTPASSAGEDRIVER_HPP_ */

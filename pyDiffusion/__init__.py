@@ -10,11 +10,12 @@ except ImportError as ie:
         "http://www.github.com/SimonsGlass/numpy_quad"
         )
 
-__all__ = ["FirstPassagePDF", "DiffusionPDF", "DiffusionTimeCDF", "DiffusionPositionPDF", "fileIO", "quadMath", "FirstPassageDriver"]
+__all__ = ["FirstPassagePDF", "DiffusionPDF", "DiffusionTimeCDF", "DiffusionPositionPDF", "fileIO", "quadMath", "FirstPassageDriver", "FirstPassageEvolve"]
 
 from .pydiffusionCDF import DiffusionPositionCDF, DiffusionTimeCDF
 from .pydiffusionPDF import DiffusionPDF
 from .pyfirstPassagePDF import FirstPassagePDF
 from .pyfirstPassageDriver import FirstPassageDriver
+from .pyfirstPassageEvolve import FirstPassageEvolve
 from . import fileIO
 from . import quadMath

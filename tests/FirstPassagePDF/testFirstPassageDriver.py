@@ -1,8 +1,7 @@
 import numpy as np
 import npquad 
 import sys 
-sys.path.append("../../src")
-from libDiffusion import FirstPassageDriver, FirstPassagePDF
+from pyDiffusion import FirstPassageDriver, FirstPassagePDF
 maxPositions = [3, 4, 5]
 beta = np.inf
 
@@ -19,13 +18,13 @@ for i in range(max_time):
 
 N = 100
 pdf = FirstPassageDriver(beta, maxPositions)
-quantile, variance, positions = pdf.evolveToCutoff(100, 1)
+quantile, variance, positions = pdf.evolveToCutoff(100, 'test1.csv', 1, writeHeader=True)
 print(quantile, variance, positions)
 
 for d in maxPositions:
     pdf = FirstPassagePDF(beta, d, False)
     pdf.setBetaSeed(0)
-    quantile, variance, Ns = pdf.evolveToCutoffMultiple(1, [N])
+    quantile, variance, Ns = pdf.evolveToCutoffMultiple([N], 1)
     print(quantile, variance, Ns)
 
 N = 1e24
@@ -33,12 +32,12 @@ maxPosition = 1000
 beta = np.inf
 pdf = FirstPassageDriver(beta, [maxPosition])
 pdf.setBetaSeed(0)
-quantile, variance, positions = pdf.evolveToCutoff(N, 1)
+quantile, variance, positions = pdf.evolveToCutoff(N, 'test2.csv', 1, writeHeader=True)
 print(f"Driver: \nQuantile: {quantile[0]}, Variance:{variance[0]}")
 
 pdf = FirstPassagePDF(beta, maxPosition, False)
 pdf.setBetaSeed(0)
-quantile, variance, Ns = pdf.evolveToCutoffMultiple(1, [N])
+quantile, variance, Ns = pdf.evolveToCutoffMultiple([N], 1)
 print(f"Single: \nQuantile: {quantile[0]}, Variance:{variance[0]}")
 
 
