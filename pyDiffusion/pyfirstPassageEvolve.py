@@ -31,6 +31,8 @@ class FirstPassageEvolve(libDiffusion.FirstPassageEvolve):
             and self.numberHalted == other.numberHalted
             and self.nParticles == other.nParticles
             and self.getBeta() == other.getBeta()
+            and self.id == other.id 
+            and self.save_dir == other.save_dir
         ):
             return True
         return False
@@ -44,13 +46,13 @@ class FirstPassageEvolve(libDiffusion.FirstPassageEvolve):
             particleDataDict.update(
                 {
                     position: {
-                        "quantileTime": particleData.quantiletime,
-                        "variance": float(particleData.variance),
+                        "quantileTime": particleData.quantileTime,
+                        "variance": str(particleData.variance),
                         "quantileSet": particleData.quantileSet,
                         "varianceSet": particleData.varianceSet,
-                        "cdfPrev": float(particleData.cdfPrev),
-                        "runningSumSquared": float(particleData.runningSumSquared),
-                        "runningSum": float(particleData.runningSum),
+                        "cdfPrev": str(particleData.cdfPrev),
+                        "runningSumSquared": str(particleData.runningSumSquared),
+                        "runningSum": str(particleData.runningSum),
                     }
                 }
             )
@@ -61,7 +63,7 @@ class FirstPassageEvolve(libDiffusion.FirstPassageEvolve):
                 {
                     pdf.getMaxPosition(): {
                         "time": pdf.getTime(),
-                        "pdf": list(np.array(pdf.getPDF()).astype(float)),
+                        "pdf": [str(i) for i in pdf.getPDF()],
                         "cdf": str(pdf.getFirstPassageCDF()),
                     }
                 }
@@ -72,13 +74,61 @@ class FirstPassageEvolve(libDiffusion.FirstPassageEvolve):
             "maxPositions": self.maxPositions,
             "time": self.time,
             "numberHalted": self.numberHalted,
-            "nParticles": float(self.nParticles),
+            "nParticles": str(self.nParticles),
             "beta": self.getBeta(),
+            "id": self.id,
+            "save_dir": self.save_dir,
         }
-        total_vars = {"particleData": particleDataDict, "pdfsData": pdfsDataDict, "vars": vars}
+        total_vars = {
+            "particleData": particleDataDict,
+            "pdfsData": pdfsDataDict,
+            "vars": vars,
+        }
         save_file = os.path.join(self.save_dir, "Scalars.json")
-        with open(save_file, "w") as outfile: 
+        with open(save_file, "w") as outfile:
             json.dump(total_vars, outfile, indent=4)
+
+    @classmethod
+    def fromFile(cls, file: str) -> "FirstPassageEvolve":
+        with open(file, "r") as file:
+            vars = json.load(file)
+
+        beta = vars["vars"]["beta"]
+        maxPositions = vars["vars"]['maxPositions']
+        nParticles = np.quad(vars["vars"]['nParticles'])
+        pdf = FirstPassageEvolve(beta, maxPositions, nParticles)
+        pdf.id = vars["vars"]["id"]
+        pdf.save_dir = vars["vars"]["save_dir"]
+        pdf.numberHalted = vars["vars"]["numberHalted"]
+        pdf.time = vars["vars"]["time"]
+        pdf.nParticles = np.quad(vars["vars"]["nParticles"])
+        
+        PDFs = []
+        for key, pdfData in vars["pdfsData"].items():
+            pdfBase = libDiffusion.FirstPassageBase(int(key))
+            pdfBase.setTime(pdfData['time'])
+            pdfBase.setPDF([np.quad(i) for i in pdfData['pdf']])
+            pdfBase.setMaxPosition(int(key))
+            pdfBase.setFirstPassageCDF(np.quad(pdfData['cdf']))
+            PDFs.append(pdfBase)
+        
+        pdf.setPDFs(PDFs)
+
+        particlesData = []
+        for key, data in vars["particleData"].items():
+            pData = libDiffusion.ParticleData(np.quad(vars["vars"]["nParticles"]))
+            pData.quantileTime = data["quantileTime"]
+            pData.variance = np.quad(data["variance"])
+            pData.quantileSet = data["quantileSet"]
+            pData.varianceSet = data["varianceSet"]
+            pData.cdfPrev = np.quad(data["cdfPrev"])
+            pData.runningSumSquared = np.quad(data["runningSumSquared"])
+            pData.runningSum = np.quad(data["runningSum"])
+            particlesData.append(pData)
+        
+        pdf.particleData = particlesData
+        
+        return pdf
 
     @property
     def maxPositions(self):

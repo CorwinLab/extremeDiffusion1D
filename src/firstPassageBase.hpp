@@ -43,6 +43,7 @@ public:
   void iterateTimeStep(std::vector<RealType> biases);
 
   RealType getFirstPassageCDF() { return firstPassageCDF; };
+  void setFirstPassageCDF(RealType _firstPassageCDF) { firstPassageCDF = _firstPassageCDF; };
 
   friend bool operator==(const FirstPassageBase &lhs,
                          const FirstPassageBase &rhs)
