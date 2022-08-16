@@ -29,6 +29,5 @@ class FirstPassageDriver(libDiffusion.FirstPassageDriver):
     def setPDFs(self, pdfs: List["FirstPassageBase"]):
         super().setPDFs(pdfs)
 
-
     def evolveToCutoff(self, nParticles: np.quad, filePath: str, cutoff: float=1, writeHeader: bool=True) -> Tuple[List[int], List[np.quad], List[int]]:
         return super().evolveToCutoff(nParticles, cutoff, filePath, writeHeader)

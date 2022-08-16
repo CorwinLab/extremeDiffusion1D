@@ -25,7 +25,7 @@ protected:
 public:
   FirstPassageBase(const unsigned long int _maxPosition);
   ~FirstPassageBase(){};
-  
+
   bool haltingFlag;
 
   unsigned long int getTime() { return t; };
@@ -43,6 +43,16 @@ public:
   void iterateTimeStep(std::vector<RealType> biases);
 
   RealType getFirstPassageCDF() { return firstPassageCDF; };
+
+  friend bool operator==(const FirstPassageBase &lhs,
+                         const FirstPassageBase &rhs)
+  {
+    return (lhs.PDF.size() == rhs.PDF.size()) &&
+           (std::equal(lhs.PDF.begin(), lhs.PDF.end(), rhs.PDF.begin())) &&
+           (lhs.maxPosition == rhs.maxPosition) && 
+           (lhs.t == rhs.t) && 
+           (lhs.firstPassageCDF == rhs.firstPassageCDF);
+  }
 };
 
 #endif /* FISRTPASSAGEBASE_HPP_ */

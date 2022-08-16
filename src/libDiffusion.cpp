@@ -1,6 +1,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/operators.h>
 #include <boost/multiprecision/float128.hpp>
 
 #include "firstPassageBase.hpp"
@@ -49,6 +50,7 @@ PYBIND11_MODULE(libDiffusion, m)
      m.doc() = "Random walk library";
      py::class_<ParticleData>(m, "ParticleData")
           .def(py::init<const RealType>())
+          .def(py::self == py::self)
           .def("push_back_cdf", &ParticleData::push_back_cdf)
           .def("calculateVariance", &ParticleData::calculateVariance)
           .def_readwrite("quantiletime", &ParticleData::quantileTime)
@@ -69,6 +71,7 @@ PYBIND11_MODULE(libDiffusion, m)
      py::class_<FirstPassageBase>(m, "FirstPassageBase")
           .def(py::init<const unsigned long int>(),
                py::arg("maxPosition"))
+          .def(py::self == py::self)
           .def("getTime", &FirstPassageBase::getTime)
           .def("setTime", &FirstPassageBase::setTime)
           .def("getPDF", &FirstPassageBase::getPDF)
@@ -81,6 +84,8 @@ PYBIND11_MODULE(libDiffusion, m)
      py::class_<FirstPassageDriver, RandomNumGenerator>(m, "FirstPassageDriver")
           .def(py::init<const double, std::vector<unsigned int long> >())
           .def("iterateTimeStep", &FirstPassageDriver::iterateTimeStep)
+          .def("getMaxPositions", &FirstPassageDriver::getMaxPositions)
+          .def("setMaxPositions", &FirstPassageDriver::setMaxPositions)
           .def("getBiases", &FirstPassageDriver::getBiases)
           .def("getTime", &FirstPassageDriver::getTime)
           .def("setTime", &FirstPassageDriver::setTime)

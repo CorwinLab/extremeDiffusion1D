@@ -22,6 +22,9 @@ public:
   unsigned int getTime() { return t; };
   void setTime(unsigned int _t) { t = _t; };
 
+  std::vector<unsigned int long> getMaxPositions() { return maxPositions; };
+  void setMaxPositions(std::vector<unsigned int long> _maxPositions) { _maxPositions = maxPositions; };
+
   void iterateTimeStep();
   std::vector<RealType> getBiases();
   std::tuple<std::vector<unsigned int long>,
