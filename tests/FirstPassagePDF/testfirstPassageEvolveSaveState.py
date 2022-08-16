@@ -10,3 +10,6 @@ pdf = FirstPassageEvolve(beta, maxPositions, nParticles)
 pdf.evolveToCutoff('test.csv')
 os.remove("test.csv")
 pdf.saveState()
+
+pdf2 = FirstPassageEvolve.fromFile("Scalars.json")
+print(pdf2 == pdf)
