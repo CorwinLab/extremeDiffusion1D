@@ -4,6 +4,7 @@ from typing import List, Tuple
 import csv
 import json
 import os
+import time
 
 from .lDiffusionLink import libDiffusion
 
@@ -11,6 +12,8 @@ from .lDiffusionLink import libDiffusion
 class FirstPassageEvolve(libDiffusion.FirstPassageEvolve):
     def __init__(self, beta: float, maxPositions: List[int], nParticles: np.quad):
         super().__init__(beta, maxPositions, nParticles)
+        self._last_saved_time = time.process_time()
+        self._save_interval = 3600 * 12 # Save state every 12 hours
         self.id = None
         self.save_dir = "."
 
@@ -84,7 +87,7 @@ class FirstPassageEvolve(libDiffusion.FirstPassageEvolve):
             "pdfsData": pdfsDataDict,
             "vars": vars,
         }
-        save_file = os.path.join(self.save_dir, "Scalars.json")
+        save_file = os.path.join(self.save_dir, f"Scalars{self.id}.json")
         with open(save_file, "w") as outfile:
             json.dump(total_vars, outfile, indent=4)
 
@@ -147,6 +150,11 @@ class FirstPassageEvolve(libDiffusion.FirstPassageEvolve):
         self.setTime(time)
 
     def iterateTimeStep(self):
+        # Save the object state to use later
+        if (time.process_time() - self._last_saved_time) > self._save_interval:
+            self.saveState()
+            self._last_saved_time = time.process_time()
+
         super().iterateTimeStep()
 
     def getBiases() -> List[np.quad]:
