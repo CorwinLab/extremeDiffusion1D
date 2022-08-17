@@ -40,6 +40,9 @@ public:
     maxPosition = _maxPosition;
   };
 
+  bool getHaltingFlag() {return haltingFlag;};
+  void setHaltingFlag(bool _haltingFlag) { haltingFlag = _haltingFlag;};
+
   void iterateTimeStep(std::vector<RealType> biases);
 
   RealType getFirstPassageCDF() { return firstPassageCDF; };

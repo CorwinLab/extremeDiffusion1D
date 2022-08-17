@@ -14,7 +14,9 @@ def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file, sysID, save_dir):
     N = np.quad(f"1e{N_exp}")
     distances = np.geomspace(dmin, dmax, num=500).astype(int)
     distances = np.unique(distances)
+    scalar_file = os.path.join(save_dir, f"Scalars{sysID}.json")
 
+    # Check if save file is there or not
     if os.path.isfile(save_file) and os.stat(save_file).st_size != 0:
         data = np.loadtxt(save_file, skiprows=1, delimiter=',')
         maxDistance = data[-1, 0]
@@ -24,15 +26,21 @@ def runExperiment(beta, dmin, dmax, cutoff, N_exp, save_file, sysID, save_dir):
     else:
         write_header = True
 
-    pdf = FirstPassageEvolve(beta, distances, N)
-    pdf.id = sysID
-    pdf.save_dir = save_dir
-    pdf.evolveToCutoff(save_file, write_header, cutoff)
+    # Check if state was previously saved 
+    if os.path.isfile(scalar_file):
+        pdf = FirstPassageEvolve.fromFile(scalar_file)
+        pdf.evolveToCutoff(save_file, write_header, cutoff)
+
+    else: 
+        pdf = FirstPassageEvolve(beta, distances, N)
+        pdf.id = sysID
+        pdf.save_dir = save_dir
+        pdf.evolveToCutoff(save_file, write_header, cutoff)
 
 if __name__ == "__main__":
     # Testing line
-    topDir = '.'; beta=1; N_exp=24; sysID=0; dmin=10; dmax=500; cutoff=1; 
-    #(topDir, beta, N_exp, sysID, dmin, dmax, cutoff) = sys.argv[1:]
+    #topDir = '.'; beta=1; N_exp=24; sysID=0; dmin=10; dmax=500; cutoff=1; 
+    (topDir, beta, N_exp, sysID, dmin, dmax, cutoff) = sys.argv[1:]
 
     save_dir = f"{topDir}"
     save_file = os.path.join(save_dir, f"FirstPassageTimes{sysID}.txt")
