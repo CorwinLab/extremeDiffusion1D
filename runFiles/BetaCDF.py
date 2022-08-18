@@ -1,14 +1,10 @@
-import sys
-
-sys.path.append("../src/")
 import numpy as np
 import npquad
-import quadMath
-import fileIO
 import os
 from experimentUtils import saveVars
 from datetime import date
-from pydiffusionCDF import DiffusionTimeCDF
+import sys
+from pyDiffusion import DiffusionTimeCDF
 
 
 def runExperiment(
@@ -80,7 +76,7 @@ if __name__ == "__main__":
     save_file = os.path.abspath(save_file)
 
     n_exp = [2, 7, 24, 85, 300]
-    tMax = np.log(1e24) ** 2.5
+    tMax = np.log(1e24) * 5 * 10**3
 
     vars = {
         "beta": beta,

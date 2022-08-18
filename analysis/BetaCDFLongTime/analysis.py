@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 import glob
 import os
 import sys
-sys.path.append("../../src")
+sys.path.append("../../dataAnalysis")
 import theory
 from overalldatabase import Database
 
@@ -50,8 +50,15 @@ axv.set_xlabel("t / log(N)")
 axv.set_ylabel("Var(Env)")
 logN = np.log(1e24)
 N = 1e24
+alpha = 0.75
 
 colors = ['r', 'b', 'c', 'm']
+
+time = np.loadtxt("times.txt")
+var01 = np.loadtxt("Variance01.txt")
+var001 = np.loadtxt("Variance001.txt")
+axv.plot(time / np.log(N), var01, ls='--', c='b')
+axv.plot(time / np.log(N), var001, ls='--', c='r')
 
 for i, beta in enumerate([0.01, 0.1, 1, 10]): 
     if run_again: 
@@ -70,17 +77,18 @@ for i, beta in enumerate([0.01, 0.1, 1, 10]):
     time = np.loadtxt(time_file)
 
     ax.plot(time / logN, mean[:,3], label=beta)
-    axv.plot(time / logN, var[:,3], label=beta, c=colors[i], alpha=1)
+    axv.plot(time / logN, var[:,3], label=beta, c=colors[i], alpha=alpha)
     #axv.plot(time / logN, varPowerLaw(beta, time, N), c=colors[i], ls='--')
-    #axv.plot(time / logN, theory.quantileVarLongTimeBetaDist(N, time, beta), ls='-.', c=colors[i])
+    axv.plot(time / logN, theory.quantileVarLongTimeBetaDist(N, time, beta), ls='-.', c=colors[i])
+
 
 ax.set_xlim([min(time/logN), max(time/logN)])
-axv.set_xlim([min(time/logN), max(time/logN)])
+axv.set_xlim([1/logN, max(time/logN)])
 
 ax.legend()
 axv.legend()
 fig.savefig("Mean.png")
-figv.savefig("Var.png")
+figv.savefig("Var.pdf")
 
 '''Make plot of sampling'''
 fig, ax = plt.subplots()
