@@ -13,7 +13,7 @@ class FirstPassageEvolve(libDiffusion.FirstPassageEvolve):
     def __init__(self, beta: float, maxPositions: List[int], nParticles: np.quad):
         super().__init__(beta, maxPositions, nParticles)
         self._last_saved_time = time.process_time()
-        self._save_interval = 10 # Save state every 12 hours
+        self._save_interval = 3600*12 # Save state every 12 hours
         self.id = None
         self.save_dir = "."
 

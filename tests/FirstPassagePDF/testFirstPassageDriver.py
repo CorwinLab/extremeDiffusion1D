@@ -3,7 +3,7 @@ import npquad
 import sys 
 from pyDiffusion import FirstPassageDriver, FirstPassagePDF
 maxPositions = [3, 4, 5]
-beta = np.inf
+beta = 1
 
 pdf = FirstPassageDriver(beta, maxPositions)
 pdf.setBetaSeed(0)
@@ -13,7 +13,7 @@ for i in range(max_time):
     pdf.iterateTimeStep()
     pdfs = pdf.getPDFs()
     for p in pdfs: 
-        print(p.getPDF(), sum(p.getPDF()))
+        print(list(np.array(p.getPDF()).astype(float)), sum(p.getPDF()))
     print("\n")
 
 N = 100

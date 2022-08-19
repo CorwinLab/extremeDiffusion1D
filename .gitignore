@@ -9,6 +9,11 @@ pybind11/
 #np quad folder
 numpy_quad/
 
+#miscellanious stuff
+/Data/
+/Data2/
+testFirstPass.py
+
 #Latex stuff
 *.aux
 *.log

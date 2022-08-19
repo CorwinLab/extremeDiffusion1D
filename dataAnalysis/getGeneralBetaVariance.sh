@@ -1,0 +1,7 @@
+#!/bin/bash
+
+NPARTICLES=1e24
+MAXDISTANCE=13000
+BETA=0.1
+
+math -script getGeneralBetaVariance.m $NPARTICLES $MAXDISTANCE $BETA
