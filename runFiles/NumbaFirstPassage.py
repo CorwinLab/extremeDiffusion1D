@@ -8,7 +8,7 @@ from experimentUtils import saveVars
 
 def runExperiment(nExp, dMin, dMax, num_of_points, save_dir, sysID):
     N = float(f"1e{nExp}")
-    dMin = int(dMin * np.log(N))
+    dMin = int(dMin * np.log(N)) + 1
     dMax = int(dMax * np.log(N))
     distances = np.geomspace(dMin, dMax, num_of_points)
     distances = np.unique(distances.astype(int))

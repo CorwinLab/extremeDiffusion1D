@@ -1,4 +1,3 @@
-
 #!/bin/bash
 #SBATCH --job-name=FCDF
 #SBATCH --time=1-00:00:00
