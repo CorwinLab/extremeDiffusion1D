@@ -3,8 +3,6 @@ from pyDiffusion import pyfirstPassageNumba
 import os
 import csv
 import sys
-from datetime import date
-from experimentUtils import saveVars
 
 
 def runExperiment(nExp, dMin, dMax, num_of_points, save_dir, sysID):
@@ -46,13 +44,12 @@ def runExperiment(nExp, dMin, dMax, num_of_points, save_dir, sysID):
         variance = running_sum_squared - running_sum ** 2
         writer.writerow([d, quantile, variance])
         f.flush()
-        
     f.close()
 
 if __name__ == "__main__":
     # Test line:
-    # save_dir, sysID, dMin, dMax, nExp, num_of_points = '.', 1, 0, 50, 24, 250
-    (save_dir, sysID, dMin, dMax, nExp, num_of_points) = sys.argv[1:]
+    save_dir, sysID, dMin, dMax, nExp, num_of_points = '.', 1, 0, 50, 24, 250
+    #(save_dir, sysID, dMin, dMax, nExp, num_of_points) = sys.argv[1:]
     dMin = float(dMin)
     dMax = float(dMax)
     num_of_points = int(num_of_points)
@@ -63,15 +60,6 @@ if __name__ == "__main__":
             "num_of_points": num_of_points,
             "save_dir": save_dir,
             "sysID": sysID}
-
-    vars_file = os.path.join(save_dir, "variables.json")
-    today = date.today()
-    text_date = today.strftime("%b-%d-%Y")
-
-    if int(sysID) == 0:
-        vars.update({"Date": text_date})
-        saveVars(vars, vars_file)
-        vars.pop("Date")
 
     runExperiment(**vars)
 

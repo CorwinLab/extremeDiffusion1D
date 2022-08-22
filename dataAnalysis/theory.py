@@ -464,4 +464,4 @@ def quantileVarWrittenOut(t, N):
     fig.savefig("Test.png")
     """
     logN = np.log(N).astype(float)
-    return 2**(2/3) * TW_var * (logN**(4/3)/t**(2/3)) * (1-logN/t)**(4/3) / (1-(1-logN/t)**2)
+    return 2**(2/3) * TW_var * (logN**(4/3)/t**(2/3)) * (1-logN/t)**(4/3) / (1-(1-logN/t)**2)   
