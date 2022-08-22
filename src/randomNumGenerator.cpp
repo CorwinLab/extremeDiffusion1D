@@ -29,11 +29,10 @@ double RandomNumGenerator::generateBeta(){
     }
     else {
         double randomVal = beta_dist(gen, betaParams);
-        
         // If returned value is NaN, there's either an overflow or underflow 
         // So return 0 or 1. 
         if (isnan(randomVal)){
-            randomVal = rand() % 1;
+            randomVal = round(dis(gen));
         }
         return randomVal;
     }
