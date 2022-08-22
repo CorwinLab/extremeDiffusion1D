@@ -1,4 +1,5 @@
 #include "randomNumGenerator.hpp"
+#include <stdlib.h>
 
 RandomNumGenerator::RandomNumGenerator(const double _beta)
 {
@@ -28,9 +29,11 @@ double RandomNumGenerator::generateBeta(){
     }
     else {
         double randomVal = beta_dist(gen, betaParams);
-        // This is a hack for now. If beta is too small it may return an NaN value.
+        
+        // If returned value is NaN, there's either an overflow or underflow 
+        // So return 0 or 1. 
         if (isnan(randomVal)){
-            randomVal = beta_dist(gen, betaParams);
+            randomVal = rand() % 1;
         }
         return randomVal;
     }

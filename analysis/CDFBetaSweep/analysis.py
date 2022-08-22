@@ -16,7 +16,7 @@ for dir in dirs:
     path = os.path.join(beta_dir, dir)
     beta = float(dir.split("/")[-1])
     db.add_directory(path, dir_type="Gumbel")
-    # db.calculateMeanVar(path, verbose=True, maxTime=276310)
+    #db.calculateMeanVar(path, verbose=True, maxTime=276310)
 
 betas = db.betas()
 N=24
@@ -40,6 +40,12 @@ for i, b in enumerate(betas):
     time = cdf_df['time'].values
     var = cdf_df['Var Quantile'].values
     ax.plot(time / logN, var, c=colors[i], alpha=alpha)
+
+time = np.loadtxt("times.txt")
+var01 = np.loadtxt("Variance01.txt")
+var001 = np.loadtxt("Variance001.txt")
+ax.plot(time / logN, var01, ls='--', c='b')
+ax.plot(time / logN, var001, ls='--', c='r')
 
 fig.savefig("QuantileVariance.pdf", bbox_inches='tight')
 
