@@ -87,3 +87,21 @@ MaxVar = Table[MaxAsym[x, nParticles], {x, minDistance, maxDistance}];
 
 
 Export["/home/jacob/Desktop/varianceMax.txt", MaxVar, "Table"];
+
+
+mean[t_, n_] = (1 - (1 - Log[n] / t)^2)^(1 / 2) * t;
+samVar[t_, n_] = (t/Log[n] -1)^2 / (2*t/Log[n]-1) * Pi^2 / 6;
+
+
+SamAsym[xvals_, nParticles_] := 
+	Module[{n = nParticles, x=xvals, time1, time2, t}, 
+		time2[x_, n_] := t /. FindRoot[Abs[mean[t, n] + Sqrt[samVar[t, n]] - x] == 0, {t, N[x^4 / 6 / (Log[n]^(3 / 4))], 2, Infinity}, MaxIterations -> 1000, AccuracyGoal -> Infinity, PrecisionGoal -> 16]; 
+		time1[x_, n_] := t /. FindRoot[Abs[mean[t, n] - Sqrt[samVar[t, n]] - x] == 0, {t, N[x^4 / 6 / (Log[n]^(3 / 4))], 2, Infinity}, MaxIterations -> 1000, AccuracyGoal -> Infinity, PrecisionGoal -> 16]; 
+		Return[((time2[x, n] - time1[x, n]) / 2)^2, Module] 
+	];
+
+
+SamVar = Table[SamAsym[x, nParticles], {x, minDistance, maxDistance}];
+
+
+Export["/home/jacob/Desktop/varianceSam.txt", SamVar, "Table"];

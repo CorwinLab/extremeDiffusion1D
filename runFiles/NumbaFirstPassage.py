@@ -15,6 +15,11 @@ def runExperiment(nExp, dMin, dMax, num_of_points, save_dir, sysID):
     distances = np.unique(distances.astype(int))
 
     save_file = os.path.join(save_dir, f"FirstPassageCDF{sysID}.txt")
+    if os.path.exists(save_file):
+        data = np.loadtxt(save_file, skiprows=1, delimiter=',')
+        max_position = data[-1, 0]
+        distances = distances[distances > max_position]
+    
     f = open(save_file, "a")
     writer = csv.writer(f)
     writer.writerow(["Position", "Quantile", "Variance"])
