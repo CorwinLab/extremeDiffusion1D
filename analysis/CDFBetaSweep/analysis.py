@@ -16,7 +16,7 @@ for dir in dirs:
     path = os.path.join(beta_dir, dir)
     beta = float(dir.split("/")[-1])
     db.add_directory(path, dir_type="Gumbel")
-    #db.calculateMeanVar(path, verbose=True, maxTime=276310)
+    db.calculateMeanVar(path, verbose=True, maxTime=276310)
 
 betas = db.betas()
 N=24

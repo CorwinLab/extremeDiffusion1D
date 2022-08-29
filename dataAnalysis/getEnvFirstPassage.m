@@ -23,6 +23,9 @@ ShortTimeAsym[xvals_, nParticles_] :=
 minDistance = IntegerPart[Log[nParticles]]+1
 
 
+Print[nParticles];
+
+
 var = Table[ShortTimeAsym[x, nParticles], {x, minDistance, maxDistance}];
 
 
@@ -58,9 +61,9 @@ LongTimeVar[n_, time_] :=
 LongTimeAsym[xvals_, nParticles_] :=
     Module[{n = nParticles, x = xvals, time1, time2, t},
         time2[x_, n_] :=
-            t /. FindRoot[Abs[mean[t, n] + Sqrt[LongTimeVar[n, t]] - x] == 0, {t, N[x^2 / 6 / (Log[n]^(3 / 4))], 2, Infinity}, MaxIterations -> 1000, AccuracyGoal -> Infinity, PrecisionGoal -> 16];
+            t /. FindRoot[Abs[mean[t, n] + Sqrt[LongTimeVar[n, t]] - x] == 0, {t, N[x^2 / 2 / (Log[n])], 2, Infinity}, MaxIterations -> 1000, AccuracyGoal -> Infinity, PrecisionGoal -> 16];
         time1[x_, n_] :=
-            t /. FindRoot[Abs[mean[t, n] - Sqrt[LongTimeVar[n, t]] - x] == 0, {t, N[x^2 / 6 / (Log[n]^(3 / 4))], 2, Infinity}, MaxIterations -> 1000, AccuracyGoal -> Infinity, PrecisionGoal -> 16];
+            t /. FindRoot[Abs[mean[t, n] - Sqrt[LongTimeVar[n, t]] - x] == 0, {t, N[x^2 / 2 / (Log[n])], 2, Infinity}, MaxIterations -> 1000, AccuracyGoal -> Infinity, PrecisionGoal -> 16]; 
         Return[((time2[x, n] - time1[x, n]) / 2)^2, Module]
     ];
 

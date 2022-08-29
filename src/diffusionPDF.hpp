@@ -100,8 +100,9 @@ public:
     largeCutoff = _largeCutoff;
   };
 
-  // Functions that do things
+  void removeParticle(unsigned int idx) { occupancy.at(idx) = 0; }
 
+  // Functions that do things
   void iterateTimestep();
 
   double findQuantile(const RealType quantile);
