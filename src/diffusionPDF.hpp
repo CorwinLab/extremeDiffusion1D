@@ -12,11 +12,11 @@
 #include <random>
 #include <utility>
 #include <vector>
-#include "randomNumGenerator.hpp"
+#include "randomDistribution.hpp"
 
 typedef boost::multiprecision::float128 RealType;
 
-class DiffusionPDF : public RandomNumGenerator {
+class DiffusionPDF : public RandomDistribution {
 private:
   std::vector<RealType> occupancy;
   RealType nParticles;
@@ -34,11 +34,11 @@ private:
   unsigned long int time;
 
   RealType toNextSite(RealType currentSite, RealType bias);
-  double generateBeta();
 
 public:
   DiffusionPDF(const RealType _nParticles,
-               const double _beta,
+               std::string _distributionName,
+               std::vector<double> _parameters,
                const unsigned long int _occupancySize,
                const bool _probDistFlag = true,
                const bool _staticEnvironment = false);

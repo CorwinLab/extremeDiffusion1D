@@ -7,12 +7,13 @@
 
 #include "stat.hpp"
 #include "diffusionPositionCDF.hpp"
-#include "diffusionCDFBase.hpp"
+#include "randomDistribution.hpp"
 
-DiffusionPositionCDF::DiffusionPositionCDF(const double _beta,
+DiffusionPositionCDF::DiffusionPositionCDF(std::string _distributionName,
+                                           std::vector<double> _parameters, 
                                            const unsigned long int _tMax,
                                            std::vector<RealType> _quantiles)
-    : DiffusionCDF(_beta, _tMax)
+    : RandomDistribution(_distributionName, _parameters), tMax(_tMax)
 {
   // Initialize such that CDF(n=0, t) = 1
   CDF.resize(tMax + 1, 1);
@@ -35,7 +36,7 @@ void DiffusionPositionCDF::stepPosition()
   std::vector<RealType> CDF_next(tMax + 1, 0);
 
   for (unsigned long int t = position + 1; t < tMax + 1; t++) {
-    RealType beta = RealType(generateBeta());
+    RealType beta = RealType(generateRandomVariable());
     if (t == position + 1) {
       CDF_next[t] = beta * CDF[t - 1];
     }

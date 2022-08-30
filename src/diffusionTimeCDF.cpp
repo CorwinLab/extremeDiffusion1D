@@ -7,11 +7,12 @@
 
 #include "stat.hpp"
 #include "diffusionTimeCDF.hpp"
-#include "diffusionCDFBase.hpp"
+#include "randomDistribution.hpp"
 
-DiffusionTimeCDF::DiffusionTimeCDF(const double _beta,
+DiffusionTimeCDF::DiffusionTimeCDF(std::string _distributionName,
+                                   std::vector<double> _parameters,
                                    const unsigned long int _tMax)
-    : DiffusionCDF(_beta, _tMax)
+    : RandomDistribution(_distributionName, _parameters), tMax(_tMax)
 {
   CDF.resize(tMax + 1);
   CDF[0] = 1;
@@ -25,7 +26,7 @@ void DiffusionTimeCDF::iterateTimeStep()
       CDF_next[n] = 1; // Need CDF(n=0, t) = 1
     }
     else if (n == t + 1) {
-      RealType beta = RealType(generateBeta());
+      RealType beta = RealType(generateRandomVariable());
       CDF_next[n] = beta * CDF[n - 1];
     }
     else {
@@ -34,7 +35,7 @@ void DiffusionTimeCDF::iterateTimeStep()
         continue // or could even break?
       }
       */
-      RealType beta = RealType(generateBeta());
+      RealType beta = RealType(generateRandomVariable());
       CDF_next[n] = beta * CDF[n - 1] + (1 - beta) * CDF[n];
     }
   }

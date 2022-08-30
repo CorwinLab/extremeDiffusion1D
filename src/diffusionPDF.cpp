@@ -1,5 +1,5 @@
 #include "diffusionPDF.hpp"
-#include "randomNumGenerator.hpp"
+#include "randomDistribution.hpp"
 #include "stat.hpp"
 
 #include <math.h>
@@ -14,11 +14,12 @@ static_assert(sizeof(RealType) == 16, "Bad size");
 
 // Constuctor
 DiffusionPDF::DiffusionPDF(const RealType _nParticles,
-                           const double _beta,
+                           std::string _distributionName,
+                           std::vector<double> _parameters,
                            const unsigned long int _occupancySize,
                            const bool _ProbDistFlag,
                            const bool _staticEnvironment) 
-      : RandomNumGenerator(_beta), nParticles(_nParticles), occupancySize(_occupancySize),
+      : RandomDistribution(_distributionName, _parameters), nParticles(_nParticles), occupancySize(_occupancySize),
       ProbDistFlag(_ProbDistFlag), staticEnvironment(_staticEnvironment)
 {
   if (isnan(nParticles) || isinf(nParticles)) {
@@ -72,25 +73,6 @@ RealType DiffusionPDF::toNextSite(RealType currentSite, RealType bias)
   }
 }
 
-double DiffusionPDF::generateBeta()
-{
-  // If beta = 0 return either 0 or 1
-  if (beta == 0.0) {
-    return round(dis(gen));
-  }
-  // If beta = 1 use random uniform distribution
-  else if (beta == 1.0) {
-    return dis(gen);
-  }
-  // If beta = inf return 0.5
-  else if (isinf(beta)) {
-    return 0.5;
-  }
-  else {
-    return beta_dist(gen, betaParams);
-  }
-}
-
 void DiffusionPDF::iterateTimestep()
 {
   unsigned long int prevMinIndex = edges.first;
@@ -122,14 +104,14 @@ void DiffusionPDF::iterateTimestep()
     RealType bias = 0;
     if (*occ != 0) {
       if (!staticEnvironment){
-        bias = RealType(DiffusionPDF::generateBeta());
+        bias = RealType(generateRandomVariable());
       }
       else {
         unsigned int index = 2 * i - time + transitionProbabilities.size()/2;
         if (transitionProbabilities[index] == -1){
           // The issue is here. Since the actual values of the index don't match 
           // the x-values just doing [i] isn't correct
-          transitionProbabilities[index] = RealType(DiffusionPDF::generateBeta());  
+          transitionProbabilities[index] = RealType(generateRandomVariable());  
         }
         bias = transitionProbabilities[index];
       }

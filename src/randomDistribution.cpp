@@ -21,6 +21,9 @@ RandomDistribution::RandomDistribution(std::string _distributionName,
 }
 
 double RandomDistribution::getBetaDistributed(){
+    if (parameters.size() != 2){
+        throw std::runtime_error("Parameters is not correct size");
+    }
     if (parameters[0] == 0.0 && parameters[1] == 0.0) {
         return round(dis(gen));
     }
