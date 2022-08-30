@@ -76,8 +76,8 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
         to a file.
     """
 
-    def __init__(self, beta: float, tMax: int):
-        super().__init__(beta, tMax)
+    def __init__(self, distributionName: str, parameters: List[float], tMax: int):
+        super().__init__(distributionName, parameters, tMax)
         self._last_saved_time = time.process_time()  # seconds
         self._save_interval = 3600 * 6  # Set to save occupancy every XX hours.
         self.id = None  # Need to also get SLURM ID
@@ -98,7 +98,7 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
         if (
             self.id == other.id
             and self.save_dir == other.save_dir
-            and self.beta == other.beta
+            and self.parameters == other.parameters
             and self.time == other.time
             and np.all(self.CDF == other.CDF)
             and self.tMax == other.tMax
@@ -115,12 +115,20 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
         self.setTime(time)
 
     @property
-    def beta(self):
-        return self.getBeta()
+    def distributionName(self):
+        return self.getDistributionName()
 
-    @beta.setter
-    def beta(self, beta):
-        self.setBeta(beta)
+    @distributionName.setter 
+    def distributionName(self, distributionName):
+        self.setDistributionName(distributionName)
+
+    @property
+    def parameters(self):
+        return self.getParameters()
+
+    @parameters.setter
+    def parameters(self, parameters):
+        self.setParameters(parameters)
 
     @property
     def CDF(self):
@@ -305,7 +313,8 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
 
         vars = {
             "time": self.time,
-            "beta": self.beta,
+            "distributionName": self.distributionName,
+            "parameters": self.parameters,
             "tMax": self.tMax,
             "id": self.id,
             "save_dir": self.save_dir,
@@ -340,7 +349,7 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
         cdf = np.zeros(vars["tMax"] + 1, dtype=np.quad)
         cdf[: vars["time"] + 1] = load_cdf
 
-        d = DiffusionTimeCDF(beta=vars["beta"], tMax=vars["tMax"])
+        d = DiffusionTimeCDF(vars['distributionName'], vars['parameters'], tMax=vars["tMax"])
         d.time = vars["time"]
         d.id = vars["id"]
         d.save_dir = vars["save_dir"]
@@ -498,8 +507,8 @@ class DiffusionPositionCDF(libDiffusion.DiffusionPositionCDF):
         return self.__str__()
 
     @property
-    def beta(self):
-        return self.getBeta()
+    def parameters(self):
+        return self.getParameters()
 
     @property
     def CDF(self):
@@ -508,10 +517,6 @@ class DiffusionPositionCDF(libDiffusion.DiffusionPositionCDF):
     @property
     def tMax(self):
         return self.gettMax()
-
-    @property
-    def setBetaSeed(self, seed):
-        super().setBetaSeed(seed)
 
     @property
     def position(self):
