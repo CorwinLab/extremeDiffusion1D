@@ -4,6 +4,9 @@ RandomDistribution::RandomDistribution(std::string _distributionName,
                                        std::vector<double> _parameters)
     : distributionName(_distributionName), parameters(_parameters)
 {
+    if (distributionName != "beta" && distributionName != "bates"){
+        throw std::runtime_error("distributionName must be either 'beta' or 'bates'");
+    }
     /* Set up beta distribution */
     if (distributionName == "beta"){
         if (parameters[0] != 0  || parameters[1] != 0) {

@@ -186,6 +186,10 @@ PYBIND11_MODULE(libDiffusion, m)
 
   py::class_<DiffusionTimeCDF, RandomDistribution>(m, "DiffusionTimeCDF")
       .def(py::init<std::string, std::vector<double>, const unsigned long int>())
+      .def("getCDF", &DiffusionTimeCDF::getCDF)
+      .def("setCDF", &DiffusionTimeCDF::setCDF)
+      .def("gettMax", &DiffusionTimeCDF::gettMax)
+      .def("settMax", &DiffusionTimeCDF::settMax)
       .def("getGumbelVariance",
            static_cast<RealType (DiffusionTimeCDF::*)(RealType)>(
                &DiffusionTimeCDF::getGumbelVariance),
