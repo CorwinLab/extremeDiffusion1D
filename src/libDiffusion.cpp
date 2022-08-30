@@ -67,7 +67,8 @@ PYBIND11_MODULE(libDiffusion, m)
       .def("getBeta", &RandomNumGenerator::getBeta)
       .def("setBeta", &RandomNumGenerator::setBeta)
       .def("generateBeta", &RandomNumGenerator::generateBeta)
-      .def("setBetaSeed", &RandomNumGenerator::setBetaSeed);
+      .def("setBetaSeed", &RandomNumGenerator::setBetaSeed)
+      .def("getBetaSeed", &RandomNumGenerator::getBetaSeed);
 
   py::class_<RandomDistribution>(m, "RandomDistribution")
       .def(py::init<std::string, std::vector<double>>())

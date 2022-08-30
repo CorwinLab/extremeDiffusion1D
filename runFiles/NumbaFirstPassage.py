@@ -4,6 +4,7 @@ import os
 import csv
 import sys
 from datetime import date
+import time
 from experimentUtils import saveVars
 
 
@@ -23,6 +24,8 @@ def runExperiment(nExp, dMin, dMax, num_of_points, save_dir, sysID):
     f = open(save_file, "a")
     writer = csv.writer(f)
     writer.writerow(["Position", "Quantile", "Variance"])
+    
+    time_interval = 3600 * 12
 
     for d in distances:
         quantile = None
@@ -33,7 +36,7 @@ def runExperiment(nExp, dMin, dMax, num_of_points, save_dir, sysID):
         firstPassageCDF = pdf[0] + pdf[-1]
         nFirstPassageCDFPrev = 1 - np.exp(-firstPassageCDF * N)
         t = 1
-
+        last_save_time = time.time()
         while (nFirstPassageCDFPrev < 1) or (firstPassageCDF < 1 / N):
             pdf = pyfirstPassageNumba.iteratePDF(pdf)
 
@@ -48,6 +51,12 @@ def runExperiment(nExp, dMin, dMax, num_of_points, save_dir, sysID):
 
             t+=1
             nFirstPassageCDFPrev = nFirstPassageCDF
+
+            if (time.time() - last_save_time) >= time_interval: 
+                np.savetxt(f"PDF{sysID}.txt", pdf)
+                np.savetxt(f"SaveDistance{sysID}.txt", [d])
+                last_save_time = time.time()
+
         variance = running_sum_squared - running_sum ** 2
         writer.writerow([d, quantile, variance])
         f.flush()

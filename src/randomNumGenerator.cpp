@@ -12,7 +12,8 @@ RandomNumGenerator::RandomNumGenerator(const double _beta)
 
   std::uniform_real_distribution<>::param_type unifParams(0.0, 1.0);
   dis.param(unifParams);
-  gen.seed(rd());
+  seed = rd();
+  gen.seed(seed);
 }
 
 double RandomNumGenerator::generateBeta(){

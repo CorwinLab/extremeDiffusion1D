@@ -12,6 +12,7 @@ class RandomNumGenerator{
     protected:
         double beta;
         boost::random::beta_distribution<>::param_type betaParams;
+        unsigned int seed;
         std::random_device rd;
         boost::random::mt19937_64 gen;
         std::uniform_real_distribution<> dis;
@@ -24,7 +25,10 @@ class RandomNumGenerator{
         double getBeta() { return beta; };
         void setBeta(double _beta) { beta = _beta; };
         double generateBeta();
-        void setBetaSeed(const unsigned int seed) { gen.seed(seed); };
+        void setBetaSeed(const unsigned int _seed) { 
+            gen.seed(_seed); 
+            seed = _seed; };
+        unsigned int getBetaSeed() { return seed; }
 };
 
 #endif /* RANDOMNUMGENERATOR_HPP_ */
