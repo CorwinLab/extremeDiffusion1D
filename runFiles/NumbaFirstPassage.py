@@ -15,15 +15,20 @@ def runExperiment(nExp, dMin, dMax, num_of_points, save_dir, sysID):
     distances = np.geomspace(dMin, dMax, num_of_points)
     distances = np.unique(distances.astype(int))
 
+    write_header = True
     save_file = os.path.join(save_dir, f"FirstPassageCDF{sysID}.txt")
     if os.path.exists(save_file):
         data = np.loadtxt(save_file, skiprows=1, delimiter=',')
         max_position = data[-1, 0]
+        if max_position == max(distances):
+            sys.exit()
         distances = distances[distances > max_position]
+        write_header = False
     
     f = open(save_file, "a")
     writer = csv.writer(f)
-    writer.writerow(["Position", "Quantile", "Variance"])
+    if write_header:
+        writer.writerow(["Position", "Quantile", "Variance"])
     
     time_interval = 3600 * 12
 
