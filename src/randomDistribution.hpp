@@ -33,6 +33,11 @@ class RandomDistribution{
         // Cutoff Uniform distribution
         std::uniform_real_distribution<> cutoff_uniform;
         double getUniformDistributed();
+
+        // Quadratic distribution
+        double alpha;
+        double beta;
+        double getQuadraticDistributed();
         
         std::string distributionName;
         std::vector<double> parameters;

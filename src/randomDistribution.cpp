@@ -1,10 +1,11 @@
 #include "randomDistribution.hpp"
+#include <cmath>
 
 RandomDistribution::RandomDistribution(std::string _distributionName,
                                        std::vector<double> _parameters)
     : distributionName(_distributionName), parameters(_parameters)
 {
-    if (distributionName != "beta" && distributionName != "bates" && distributionName != "triangular" && distributionName != "uniform"){
+    if (distributionName != "beta" && distributionName != "bates" && distributionName != "triangular" && distributionName != "uniform" && distributionName != "quadratic"){
         throw std::runtime_error("distributionName must be either 'beta' or 'bates'");
     }
     /* Set up beta distribution */
@@ -21,10 +22,16 @@ RandomDistribution::RandomDistribution(std::string _distributionName,
         triang_dist.param(t_params);
     }
 
-    /* Set up cutoff uniform random */ 
+    /* Set up cutoff uniform distribution */ 
     if (distributionName == "uniform"){
         std::uniform_real_distribution<>::param_type cutoffParams(parameters[0], parameters[1]);
         cutoff_uniform.param(cutoffParams);
+    }
+
+    /* Set up quadratic distribution */
+    if (distributionName == "quadratic"){
+        beta = (parameters[0] + parameters[1]) / 2;
+        alpha = 12 / (pow(parameters[1] - parameters[0], 3));
     }
 
     /* Set up random uniform distribution*/
@@ -77,6 +84,17 @@ double RandomDistribution::getUniformDistributed(){
     return cutoff_uniform(gen);
 }
 
+double RandomDistribution::getQuadraticDistributed(){
+    double val = (3 * dis(gen) / alpha - pow(beta - parameters[0], 3));
+    if (val < 0){
+        val = -pow(abs(val), 1./3);
+    }
+    else{
+        val = pow(val, 1./3);
+    }
+    return val + beta;
+}
+
 double RandomDistribution::generateRandomVariable(){
     if (distributionName == "beta"){
         return getBetaDistributed();
@@ -89,6 +107,9 @@ double RandomDistribution::generateRandomVariable(){
     }
     else if (distributionName == "uniform"){
         return getUniformDistributed();
+    }
+    else if (distributionName == "quadratic"){
+        return getQuadraticDistributed();
     }
     else {
         throw;

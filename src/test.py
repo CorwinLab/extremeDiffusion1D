@@ -1,10 +1,11 @@
+from random import random
 from libDiffusion import RandomDistribution
 from matplotlib import pyplot as plt
 import numpy as np
 
-a = 1/2-1/(2*np.sqrt(7))
-b = 1/2+1/(2*np.sqrt(7))
-r = RandomDistribution("uniform", [a, b])
+b = 1/2 + 1/2*np.sqrt(5/63)
+a = 1/2 - 1/2*np.sqrt(5/63)
+r = RandomDistribution("quadratic", [a, b])
 vars = []
 for _ in range(1000000):
     vars.append(r.generateRandomVariable())
