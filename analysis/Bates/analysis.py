@@ -32,24 +32,43 @@ ax.set_xlim([0, 1])
 print("Triang Variance:", np.var(data))
 fig.savefig("RandomNumsTriang.png", bbox_inches='tight')
 
+# Test if random numbers are quadratic distributed
+file = '/home/jacob/Desktop/corwinLabMount/CleanData/Quadratic/RandomNums1.txt'
+data = np.loadtxt(file)
+fig, ax = plt.subplots()
+ax.hist(data, bins=50)
+ax.set_xlim([0, 1])
+print("Quadratic Variance:", np.var(data))
+fig.savefig("RandomNumsQuadratic.png", bbox_inches='tight')
+
+# Test if random numbers are quadratic distributed for beta=1
+file = '/home/jacob/Desktop/corwinLabMount/CleanData/QuadraticBeta1/RandomNums1.txt'
+data = np.loadtxt(file)
+fig, ax = plt.subplots()
+ax.hist(data, bins=50)
+ax.set_xlim([0, 1])
+print("Quadratic Beta 1 Variance:", np.var(data))
+print("Expected Beta 1 Var: ", 1/12)
+fig.savefig("RandomNumsQuadratic.png", bbox_inches='tight')
+
 # Plot the variance of each distribution
 # Get Bates data
-logN = np.log(1e24)
+logN = np.log(1e2)
 alpha = 0.75
 fig, ax = plt.subplots()
 ax.set_xscale("log")
 ax.set_yscale("log")
 ax.set_xlabel(r"$t/log(N)$")
 ax.set_ylabel(r"$\mathrm{Var}(\mathrm{Env}_N^t)$")
-ax.set_xlim([0.1, 5 * 10**2])
+ax.set_xlim([1/logN, 5 * 10 **2  * np.log(1e24)/np.log(1e2)])
 
 db = Database()
 path = "/home/jacob/Desktop/corwinLabMount/CleanData/Bates/"
 db.add_directory(path, dir_type="Gumbel")
 #db.calculateMeanVar(path, verbose=True, maxTime=27631)
-N = 24
+N = 2
 cdf_df, max_df = db.getMeanVarN(N)
-ax.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'], label=r'$\mathrm{Bates}(n=7)$', alpha=alpha)
+ax.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'], alpha=alpha) # label=r'$\mathrm{Bates}(n=7)$')
 
 # Get beta=10 data
 path = "/home/jacob/Desktop/corwinLabMount/CleanData/CDFBetaSweep/10/"
@@ -78,15 +97,23 @@ path = "/home/jacob/Desktop/corwinLabMount/CleanData/Uniform/"
 db.add_directory(path, dir_type="Gumbel")
 #db.calculateMeanVar(path, verbose=True, maxTime=27631)
 cdf_df, max_df = db.getMeanVarN(N)
-ax.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'], label=r'$\mathrm{Uniform}(\frac{1}{2}(1 \pm 1/\sqrt{7}))$', alpha=alpha)
+ax.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'], alpha=alpha) #label=r'$\mathrm{Uniform}(\frac{1}{2}(1 \pm 1/\sqrt{7}))$', )
 
 # Get triangle distributed
 db = Database()
 path = "/home/jacob/Desktop/corwinLabMount/CleanData/Triang/"
 db.add_directory(path, dir_type="Gumbel")
-db.calculateMeanVar(path, verbose=True, maxTime=27631)
+#db.calculateMeanVar(path, verbose=True, maxTime=27631)
 cdf_df, max_df = db.getMeanVarN(N)
-ax.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'], label=r'$\mathrm{Traing}(1/2 \pm 1/\sqrt{14}, 1/2)$', alpha=alpha)
+ax.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'], alpha=alpha) # label=r'$\mathrm{Traing}(1/2 \pm 1/\sqrt{14}, 1/2)$')
 
-ax.legend(loc='upper left')
-fig.savefig("Variance.pdf", bbox_inches='tight')
+# Get triangle distributed
+db = Database()
+path = "/home/jacob/Desktop/corwinLabMount/CleanData/Quadratic/"
+db.add_directory(path, dir_type="Gumbel")
+#db.calculateMeanVar(path, verbose=True, maxTime=27631)
+cdf_df, max_df = db.getMeanVarN(N)
+ax.plot(cdf_df['time'] / logN, cdf_df['Var Quantile'], alpha=alpha) #label=r'$\mathrm{Quadratic}(1/2(1 \pm \sqrt{5/63}))$')
+
+ax.legend(loc='upper left', fontsize=12)
+fig.savefig(f"Variance{N}.pdf", bbox_inches='tight')

@@ -5,7 +5,7 @@ RandomDistribution::RandomDistribution(std::string _distributionName,
                                        std::vector<double> _parameters)
     : distributionName(_distributionName), parameters(_parameters)
 {
-    if (distributionName != "beta" && distributionName != "bates" && distributionName != "triangular" && distributionName != "uniform" && distributionName != "quadratic"){
+    if (distributionName != "beta" && distributionName != "delta" && distributionName != "bates" && distributionName != "triangular" && distributionName != "uniform" && distributionName != "quadratic"){
         throw std::runtime_error("distributionName must be either 'beta' or 'bates'");
     }
     /* Set up beta distribution */
@@ -32,6 +32,12 @@ RandomDistribution::RandomDistribution(std::string _distributionName,
     if (distributionName == "quadratic"){
         beta = (parameters[0] + parameters[1]) / 2;
         alpha = 12 / (pow(parameters[1] - parameters[0], 3));
+    }
+
+    /* Set up discrete distribution */ 
+    if (distributionName == "delta"){
+        std::discrete_distribution<>::param_type disc_params(parameters.begin(), parameters.end());
+        disc_dist.param(disc_params);
     }
 
     /* Set up random uniform distribution*/
@@ -95,6 +101,22 @@ double RandomDistribution::getQuadraticDistributed(){
     return val + beta;
 }
 
+double RandomDistribution::getDeltaDistributed(){
+    int randChoice = disc_dist(gen);
+    if (randChoice == 0){
+        return 0.0;
+    }
+    else if (randChoice == 1){
+        return 0.5; 
+    }
+    else if (randChoice == 2){
+        return 1.0;
+    }
+    else {
+        throw;
+    }
+}
+
 double RandomDistribution::generateRandomVariable(){
     if (distributionName == "beta"){
         return getBetaDistributed();
@@ -110,6 +132,9 @@ double RandomDistribution::generateRandomVariable(){
     }
     else if (distributionName == "quadratic"){
         return getQuadraticDistributed();
+    }
+    else if (distributionName == "delta"){
+        return getDeltaDistributed();
     }
     else {
         throw;

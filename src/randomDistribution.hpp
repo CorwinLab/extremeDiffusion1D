@@ -38,6 +38,10 @@ class RandomDistribution{
         double alpha;
         double beta;
         double getQuadraticDistributed();
+
+        // Delta distribution
+        std::discrete_distribution<> disc_dist;
+        double getDeltaDistributed();
         
         std::string distributionName;
         std::vector<double> parameters;
