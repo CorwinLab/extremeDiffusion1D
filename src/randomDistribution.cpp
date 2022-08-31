@@ -4,7 +4,7 @@ RandomDistribution::RandomDistribution(std::string _distributionName,
                                        std::vector<double> _parameters)
     : distributionName(_distributionName), parameters(_parameters)
 {
-    if (distributionName != "beta" && distributionName != "bates"){
+    if (distributionName != "beta" && distributionName != "bates" && distributionName != "triangular" && distributionName != "uniform"){
         throw std::runtime_error("distributionName must be either 'beta' or 'bates'");
     }
     /* Set up beta distribution */
@@ -13,6 +13,18 @@ RandomDistribution::RandomDistribution(std::string _distributionName,
             boost::random::beta_distribution<>::param_type params(parameters[0], parameters[1]); /* (alpha, beta) */ 
             betaParams = params;
         }
+    }
+
+    /* Set up triangular distribution */ 
+    if (distributionName == "triangular"){
+        boost::random::triangle_distribution<>::param_type t_params(parameters[0], parameters[1], parameters[2]); /* (a, b, c) */
+        triang_dist.param(t_params);
+    }
+
+    /* Set up cutoff uniform random */ 
+    if (distributionName == "uniform"){
+        std::uniform_real_distribution<>::param_type cutoffParams(parameters[0], parameters[1]);
+        cutoff_uniform.param(cutoffParams);
     }
 
     /* Set up random uniform distribution*/
@@ -57,12 +69,26 @@ double RandomDistribution::getBatesDistributed(){
     return mean / parameters[0];
 }
 
+double RandomDistribution::getTriangularDistributed(){
+    return triang_dist(gen);
+}
+
+double RandomDistribution::getUniformDistributed(){
+    return cutoff_uniform(gen);
+}
+
 double RandomDistribution::generateRandomVariable(){
     if (distributionName == "beta"){
         return getBetaDistributed();
     }
     else if (distributionName == "bates"){
         return getBatesDistributed();
+    }
+    else if (distributionName == "triangular"){
+        return getTriangularDistributed();
+    }
+    else if (distributionName == "uniform"){
+        return getUniformDistributed();
     }
     else {
         throw;
