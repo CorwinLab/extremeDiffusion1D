@@ -23,6 +23,10 @@ testFirstPass.py
 *.png
 *.json
 *.dat
+*.gif
+*.avi
+*.csv
+*.zip
 
 # Keep example files
 !/examples/*

@@ -33,7 +33,7 @@ files = glob.glob(dir)
 run_again = False
 
 if run_again:
-    position, mean, variance = calculateMeanVar(files, 27631)
+    position, mean, variance = calculateMeanVar(files, 55262)
     env_variance = variance[:, 1]
     sam_variance = mean[:, 2]
     np.savetxt("Position.txt", position)
@@ -86,10 +86,11 @@ ax.set_xlabel(r"$x / \log(N)$")
 ax.set_ylabel(r"$\mathrm{Var}(\tau)$")
 ax.plot(position / logN, env_variance, c='r')
 ax.plot(position / logN, sam_variance, c='b')
+'''
 ax.plot(theoretical_position[good_idx_short] / logN, theoretical_variance[good_idx_short], c='k', ls='--')
 ax.plot(theoretical_position / logN, theoretical_variance_long, c='m', ls='--')
 ax.plot(theoretical_position[good_idx] / logN, theoretical_sampling[good_idx], c='k', ls='--')
-
+'''
 # this is the long time asymptotics power law
 # ax.plot(xvals / logN, yvals, c='orange')
 #ax.plot(xvals / logN, ysam, c='orange')
@@ -125,9 +126,9 @@ ax.set_yscale("log")
 ax.set_xlabel(r"$t/ \log(N)$")
 ax.set_xlim([0.5, 1000])
 ax.set_ylabel(r"$\mathrm{Var}(\tau_{\mathrm{Env}})$")
-ax.plot(position / np.log(1e24), env_variance/np.sqrt(np.log(1e24)), c='r')
-ax.plot(position2 / np.log(float("1e2")), env_variance2/np.sqrt(np.log(1e2)), c='b')
-ax.plot(position7 / np.log(1e7), env_variance7/np.sqrt(np.log(1e7)), c='m')
+ax.plot(position / np.log(1e24), env_variance/(np.sqrt(np.log(1e24))**0), c='r')
+ax.plot(position2 / np.log(float("1e2")), env_variance2/(np.sqrt(np.log(1e2))**0), c='b')
+ax.plot(position7 / np.log(1e7), env_variance7/(np.sqrt(np.log(1e7))**0), c='m')
 #ax.plot(theoretical_distance2 / np.log(100), theoretical_variance2, ls='--')
 #ax.plot(theoretical_distance7 / np.log(1e7), theoretical_variance7_long, ls='--')
 #ax.plot(theoretical_distance7 / np.log(1e7), theoretical_variance7, ls='--')
