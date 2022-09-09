@@ -53,13 +53,16 @@ if run_again:
     position7, mean, variance = calculateMeanVar(files, 16118)
     env_variance7 = variance[:, 1]
     sam_variance7 = mean[:, 2]
+    env_mean7 = mean[:, 1]
     np.savetxt("Position7.txt", position7)
     np.savetxt("Environmental7.txt", env_variance7)
+    np.savetxt("EnvironmentalMean7.txt", env_mean7)
     np.savetxt("SamplingVariance7.txt", sam_variance7)
 else: 
     position7 = np.loadtxt("Position7.txt")
     env_variance7 = np.loadtxt("Environmental7.txt")
     sam_variance7 = np.loadtxt("SamplingVariance7.txt")
+    env_mean7 = np.loadtxt("EnvironmentalMean7.txt")
 
 theoretical_position = np.loadtxt("distances.txt")
 theoretical_variance = np.loadtxt("varianceShortTime.txt")
@@ -126,10 +129,39 @@ ax.set_yscale("log")
 ax.set_xlabel(r"$t/ \log(N)$")
 ax.set_xlim([0.5, 1000])
 ax.set_ylabel(r"$\mathrm{Var}(\tau_{\mathrm{Env}})$")
-ax.plot(position / np.log(1e24), env_variance/(np.sqrt(np.log(1e24))**0), c='r')
-ax.plot(position2 / np.log(float("1e2")), env_variance2/(np.sqrt(np.log(1e2))**0), c='b')
-ax.plot(position7 / np.log(1e7), env_variance7/(np.sqrt(np.log(1e7))**0), c='m')
+#ax.plot(position / np.log(1e24), env_variance/(np.sqrt(np.log(1e24))**0), c='r')
+#ax.plot(position2 / np.log(float("1e2")), env_variance2/(np.sqrt(np.log(1e2))**0), c='b')
+ax.plot(position7 / np.log(1e7), env_variance7, c='m')
 #ax.plot(theoretical_distance2 / np.log(100), theoretical_variance2, ls='--')
-#ax.plot(theoretical_distance7 / np.log(1e7), theoretical_variance7_long, ls='--')
-#ax.plot(theoretical_distance7 / np.log(1e7), theoretical_variance7, ls='--')
+ax.plot(theoretical_distance7 / np.log(1e7), theoretical_variance7_long, ls='--')
+ax.plot(theoretical_distance7 / np.log(1e7), theoretical_variance7, ls='--')
+
+# Plotting the 1/N quantile stuff
+distances = [20, 100, 1611]
+for d in distances:
+    data = pd.read_csv(f"../FirstPassTest/TotalDF{d}.csv")
+    data_first_pass = data[data['Number Crossed'] == 0]
+
+    ax.scatter(d / np.log(1e7), np.var(data['Time'].values), c='g')
+    #ax.scatter(distance / np.log(1e7), np.var(data_first_pass['Time'].values), c='r')
+
 fig.savefig("EnvVariance.pdf", bbox_inches='tight')
+
+logN = np.log(1e7)
+fig, ax = plt.subplots()
+ax.plot(position7 / logN, env_mean7, c='m', label='Data')
+ax.plot(position7[position7 > logN] / logN, position7[position7 >logN]**2 / 2 /logN, '--', c='orange', label='Theory by Inversion')
+
+distances = [20, 100, 1611]
+for d in distances:
+    data = pd.read_csv(f"../FirstPassTest/TotalDF{d}.csv")
+    data_first_pass = data[data['Number Crossed'] == 0]
+
+    ax.scatter(d / np.log(1e7), np.mean(data['Time'].values), c='g')
+
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_xlabel(r"$x / log(N)$")
+ax.set_ylabel(r"$Mean(\tau_{Env})$")
+ax.legend()
+fig.savefig("EnvMean.pdf", bbox_inches='tight')

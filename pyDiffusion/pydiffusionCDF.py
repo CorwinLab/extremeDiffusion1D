@@ -486,20 +486,28 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
         f = open(save_file, "a")
         writer = csv.writer(f)
 
-        header = ["Time", "Number Crossed"]
+        header = ["Time", "Number Crossed", "Side"]
         writer.writerow(header)
         f.flush()
 
-        prev_quantile_pos = 0
-        times_crossed = 0
+        prev_upper_quantile_pos = 0
+        times_right_crossed = 0
+        prev_lower_quantile_pos = 0
+        times_left_crossed = 0
         while self.time < maxTime:
             self.iterateTimeStep()
-            current_quantile_pos = self.findQuantile(quantile)
-            print(f"Time: {self.time}", prev_quantile_pos, current_quantile_pos)
-            if prev_quantile_pos < distance and current_quantile_pos >= distance: 
-                writer.writerow([self.time, times_crossed])
-                times_crossed += 1
-            prev_quantile_pos = current_quantile_pos
+            # right sided
+            current_upper_quantile_pos = self.findQuantile(quantile)
+            if prev_upper_quantile_pos < distance and current_upper_quantile_pos >= distance: 
+                writer.writerow([self.time, times_right_crossed, 'right'])
+                times_right_crossed += 1
+            prev_upper_quantile_pos = current_upper_quantile_pos
+
+            current_lower_quantile_pos = self.findLowerQuantile(quantile)            
+            if prev_lower_quantile_pos > -distance and current_lower_quantile_pos <= -distance:
+                writer.writerow([self.time, times_left_crossed, 'left'])
+                times_left_crossed += 1
+            prev_lower_quantile_pos = current_lower_quantile_pos
 
 class DiffusionPositionCDF(libDiffusion.DiffusionPositionCDF):
     """
