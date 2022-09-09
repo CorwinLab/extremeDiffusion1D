@@ -470,30 +470,36 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
 
         f.close()
 
-    def evolveAndSaveFirstPassage(self, quantile: np.quad, distances: Sequence[int], save_file: str):
+    def evolveAndSaveFirstPassage(self, quantile: np.quad, distance: int, save_file: str, maxTime: int):
         """
         Measure the first passage time of a quantile at various distances.
+
+        Examples
+        --------
+        >>> tMax = 100
+        >>> N = 1e10
+        >>> x = 50
+        >>> cdf = DiffusionTimeCDF('beta', [1, 1], tMax)
+        >>> cdf.evolveAndSaveFirstPassage(N, x, 'test.csv', tMax)
         """
 
         f = open(save_file, "a")
         writer = csv.writer(f)
 
-        header = ["Distance", "Time"]
+        header = ["Time", "Number Crossed"]
         writer.writerow(header)
         f.flush()
 
-        idx = 0
-        while idx < len(distances):
+        prev_quantile_pos = 0
+        times_crossed = 0
+        while self.time < maxTime:
             self.iterateTimeStep()
-            upper_dist = self.findQuantile(quantile)
-            lower_dist = abs(self.findLowerQuantile(quantile))
-
-            if upper_dist >= distances[idx] or lower_dist >= distances[idx]:
-                row = [distances[idx], self.time]
-                writer.writerow(row)
-                f.flush()
-            idx += 1
-
+            current_quantile_pos = self.findQuantile(quantile)
+            print(f"Time: {self.time}", prev_quantile_pos, current_quantile_pos)
+            if prev_quantile_pos < distance and current_quantile_pos >= distance: 
+                writer.writerow([self.time, times_crossed])
+                times_crossed += 1
+            prev_quantile_pos = current_quantile_pos
 
 class DiffusionPositionCDF(libDiffusion.DiffusionPositionCDF):
     """
