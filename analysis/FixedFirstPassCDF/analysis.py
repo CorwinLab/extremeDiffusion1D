@@ -3,6 +3,7 @@ import npquad
 from matplotlib import pyplot as plt
 import glob 
 import pandas as pd
+import os
 
 def calculateMeanVar(files, max_dist, verbose=True):
     average_data = None
@@ -69,6 +70,12 @@ theoretical_variance = np.loadtxt("varianceShortTime.txt")
 theoretical_variance_long = np.loadtxt("varianceLongTime.txt")
 theoretical_sampling = np.loadtxt("varianceSam.txt")
 
+distanceMax = np.loadtxt("../FirstPassDiscreteAbs/distances.txt")
+varianceMax = np.loadtxt("../FirstPassDiscreteAbs/varianceMax.txt")
+good_idx = (varianceMax > 10**-3)  * (varianceMax < varianceMax[-1])
+varianceMax = varianceMax[good_idx]
+distanceMax = distanceMax[good_idx]
+
 good_idx_short = (theoretical_variance <= theoretical_variance[-1])
 good_idx = (theoretical_sampling > 10**-5) & (theoretical_sampling <= theoretical_sampling[-1])
 
@@ -89,6 +96,8 @@ ax.set_xlabel(r"$x / \log(N)$")
 ax.set_ylabel(r"$\mathrm{Var}(\tau)$")
 ax.plot(position / logN, env_variance, c='r')
 ax.plot(position / logN, sam_variance, c='b')
+ax.plot(distanceMax / logN, varianceMax, c='k', ls='--', alpha=0.5)
+ax.plot(position / logN, env_variance + sam_variance)
 '''
 ax.plot(theoretical_position[good_idx_short] / logN, theoretical_variance[good_idx_short], c='k', ls='--')
 ax.plot(theoretical_position / logN, theoretical_variance_long, c='m', ls='--')
@@ -126,15 +135,16 @@ theoretical_variance7_long = np.loadtxt("varianceLongTime7.txt")
 fig, ax = plt.subplots()
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.set_xlabel(r"$t/ \log(N)$")
+ax.set_xlabel(r"$x/ \log(N)$")
 ax.set_xlim([0.5, 1000])
-ax.set_ylabel(r"$\mathrm{Var}(\tau_{\mathrm{Env}})$")
-#ax.plot(position / np.log(1e24), env_variance/(np.sqrt(np.log(1e24))**0), c='r')
-#ax.plot(position2 / np.log(float("1e2")), env_variance2/(np.sqrt(np.log(1e2))**0), c='b')
-ax.plot(position7 / np.log(1e7), env_variance7, c='m')
-#ax.plot(theoretical_distance2 / np.log(100), theoretical_variance2, ls='--')
-ax.plot(theoretical_distance7 / np.log(1e7), theoretical_variance7_long, ls='--')
-ax.plot(theoretical_distance7 / np.log(1e7), theoretical_variance7, ls='--')
+ax.set_ylabel(r"$\frac{\mathrm{Var}(\tau_{\mathrm{Env}})}{\sqrt{\log(N)}}$")
+ax.plot(position / np.log(1e24), env_variance/(np.sqrt(np.log(1e24))), c='r', label=r'$N=10^{24}$', alpha=0.5)
+ax.plot(position2 / np.log(1e2), env_variance2/(np.sqrt(np.log(1e2))), c='b', label=r'$N=10^2$', alpha=0.5)
+ax.plot(position7 / np.log(1e7), env_variance7 / np.sqrt(np.log(1e7)), c='m', label=r'$N=10^7$', alpha=0.5)
+ax.plot(theoretical_distance2 / np.log(100), theoretical_variance2_long / np.sqrt(np.log(1e2)), ls='-.', c='b')
+ax.plot(theoretical_distance7 / np.log(1e7), theoretical_variance7_long / np.sqrt(np.log(1e7)), ls='-.', c='m')
+ax.plot(theoretical_distance7 / np.log(1e7), theoretical_variance7 / np.sqrt(np.log(1e7)), ls='--', c='m')
+ax.plot(theoretical_distance2 / np.log(1e2), theoretical_variance2 / np.sqrt(np.log(1e2)), ls='--', c='b')
 
 # Plotting the 1/N quantile stuff
 distances = [20, 100, 1611]
@@ -142,9 +152,11 @@ for d in distances:
     data = pd.read_csv(f"../FirstPassTest/TotalDF{d}.csv")
     data_first_pass = data[data['Number Crossed'] == 0]
 
-    ax.scatter(d / np.log(1e7), np.var(data['Time'].values), c='g')
+    #ax.scatter(d / np.log(1e7), np.var(data['Time'].values), c='g')
     #ax.scatter(distance / np.log(1e7), np.var(data_first_pass['Time'].values), c='r')
-
+minTimes = np.loadtxt("../DoubleSidedFPT/MinimumTimes.txt")
+#ax.scatter(100 / np.log(1e7), np.var(minTimes), c='k')
+ax.legend()
 fig.savefig("EnvVariance.pdf", bbox_inches='tight')
 
 logN = np.log(1e7)
@@ -157,7 +169,9 @@ for d in distances:
     data = pd.read_csv(f"../FirstPassTest/TotalDF{d}.csv")
     data_first_pass = data[data['Number Crossed'] == 0]
 
-    ax.scatter(d / np.log(1e7), np.mean(data['Time'].values), c='g')
+    #ax.scatter(d / np.log(1e7), np.mean(data['Time'].values), c='g')
+
+ax.scatter(100 / np.log(1e7), np.mean(minTimes), c='k')
 
 ax.set_xscale("log")
 ax.set_yscale("log")

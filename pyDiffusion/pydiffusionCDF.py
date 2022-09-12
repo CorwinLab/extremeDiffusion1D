@@ -470,7 +470,7 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
 
         f.close()
 
-    def evolveAndSaveFirstPassage(self, quantile: np.quad, distance: int, save_file: str, maxTime: int):
+    def evolveAndSaveFirstPassage(self, quantile: np.quad, distances: List[int], save_file: str, maxTime: int):
         """
         Measure the first passage time of a quantile at various distances.
 
@@ -486,28 +486,30 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
         f = open(save_file, "a")
         writer = csv.writer(f)
 
-        header = ["Time", "Number Crossed", "Side"]
+        header = ["Distances", "Time", "Number Crossed", "Side"]
         writer.writerow(header)
         f.flush()
 
         prev_upper_quantile_pos = 0
-        times_right_crossed = 0
+        times_right_crossed = np.zeros(shape=len(distances))
         prev_lower_quantile_pos = 0
-        times_left_crossed = 0
+        times_left_crossed = np.zeros(shape=len(distances))
         while self.time < maxTime:
             self.iterateTimeStep()
-            # right sided
             current_upper_quantile_pos = self.findQuantile(quantile)
-            if prev_upper_quantile_pos < distance and current_upper_quantile_pos >= distance: 
-                writer.writerow([self.time, times_right_crossed, 'right'])
-                times_right_crossed += 1
-            prev_upper_quantile_pos = current_upper_quantile_pos
+            current_lower_quantile_pos = self.findLowerQuantile(quantile) 
 
-            current_lower_quantile_pos = self.findLowerQuantile(quantile)            
-            if prev_lower_quantile_pos > -distance and current_lower_quantile_pos <= -distance:
-                writer.writerow([self.time, times_left_crossed, 'left'])
-                times_left_crossed += 1
+            for i, d in enumerate(distances): 
+                if prev_upper_quantile_pos < d and current_upper_quantile_pos >= d:
+                    writer.writerow([d, self.time, times_right_crossed[i], 'right'])
+                    times_right_crossed[i] += 1
+                        
+                if prev_lower_quantile_pos > -d and current_lower_quantile_pos <= -d:
+                    writer.writerow([d, self.time, times_left_crossed[i], 'left'])
+                    times_left_crossed[i] += 1
+            
             prev_lower_quantile_pos = current_lower_quantile_pos
+            prev_upper_quantile_pos = current_upper_quantile_pos
 
 class DiffusionPositionCDF(libDiffusion.DiffusionPositionCDF):
     """

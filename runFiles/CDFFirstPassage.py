@@ -15,17 +15,22 @@ if __name__ == '__main__':
     (
         topDir,
         sysID,
-        distance,
+        dMin,
+        dMax,
+        num_of_points,
         Nexp,
     ) = sys.argv[1:]
     
-    distance = int(distance)
+    dMin = int(dMin)
+    dMax = int(dMax)
+    num_of_points = int(num_of_points)
     N = np.quad(f"1e{Nexp}")
     save_file = os.path.join(topDir, f"FirstPassageTimes{sysID}.csv")
 
     # Set tMax to 4 * (expected first passage time)
-    tMax = int(4 * (distance ** 2 / 2 / np.log(N))) 
-    
+    tMax = int(4 * (dMax ** 2 / 2 / np.log(N))) 
+    distance = np.unique(np.geomspace(dMin, dMax, num_of_points).astype(int))
+
     vars = {
         "tMax": tMax, 
         "N": N,
