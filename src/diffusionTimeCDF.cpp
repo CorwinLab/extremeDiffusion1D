@@ -48,7 +48,7 @@ long int DiffusionTimeCDF::findQuantile(RealType quantile)
   unsigned long int quantilePosition;
   for (unsigned long int n = t; n >= 0; n--) {
     if (CDF[n] > 1 / quantile) {
-      quantilePosition = 2 * n + 2 - t;
+      quantilePosition = 2 * n - t;
       break;
     }
   }
@@ -59,7 +59,7 @@ long int DiffusionTimeCDF::findLowerQuantile(RealType quantile) {
   long int quantilePosition=0;
   for (unsigned long int n = 0; n <= t; n++) {
     if (CDF[n] < 1. - 1. / quantile) {
-      quantilePosition = 2 * n - t;
+      quantilePosition = 2 * n - t - 2;
       break;
     }
   }
