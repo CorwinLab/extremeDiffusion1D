@@ -511,6 +511,32 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
             prev_lower_quantile_pos = current_lower_quantile_pos
             prev_upper_quantile_pos = current_upper_quantile_pos
 
+    def evolveAndSaveFirstPassageDoubleSided(self, quantile: np.quad, distances: int, save_file: str):
+        """
+        Measure the first passage time of a quantile at a given distance
+        """
+        f = open(save_file, "a")
+        writer = csv.writer(f)
+
+        header = ["Distance", "Time"]
+        writer.writerow(header)
+        f.flush()
+
+        quantile_achieved = [False for _ in distances]
+        while not all(quantile_achieved):
+            self.iterateTimeStep()
+            for i, distance in enumerate(distances):
+                if quantile_achieved[i]: 
+                    continue
+                else: 
+                    prob = self.getProbOutsidePositions(distance)
+                    if prob >= 1/quantile: 
+                        writer.writerow([distance, self.time])
+                        f.flush()
+                        quantile_achieved[i] = True
+        f.close()
+
+
 class DiffusionPositionCDF(libDiffusion.DiffusionPositionCDF):
     """
     Class to iterate through the position of the CDF.

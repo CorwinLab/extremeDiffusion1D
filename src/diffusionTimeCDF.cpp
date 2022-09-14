@@ -150,11 +150,6 @@ RealType DiffusionTimeCDF::getProbOutsidePositions(unsigned int x){
     return 0;
   }
 
-  for (unsigned int n = 0; n <= t; n++){
-    int xval = 2 * n - t;
-    std::cout << xval << std::endl;
-  }
-
   for (unsigned int n=t; n>=0; n--){
     int xval = 2 * n - t;
     if (xval == x){
