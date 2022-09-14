@@ -40,6 +40,7 @@ public:
   std::vector<long int> findQuantiles(std::vector<RealType> quantiles);
 
   long int findLowerQuantile(RealType quantile);
+  RealType getProbOutsidePositions(unsigned int x);
 
   RealType getGumbelVariance(RealType nParticles);
   std::vector<RealType> getGumbelVariance(std::vector<RealType> nParticles);

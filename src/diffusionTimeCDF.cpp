@@ -143,3 +143,41 @@ std::vector<RealType> DiffusionTimeCDF::getSaveCDF()
 {
   return slice(CDF, 0, t);
 }
+
+RealType DiffusionTimeCDF::getProbOutsidePositions(unsigned int x){
+  RealType probOutside = 0;
+  if (x > t){
+    return 0;
+  }
+
+  for (unsigned int n = 0; n <= t; n++){
+    int xval = 2 * n - t;
+    std::cout << xval << std::endl;
+  }
+
+  for (unsigned int n=t; n>=0; n--){
+    int xval = 2 * n - t;
+    if (xval == x){
+      probOutside += CDF.at(n);
+      break;
+    }
+    else if (xval < x)
+    {
+      probOutside += CDF.at(n+1);
+      break;
+    }
+  }
+
+  for (unsigned int n=0; n<=t; n++){
+    int xval = 2 * n - t;
+    if (xval == -x){
+      probOutside += 1 - CDF.at(n+1);
+      break;
+    }
+    if (xval > -x){
+      probOutside += 1 - CDF.at(n);
+      break;
+    }
+  }
+  return probOutside;
+}

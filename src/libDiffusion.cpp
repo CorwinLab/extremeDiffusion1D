@@ -210,7 +210,8 @@ PYBIND11_MODULE(libDiffusion, m)
            py::arg("quantile"))
       .def("getSaveCDF", &DiffusionTimeCDF::getSaveCDF)
       .def("getxvals", &DiffusionTimeCDF::getxvals)
-      .def("getProbandV", &DiffusionTimeCDF::getProbandV, py::arg("quantile"));
+      .def("getProbandV", &DiffusionTimeCDF::getProbandV, py::arg("quantile"))
+      .def("getProbOutsidePositions", &DiffusionTimeCDF::getProbOutsidePositions);
       
   py::class_<DiffusionPositionCDF, RandomDistribution>(m, "DiffusionPositionCDF")
       .def(py::init<std::string,
