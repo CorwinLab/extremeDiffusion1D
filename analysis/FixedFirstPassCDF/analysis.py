@@ -3,30 +3,59 @@ import npquad
 from matplotlib import pyplot as plt
 import glob 
 import pandas as pd
+from TracyWidom import TracyWidom
+from scipy.special import erf
 import os
-import sys 
-sys.path.append("../../dataAnalysis")
-from theory import KPZ_var_fit
 
-def prefactor(x, N):
-    logN = np.log(N)
-    return 1/2 * (1 + logN / x)
+def I(v):
+    return 1 - np.sqrt(1-v**2)
 
-def var_theory(x, N):
-    logN = np.log(N).astype(float)
-    return x**4 / 4 / logN**4 * KPZ_var_fit(8 * logN**3 / x**2) #* prefactor(x, N)
-
-def I(v): 
-    return 1-np.sqrt(1-v**2)
-
-def sigma(v): 
+def sigma(v):
     return (2 * I(v)**2 / (1-I(v)))**(1/3)
 
-def var_short(x, N):
+def t0(x, N):
+    logN = np.log(N)
+    return (x**2 + logN**2) / (2 * logN)
+
+def function(x, N, chi1, chi2):
+    t_vals = t0(x, N)
+    exponent = t_vals**(1/3) * sigma(x / t_vals)
+    return np.log(np.exp(exponent * chi1) + np.exp(exponent * chi2))
+
+def var_power_long(x, N): 
     logN = np.log(N).astype(float)
-    t0 = (logN**2 + x**2)/ (2*logN)
-    return (t0**(1/3) * sigma(x/t0) / (I(x/t0) - x**2 / t0**2 / np.sqrt(1-(x/t0)**2)))**2 * 0.8133 #* prefactor(x, N)
-    
+    return 1/4 * np.sqrt(np.pi / 2) * x ** 3 / logN ** (5/2)
+
+def var_power_short(x, N):
+    logN = np.log(N).astype(float)
+    return 0.8133 * x ** (8/3) / logN **(2) / 2 **(5/3)
+
+def var_short(xvals, N, samples=10000):
+    var = []
+    tw = TracyWidom(beta=2)
+    for x in xvals: 
+        r1 = np.random.rand(samples)
+        r2 = np.random.rand(samples)
+        chi1 = tw.cdfinv(r1)
+        chi2 = tw.cdfinv(r2)
+        function_var = function(x, N, chi1, chi2)
+        t_val = t0(x, N)
+        prefactor = 1/(I(x / t_val) - x**2 / t_val ** 2 / np.sqrt(1 - (x/t_val)**2)) ** 2
+        var.append(prefactor * np.var(function_var))
+
+    return var 
+
+def variance(x, N, samples=10000):
+    crossover = (np.log(N).astype(float)) ** (3/2)
+    width = (np.log(N).astype(float))**(4/3)
+    theory_short = var_short(x, N, samples)
+    theory_long =  var_power_long(x, N)
+    error_func = (erf((x - crossover) / width) + 1) / 2
+    theory = theory_short * (1 - error_func) + theory_long * (error_func)
+    theory[x < np.log(N)] = 0
+    return theory
+
+
 def calculateMeanVar(files, max_dist, verbose=True):
     average_data = None
     average_data_squared = None
@@ -136,54 +165,29 @@ else:
     sam_variance2 = np.loadtxt("SamplingVariance2.txt")
     env_mean2 = np.loadtxt("EnvironmentalMean2.txt")
 
-Nquant_data = pd.read_csv("../LocustFirstPassTest/Total_Times.csv")
-unique_distances = np.unique(Nquant_data['Distances'])
-vars = []
-means = []
-for d in unique_distances:
-    data = Nquant_data[Nquant_data['Distances'] == d]
-    times = data['Time'].values
-    vars.append(np.var(times))
-    means.append(np.mean(times))
-
-vars_first = []
-means_first = []
-for d in unique_distances:
-    data = Nquant_data[Nquant_data['Distances'] == d]
-    data = data[data['Number Crossed'] == 0]
-    times = data['Time'].values 
-    vars_first.append(np.var(times))
-    means_first.append(np.mean(times))
-
 fig, ax = plt.subplots()
 ax.set_xscale("log")
 ax.set_yscale("log")
 ax.set_xlabel(r"$x/ \log(N)$")
 ax.set_xlim([0.5, 1000])
 ax.set_ylabel(r"$\frac{\mathrm{Var}(\tau_{\mathrm{Env}})}{\sqrt{\log(N)}}$")
-ax.plot(position2 / np.log(1e2), env_variance2/(np.sqrt(np.log(1e2))), c='b', label=r'$N=10^2$', alpha=0.5)
 ax.plot(position7 / np.log(1e7), env_variance7 / np.sqrt(np.log(1e7)), c='m', label=r'$N=10^7$', alpha=0.5)
-ax.plot(position / np.log(1e24), env_variance/(np.sqrt(np.log(1e24))), c='r', label=r'$N=10^{24}$', alpha=0.5)
 
-theory_pos = position[position > np.log(1e24)]
-short = var_short(theory_pos, 1e24)
-jacob_var = var_theory(theory_pos, 1e24)
-ax.plot(theory_pos / np.log(1e24), jacob_var / (np.sqrt(np.log(1e24))), '--', label=r'KPZ Regime $N=10^{24}$')
-ax.plot(theory_pos / np.log(1e24), short / (np.sqrt(np.log(1e24))), '--', label=r'TW Regime $N=10^{24}$')
-ax.plot(theory_pos / np.log(1e24), theory_pos ** (8/3) / np.log(1e24) ** (2) * 0.813 * 2**(-2/3) / (np.sqrt(np.log(1e24))), '-.', label=r'$\frac{x^{8/3}}{2^{2/3}\log(N)^{2}}\mathrm{Var}(\chi)$')
-ax.plot(unique_distances / np.log(1e7), vars / np.sqrt(np.log(1e7)), label=r'$10^7$ Quantile', alpha=0.6)
-ax.plot(unique_distances / np.log(1e7), vars_first / np.sqrt(np.log(1e7)), label=r'First $10^7$ Quantile', alpha=0.6)
+theory_pos = np.geomspace(np.log(1e7), 1000 * np.log(1e7), num=1000)
+short = var_short(theory_pos, 1e7, samples=10000)
+long= var_power_long(theory_pos, 1e7)
+ax.plot(theory_pos / np.log(1e7), long / (np.sqrt(np.log(1e7))), label=r'KPZ Regime $N=10^{7}$', ls='--')
+ax.plot(theory_pos / np.log(1e7), short / (np.sqrt(np.log(1e7))), label=r'TW Regime $N=10^{7}$', ls='--')
+ax.vlines(np.log(1e7)**(3/2) / np.log(1e7), 0, 5*10**8, color='k', ls='--')
+ax.set_ylim([10**-3, 5*10**8])
+ax.annotate(r"$t=(\log(N))^{3/2}$", xy=(3, 10**5), rotation=90)
 
-ax.legend()
-fig.savefig("EnvVariance.pdf", bbox_inches='tight')
+fig.savefig("EnvVarianceStitching.pdf", bbox_inches='tight')
 
 fig, ax = plt.subplots()
 ax.plot(position2 / np.log(1e2), env_mean2, c='b', label=r'$N=10^2$')
 ax.plot(position7 / np.log(1e7), env_mean7, c='m', label=r'$N=10^7$')
 ax.plot(position / np.log(1e24), env_mean24, c='r', label=r'$N=10^{24}$')
-
-ax.plot(unique_distances / np.log(1e7), means, '--', label=r'$10^7$ Quantile')
-ax.plot(unique_distances / np.log(1e7), means_first, '-.', label=r'First $10^7$ Quantile')
 
 ax.set_xlim([10**-2, 10**3])
 ax.set_ylim([1, 5*10**7])
@@ -193,3 +197,81 @@ ax.set_xlabel(r"$x / log(N)$")
 ax.set_ylabel(r"$Mean(\tau_{Env})$")
 ax.legend()
 fig.savefig("EnvMean.pdf", bbox_inches='tight')
+
+fig, ax = plt.subplots()
+
+alpha=0.5
+colors = ['r', 'b', 'g']
+fontsize=12
+
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_xlabel(r"$x/ \log(N)$")
+ax.set_xlim([0.5, 1000])
+ax.set_ylabel(r"$\mathrm{Var}(\tau_{\mathrm{Env}})$")
+ax.plot(position2 / np.log(1e2), env_variance2, c=colors[0], label=r'$N=10^2$', alpha=alpha)
+ax.plot(position7 / np.log(1e7), env_variance7, c=colors[1], label=r'$N=10^7$', alpha=alpha)
+ax.plot(position / np.log(1e24), env_variance, c=colors[2], label=r'$N=10^{24}$', alpha=alpha)
+
+for i, N in enumerate([1e2, 1e7, 1e24]):
+    x = np.geomspace(1, 1000*np.log(N), num=2500)
+    var = variance(x, N)
+    ax.plot(x / np.log(N), var, c=colors[i], ls='--')
+
+leg = ax.legend(
+    fontsize=fontsize,
+    loc="upper left",
+    framealpha=0,
+    labelcolor=colors,
+    handlelength=0,
+    handletextpad=0,
+)
+
+for item in leg.legendHandles:
+    item.set_visible(False)
+
+fig.savefig("EnvVariance.pdf", bbox_inches='tight')
+
+N_exp = 24
+N = float(f"1e{N_exp}")
+logN = np.log(N).astype(float)
+dir = "/home/jacob/Desktop/talapasMount/JacobData/FirstPassDiscreteAbs"
+mean_file = os.path.join(dir, "Mean.txt")
+var_file = os.path.join(dir, "Var.txt")
+mean = np.loadtxt(mean_file).T
+var = np.loadtxt(var_file).T
+
+fig, ax = plt.subplots()
+colors = ['b', 'g', 'r']
+alpha = 0.75
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_xlabel(r"$x / \log(N)$")
+ax.set_ylabel(r"$\mathrm{Variance}$")
+
+ax.plot(position / logN, env_variance, c=colors[0], label=r'$\mathrm{Var}(\tau_{\mathrm{Env}})$', alpha=alpha)
+ax.plot(position / logN, sam_variance, c=colors[1], label=r'$\mathrm{Var}(\tau_{\mathrm{Sam}})$', alpha=alpha)
+ax.plot(var[:, 0] / logN, var[:, 1], c=colors[2], label=r'$\mathrm{Var}(\tau)$', alpha=alpha)
+
+xvals = np.array([200, 750]) * logN
+yvals3 = xvals ** 3 / 10**4 / 3
+yvals4 = xvals ** 4 / 10**7
+print(yvals3, yvals4)
+
+ax.plot(xvals / logN, yvals3, c='k', ls='--', label=r'$x^{3}$')
+ax.plot(xvals / logN, yvals4, c='k', ls='--', label=r'$x^4$')
+
+ax.set_ylim([10**-2, 10**12])
+ax.set_xlim([0.5, 10**3])
+leg = ax.legend(
+    fontsize=fontsize,
+    loc="upper left",
+    framealpha=0,
+    labelcolor=colors + ['k', 'k'],
+    handlelength=0,
+    handletextpad=0,
+)
+
+for item in leg.legendHandles:
+    item.set_visible(False)
+fig.savefig("TotalVariance.pdf", bbox_inches='tight')
