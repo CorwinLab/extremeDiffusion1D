@@ -107,7 +107,8 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             np.all(self.occupancy == other.occupancy)  # occupancy same
             and self.currentTime == other.currentTime
             and self.nParticles == other.nParticles
-            and self.beta == other.beta
+            and self.distributionName == other.distributionName
+            and self.parameters == other.parameters
             and self.probDistFlag == other.probDistFlag
             and self.edges == other.edges
             and self.id == other.id
