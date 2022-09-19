@@ -305,12 +305,10 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             vars['staticEnvironment'],
         )
 
-        occupancyLoadLength = vars["maxIdx"] - vars["minIdx"] + 1
         loadOccupancy = fileIO.loadArrayQuad(occupancy_file)
         occupancy = np.zeros(vars["occupancySize"], dtype=np.quad)
         occupancy[vars["minIdx"] : vars["maxIdx"] + 1] = loadOccupancy
 
-        zerosConcate = np.zeros(vars["occupancySize"] - vars["time"])
         edges = (vars["minIdx"], vars["maxIdx"])
 
         d.occupancy = occupancy
