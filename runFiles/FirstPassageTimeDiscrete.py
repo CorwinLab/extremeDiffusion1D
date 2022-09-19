@@ -41,12 +41,24 @@ def runExperiment(
         current_distance = quartiles[-1, 0]
         distances = distances[distances > current_distance]
         append = True
+        print("Loaded from file", flush=True)
     else:
         d = DiffusionPDF(N, beta=beta, occupancySize=tMax, ProbDistFlag=probDistFlag)
         d.save_dir = save_dir
         d.id = sysID
         append = False
-    
+        print("Starting fresh", flush=True)
+
+    if os.path.exists(save_file):
+        quartiles = np.loadtxt(save_file, skiprows=1, delimiter=',')
+        current_distance = quartiles[-1, 0]
+        distances = distances[distances > current_distance]
+        append = True
+        print("Found existing save file", flush=True)
+        
+    if d.getOccupancySize() < tMax:
+        d.resizeOccupancy(tMax)
+
     d.evolveAndSaveFirstPassage(distances, save_file, append)
 
     fileIO.saveArrayQuad(save_occ, d.occupancy)
@@ -70,7 +82,9 @@ if __name__ == "__main__":
     save_occ = os.path.join(save_dir, f"FinalOccupancy{sysID}.txt")
     save_occ = os.path.abspath(save_occ)
     if os.path.exists(save_occ):
+        print("Found FinalOccupancy file so exiting", flush=True)
         exit()
+
     max_distance = 1000 * np.log(float(f"1e{N_exp}"))
 
     vars = {

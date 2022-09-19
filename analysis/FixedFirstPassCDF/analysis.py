@@ -10,6 +10,9 @@ import os
 def I(v):
     return 1 - np.sqrt(1-v**2)
 
+def Iprime(v):
+    return v / np.sqrt(1-v**2)
+
 def sigma(v):
     return (2 * I(v)**2 / (1-I(v)))**(1/3)
 
@@ -55,6 +58,10 @@ def variance(x, N, samples=10000):
     theory[x < np.log(N)] = 0
     return theory
 
+def sam_variance_theory(x, N):
+    t_vals = t0(x, N)
+    beta = 1 / (I(x / t_vals) - x**2 / t_vals ** 2 / np.sqrt(1 - (x/t_vals)**2))
+    return np.pi**2 * beta ** 2 / 6
 
 def calculateMeanVar(files, max_dist, verbose=True):
     average_data = None
@@ -256,7 +263,6 @@ ax.plot(var[:, 0] / logN, var[:, 1], c=colors[2], label=r'$\mathrm{Var}(\tau)$',
 xvals = np.array([200, 750]) * logN
 yvals3 = xvals ** 3 / 10**4 / 3
 yvals4 = xvals ** 4 / 10**7
-print(yvals3, yvals4)
 
 ax.plot(xvals / logN, yvals3, c='k', ls='--', label=r'$x^{3}$')
 ax.plot(xvals / logN, yvals4, c='k', ls='--', label=r'$x^4$')
@@ -275,3 +281,15 @@ leg = ax.legend(
 for item in leg.legendHandles:
     item.set_visible(False)
 fig.savefig("TotalVariance.pdf", bbox_inches='tight')
+
+sam_theoretical = sam_variance_theory(position[position > np.log(1e24)], 1e24)
+fig, ax = plt.subplots()
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_xlabel(r'$x / \log(N)$')
+ax.set_ylabel(r'$\mathrm{Var}(\tau_{\mathrm{Sam}})$')
+ax.plot(position / np.log(1e24), sam_variance)
+ax.plot(position[position > np.log(1e24)] / np.log(1e24), sam_theoretical, '--')
+ax.set_ylim([10**-3, 10**12])
+ax.set_xlim([0.5, 10**3])
+fig.savefig("SamplingVariance.pdf", bbox_inches='tight')

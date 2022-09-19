@@ -232,6 +232,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         """
 
         super().resizeOccupancy(size)
+        print("Resized Occuapancy to: ", self.getOccupancySize(), flush=True)
 
     def saveState(self):
         """
@@ -696,6 +697,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             header = ["Distance", "Time"]
             writer.writerow(header)
             f.flush()
+            print("Writing Header", flush=True)
         while idx < len(positions):
             self.iterateTimestep()
             maxIdx = self.getMaxIdx()
