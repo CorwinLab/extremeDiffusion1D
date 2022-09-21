@@ -47,8 +47,31 @@ max_distances = [2301, 4605, 10642, 18529, 21142]
 dirs = [int(dir) for dir in dirs]
 for dir, max_dist in zip(dirs, max_distances):
     files = glob.glob(os.path.join(home_dir, str(dir), 'Q*.txt'))
-    N = float(f"1e{dir}")
-    max_dist = int(1000*np.log(N))
-    print("Starting: N=", dir)
-    df = calculateMeanVar(files, max_dist=max_dist, verbose=True)
-    print(df)
+    for f in files:
+        try: 
+            np.loadtxt(f, skiprows=1, delimiter=',')
+        except ValueError:
+            df = pd.read_csv(f)
+            idx = df[df['Distance'] == 'Distance'].index
+            if len(idx) > 1:
+                df_prev = df.loc[:idx[0]-1]
+                df_prev['Distance'] = df_prev['Distance'].astype(int)
+                df_prev.to_csv(f, sep=',', index=False)
+                continue
+            else: 
+                idx = idx[0]
+            df_prev = df.loc[:idx-1]
+            df_after = df.loc[idx+1:]
+
+            df_prev['Distance'] = df_prev['Distance'].astype(int)
+            df_prev['Time'] = df_prev['Time'].astype(int)
+
+            df_after['Distance'] = df_after['Distance'].astype(int)
+            df_after['Distance'] = df_after['Distance'].astype(int)
+            
+            if max(df_prev['Distance']) > max(df_after['Distance']):
+                df_prev.to_csv(f, sep=',', index=False)
+            else:
+                df_after.to_csv(f, sep=',', index=False)
+            print("Fixed: ", f)
+            
