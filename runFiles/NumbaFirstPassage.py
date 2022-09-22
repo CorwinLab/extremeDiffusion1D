@@ -28,6 +28,7 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
     writer = csv.writer(f)
     if write_header:
         writer.writerow(["Position", "Quantile", "Variance"])
+        f.flush()
     
     time_interval = 3600 * 12
 
@@ -38,14 +39,20 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
 
         pdf = pyfirstPassageNumba.initializePDF(d)
         firstPassageCDF = pdf[0] + pdf[-1]
-        nFirstPassageCDFPrev = 1 - np.exp(-firstPassageCDF * N)
+        if N==10:
+            nFirstPassageCDFPrev = 1 - (1-firstPassageCDF)**N
+        else:
+            nFirstPassageCDFPrev = 1 - np.exp(-firstPassageCDF * N)
         t = 1
         last_save_time = time.time()
         while (nFirstPassageCDFPrev < 1) or (firstPassageCDF < 1 / N):
             pdf = pyfirstPassageNumba.iteratePDF(pdf)
 
             firstPassageCDF = pdf[0] + pdf[-1]
-            nFirstPassageCDF = 1 - np.exp(-firstPassageCDF * N)
+            if N==10:
+                nFirstPassageCDF = 1 - (1-firstPassageCDF)**N
+            else: 
+                nFirstPassageCDF = 1 - np.exp(-firstPassageCDF * N)
             nFirstPassagePDF = nFirstPassageCDF - nFirstPassageCDFPrev
             
             running_sum_squared += t ** 2 * nFirstPassagePDF
