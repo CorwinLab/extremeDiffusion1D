@@ -19,13 +19,13 @@ def runExperiment(x, times, save_dir, id):
 
     if os.path.exists(save_file):
         data = np.loadtxt(save_file)
-        times = data[:, 0]
-        if max(times) == save_times[-1]:
+        saved_times = data[:, 0]
+        if saved_times[-1] == times[-1]:
             sys.exit()
-        save_times = save_times[save_times > times]
+        times = times[times > saved_times[-1]]
         write_header = False
 
-    cdf.measureFirstPassageCDF(save_times, x, save_file, write_header=write_header)
+    cdf.measureFirstPassageCDF(times, x, save_file, write_header=write_header)
 
 if __name__ == '__main__':
     (topDir, x, tMax, nPoints, id) = sys.argv[1:]
@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     vars = {
         'x': int(x),
-        'times': list(times),
+        'times': [int(t) for t in times],
         'save_dir': topDir,
         'id': int(id),
     }
