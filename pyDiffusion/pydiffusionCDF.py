@@ -536,6 +536,22 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
                         quantile_achieved[i] = True
         f.close()
 
+    def measureFirstPassageCDF(self, times, distance, save_file, write_header=True):
+        f = open(save_file, 'a')
+        writer = csv.writer(f)
+
+        if write_header:
+            header = ['Time', 'Prob']
+            writer.writerow(header)
+            f.flush()
+
+        for t in times:
+            self.evolveToTime(t)
+            writer.writerow(t, float(self.getProbOutsidePositions(distance)))
+            f.flush()
+        f.close()
+
+
 
 class DiffusionPositionCDF(libDiffusion.DiffusionPositionCDF):
     """
