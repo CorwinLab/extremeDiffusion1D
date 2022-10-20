@@ -54,7 +54,27 @@ def variance(x, N, samples=10000):
     return theory
 
 def sam_variance_theory(x, N):
+    #N = N/2
     t_vals = t0(x, N)
     beta = 1 / (I(x / t_vals) - x**2 / t_vals ** 2 / np.sqrt(1 - (x/t_vals)**2))
     beta[x < np.log(N)] = 0
     return np.pi**2 * beta ** 2 / 6
+
+def mean_longTime(xvals, N, samples=10000): 
+    mean = []
+    tw = TracyWidom(beta=2)
+    for x in xvals: 
+        r1 = np.random.rand(samples)
+        r2 = np.random.rand(samples)
+        chi1 = tw.cdfinv(r1)
+        chi2 = tw.cdfinv(r2)
+        function_var = function(x, N, chi1, chi2)
+        t_val = t0(x, N)
+        prefactor = 1/(I(x / t_val) - x**2 / t_val ** 2 / np.sqrt(1 - (x/t_val)**2))
+        mean.append(t_val)
+
+    return mean
+
+def mean_theory(x, N): 
+    logN = np.log(N).astype(float)
+    return np.piecewise(x, [x < logN, x > logN], [lambda x: x, lambda x: mean_longTime(x, N)])
