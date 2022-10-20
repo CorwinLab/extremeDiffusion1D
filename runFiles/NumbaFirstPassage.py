@@ -8,11 +8,10 @@ import time
 from experimentUtils import saveVars
 
 
-def runExperiment(nExp, dMin, dMax, num_of_points, save_dir, sysID):
+def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
     N = float(f"1e{nExp}")
-    dMin = int(dMin * np.log(N)) + 1
     dMax = int(dMax * np.log(N))
-    distances = np.geomspace(dMin, dMax, num_of_points)
+    distances = np.geomspace(1, dMax, num_of_points)
     distances = np.unique(distances.astype(int))
 
     write_header = True
@@ -29,6 +28,7 @@ def runExperiment(nExp, dMin, dMax, num_of_points, save_dir, sysID):
     writer = csv.writer(f)
     if write_header:
         writer.writerow(["Position", "Quantile", "Variance"])
+        f.flush()
     
     time_interval = 3600 * 12
 
@@ -39,14 +39,20 @@ def runExperiment(nExp, dMin, dMax, num_of_points, save_dir, sysID):
 
         pdf = pyfirstPassageNumba.initializePDF(d)
         firstPassageCDF = pdf[0] + pdf[-1]
-        nFirstPassageCDFPrev = 1 - np.exp(-firstPassageCDF * N)
+        if N==10:
+            nFirstPassageCDFPrev = 1 - (1-firstPassageCDF)**N
+        else:
+            nFirstPassageCDFPrev = 1 - np.exp(-firstPassageCDF * N)
         t = 1
         last_save_time = time.time()
         while (nFirstPassageCDFPrev < 1) or (firstPassageCDF < 1 / N):
             pdf = pyfirstPassageNumba.iteratePDF(pdf)
 
             firstPassageCDF = pdf[0] + pdf[-1]
-            nFirstPassageCDF = 1 - np.exp(-firstPassageCDF * N)
+            if N==10:
+                nFirstPassageCDF = 1 - (1-firstPassageCDF)**N
+            else: 
+                nFirstPassageCDF = 1 - np.exp(-firstPassageCDF * N)
             nFirstPassagePDF = nFirstPassageCDF - nFirstPassageCDFPrev
             
             running_sum_squared += t ** 2 * nFirstPassagePDF
@@ -71,13 +77,11 @@ def runExperiment(nExp, dMin, dMax, num_of_points, save_dir, sysID):
 if __name__ == "__main__":
     # Test line:
     # save_dir, sysID, dMin, dMax, nExp, num_of_points = '.', 1, 0, 50, 24, 250
-    (save_dir, sysID, dMin, dMax, nExp, num_of_points) = sys.argv[1:]
-    dMin = float(dMin)
+    (save_dir, sysID, dMax, nExp, num_of_points) = sys.argv[1:]
     dMax = float(dMax)
     num_of_points = int(num_of_points)
 
     vars = {"nExp": nExp,
-            "dMin": dMin,
             "dMax": dMax,
             "num_of_points": num_of_points,
             "save_dir": save_dir,

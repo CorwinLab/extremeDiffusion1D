@@ -4,7 +4,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "diffusionCDFBase.hpp"
 #include "diffusionPDF.hpp"
 #include "diffusionPositionCDF.hpp"
 #include "diffusionTimeCDF.hpp"
@@ -138,17 +137,13 @@ PYBIND11_MODULE(libDiffusion, m)
       .def("evolveToCutoff", &FirstPassagePDF::evolveToCutoff)
       .def("evolveToCutoffMultiple", &FirstPassagePDF::evolveToCutoffMultiple);
 
-  py::class_<DiffusionPDF, RandomNumGenerator>(m, "DiffusionPDF")
+  py::class_<DiffusionPDF, RandomDistribution>(m, "DiffusionPDF")
       .def(py::init<const RealType,
-                    const double,
+                    std::string,
+                    std::vector<double>,
                     const unsigned long int,
                     const bool,
-                    const bool>(),
-           py::arg("numberOfParticles"),
-           py::arg("beta"),
-           py::arg("occupancySize"),
-           py::arg("ProbDistFlag") = true,
-           py::arg("staticEnvironment") = false)
+                    const bool>())
       .def("getOccupancy", &DiffusionPDF::getOccupancy)
       .def("setOccupancy", &DiffusionPDF::setOccupancy, py::arg("occupancy"))
       .def("getOccupancySize", &DiffusionPDF::getOccupancySize)
@@ -159,7 +154,6 @@ PYBIND11_MODULE(libDiffusion, m)
       .def("setStaticEnvironment", &DiffusionPDF::setStaticEnvironment)
       .def("resizeOccupancy", &DiffusionPDF::resizeOccupancy, py::arg("size"))
       .def("getNParticles", &DiffusionPDF::getNParticles)
-      .def("getBeta", &DiffusionPDF::getBeta)
       .def("setProbDistFlag",
            &DiffusionPDF::setProbDistFlag,
            py::arg("ProbDistFlag"))
@@ -190,21 +184,12 @@ PYBIND11_MODULE(libDiffusion, m)
            py::arg("nParticles"))
       .def("getCDF", &DiffusionPDF::getCDF);
 
-  py::class_<DiffusionCDF, RandomNumGenerator>(m, "DiffusionCDF")
-      .def(py::init<const double, const unsigned long int>(),
-           py::arg("beta"),
-           py::arg("tMax"))
-      .def("getBeta", &DiffusionCDF::getBeta)
-      .def("getCDF", &DiffusionCDF::getCDF)
-      .def("setCDF", &DiffusionCDF::setCDF, py::arg("CDF"))
-      .def("gettMax", &DiffusionCDF::gettMax)
-      .def("settMax", &DiffusionCDF::settMax)
-      .def("setBetaSeed", &DiffusionCDF::setBetaSeed, py::arg("seed"));
-
-  py::class_<DiffusionTimeCDF, DiffusionCDF>(m, "DiffusionTimeCDF")
-      .def(py::init<const double, const unsigned long int>(),
-           py::arg("beta"),
-           py::arg("tMax"))
+  py::class_<DiffusionTimeCDF, RandomDistribution>(m, "DiffusionTimeCDF")
+      .def(py::init<std::string, std::vector<double>, const unsigned long int>())
+      .def("getCDF", &DiffusionTimeCDF::getCDF)
+      .def("setCDF", &DiffusionTimeCDF::setCDF)
+      .def("gettMax", &DiffusionTimeCDF::gettMax)
+      .def("settMax", &DiffusionTimeCDF::settMax)
       .def("getGumbelVariance",
            static_cast<RealType (DiffusionTimeCDF::*)(RealType)>(
                &DiffusionTimeCDF::getGumbelVariance),
@@ -226,15 +211,17 @@ PYBIND11_MODULE(libDiffusion, m)
       .def("getSaveCDF", &DiffusionTimeCDF::getSaveCDF)
       .def("getxvals", &DiffusionTimeCDF::getxvals)
       .def("getProbandV", &DiffusionTimeCDF::getProbandV, py::arg("quantile"))
-      .def("generateBeta", &DiffusionTimeCDF::generateBeta);
-
-  py::class_<DiffusionPositionCDF, DiffusionCDF>(m, "DiffusionPositionCDF")
-      .def(py::init<const double,
+      .def("getProbOutsidePositions", &DiffusionTimeCDF::getProbOutsidePositions);
+      
+  py::class_<DiffusionPositionCDF, RandomDistribution>(m, "DiffusionPositionCDF")
+      .def(py::init<std::string,
+                    std::vector<double>,
                     const unsigned long int,
-                    std::vector<RealType>>(),
-           py::arg("beta"),
-           py::arg("tMax"),
-           py::arg("quantiles"))
+                    std::vector<RealType>>())
+      .def("getCDF", &DiffusionPositionCDF::getCDF)
+      .def("setCDF", &DiffusionPositionCDF::setCDF)
+      .def("gettMax", &DiffusionPositionCDF::gettMax)
+      .def("settMax", &DiffusionPositionCDF::settMax)
       .def("getPosition", &DiffusionPositionCDF::getPosition)
       .def("getQuantilePositions", &DiffusionPositionCDF::getQuantilePositions)
       .def("getQuantiles", &DiffusionPositionCDF::getQuantiles)

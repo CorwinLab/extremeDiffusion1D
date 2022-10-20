@@ -17,7 +17,6 @@ def runExperiment(
     probDistFlag,
     max_distance,
     tMax,
-    staticEnvironment,
 ):
     """
     Run simulation to get first passage time for some distances.
@@ -27,7 +26,6 @@ def runExperiment(
     tMax = int(tMax)
     num_of_save_distances = int(num_of_save_distances)
     probDistFlag = bool(int(probDistFlag))
-    staticEnvironment = bool(int(staticEnvironment))
     max_distance = int(max_distance)
 
     logN = np.log(N).astype(float)
@@ -43,12 +41,24 @@ def runExperiment(
         current_distance = quartiles[-1, 0]
         distances = distances[distances > current_distance]
         append = True
+        print("Loaded from file", flush=True)
     else:
-        d = DiffusionPDF(N, beta=beta, occupancySize=tMax, ProbDistFlag=probDistFlag, staticEnvironment=staticEnvironment)
+        d = DiffusionPDF(N, beta=beta, occupancySize=tMax, ProbDistFlag=probDistFlag)
         d.save_dir = save_dir
         d.id = sysID
         append = False
-    
+        print("Starting fresh", flush=True)
+
+    if os.path.exists(save_file):
+        quartiles = np.loadtxt(save_file, skiprows=1, delimiter=',')
+        current_distance = quartiles[-1, 0]
+        distances = distances[distances > current_distance]
+        append = True
+        print("Found existing save file", flush=True)
+        
+    if d.getOccupancySize() < tMax:
+        d.resizeOccupancy(tMax)
+
     d.evolveAndSaveFirstPassage(distances, save_file, append)
 
     fileIO.saveArrayQuad(save_occ, d.occupancy)
@@ -63,7 +73,6 @@ if __name__ == "__main__":
         num_of_save_distances,
         probDistFlag,
         tMax,
-        staticEnvironment,
     ) = sys.argv[1:]
 
     save_dir = f"{topDir}"
@@ -73,8 +82,10 @@ if __name__ == "__main__":
     save_occ = os.path.join(save_dir, f"FinalOccupancy{sysID}.txt")
     save_occ = os.path.abspath(save_occ)
     if os.path.exists(save_occ):
+        print("Found FinalOccupancy file so exiting", flush=True)
         exit()
-    max_distance = 100 * np.log(float(f"1e{N_exp}"))
+
+    max_distance = 1000 * np.log(float(f"1e{N_exp}"))
 
     vars = {
         "beta": beta,
@@ -87,7 +98,6 @@ if __name__ == "__main__":
         "save_occ": save_occ,
         "max_distance": max_distance,
         "tMax": tMax,
-        "staticEnvironment": staticEnvironment
     }
     vars_file = os.path.join(save_dir, "variables.json")
     today = date.today()

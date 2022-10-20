@@ -6,6 +6,7 @@
 #include <boost/random/beta_distribution.hpp>
 #include <boost/random/binomial_distribution.hpp>
 #include <boost/random/normal_distribution.hpp>
+#include <boost/random/triangle_distribution.hpp>
 #include <random>
 #include <string>
 #include <vector>
@@ -23,8 +24,24 @@ class RandomDistribution{
         double getBetaDistributed();
 
         // Bates distribution
-        unsigned int n;
         double getBatesDistributed();
+
+        // Triangular distribution
+        boost::random::triangle_distribution<> triang_dist;
+        double getTriangularDistributed();
+
+        // Cutoff Uniform distribution
+        std::uniform_real_distribution<> cutoff_uniform;
+        double getUniformDistributed();
+
+        // Quadratic distribution
+        double alpha;
+        double beta;
+        double getQuadraticDistributed();
+
+        // Delta distribution
+        std::discrete_distribution<> disc_dist;
+        double getDeltaDistributed();
         
         std::string distributionName;
         std::vector<double> parameters;

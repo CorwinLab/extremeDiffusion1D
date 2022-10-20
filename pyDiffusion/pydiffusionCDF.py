@@ -76,8 +76,8 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
         to a file.
     """
 
-    def __init__(self, beta: float, tMax: int):
-        super().__init__(beta, tMax)
+    def __init__(self, distributionName: str, parameters: List[float], tMax: int):
+        super().__init__(distributionName, parameters, tMax)
         self._last_saved_time = time.process_time()  # seconds
         self._save_interval = 3600 * 6  # Set to save occupancy every XX hours.
         self.id = None  # Need to also get SLURM ID
@@ -98,7 +98,7 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
         if (
             self.id == other.id
             and self.save_dir == other.save_dir
-            and self.beta == other.beta
+            and self.parameters == other.parameters
             and self.time == other.time
             and np.all(self.CDF == other.CDF)
             and self.tMax == other.tMax
@@ -115,12 +115,20 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
         self.setTime(time)
 
     @property
-    def beta(self):
-        return self.getBeta()
+    def distributionName(self):
+        return self.getDistributionName()
 
-    @beta.setter
-    def beta(self, beta):
-        self.setBeta(beta)
+    @distributionName.setter 
+    def distributionName(self, distributionName):
+        self.setDistributionName(distributionName)
+
+    @property
+    def parameters(self):
+        return self.getParameters()
+
+    @parameters.setter
+    def parameters(self, parameters):
+        self.setParameters(parameters)
 
     @property
     def CDF(self):
@@ -305,7 +313,8 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
 
         vars = {
             "time": self.time,
-            "beta": self.beta,
+            "distributionName": self.distributionName,
+            "parameters": self.parameters,
             "tMax": self.tMax,
             "id": self.id,
             "save_dir": self.save_dir,
@@ -340,7 +349,7 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
         cdf = np.zeros(vars["tMax"] + 1, dtype=np.quad)
         cdf[: vars["time"] + 1] = load_cdf
 
-        d = DiffusionTimeCDF(beta=vars["beta"], tMax=vars["tMax"])
+        d = DiffusionTimeCDF(vars['distributionName'], vars['parameters'], tMax=vars["tMax"])
         d.time = vars["time"]
         d.id = vars["id"]
         d.save_dir = vars["save_dir"]
@@ -461,11 +470,51 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
 
         f.close()
 
-    def evolveAndSaveFirstPassage(self, quantile: np.quad, distances: Sequence[int], save_file: str):
+    def evolveAndSaveFirstPassage(self, quantile: np.quad, distances: List[int], save_file: str, maxTime: int):
         """
         Measure the first passage time of a quantile at various distances.
+
+        Examples
+        --------
+        >>> tMax = 100
+        >>> N = 1e10
+        >>> x = 50
+        >>> cdf = DiffusionTimeCDF('beta', [1, 1], tMax)
+        >>> cdf.evolveAndSaveFirstPassage(N, x, 'test.csv', tMax)
         """
 
+        f = open(save_file, "a")
+        writer = csv.writer(f)
+
+        header = ["Distances", "Time", "Number Crossed", "Side"]
+        writer.writerow(header)
+        f.flush()
+
+        prev_upper_quantile_pos = 0
+        times_right_crossed = np.zeros(shape=len(distances))
+        prev_lower_quantile_pos = 0
+        times_left_crossed = np.zeros(shape=len(distances))
+        while self.time < maxTime:
+            self.iterateTimeStep()
+            current_upper_quantile_pos = self.findQuantile(quantile)
+            current_lower_quantile_pos = self.findLowerQuantile(quantile) 
+
+            for i, d in enumerate(distances): 
+                if prev_upper_quantile_pos < d and current_upper_quantile_pos >= d:
+                    writer.writerow([d, self.time, times_right_crossed[i], 'right'])
+                    times_right_crossed[i] += 1
+                        
+                if prev_lower_quantile_pos > -d and current_lower_quantile_pos <= -d:
+                    writer.writerow([d, self.time, times_left_crossed[i], 'left'])
+                    times_left_crossed[i] += 1
+            
+            prev_lower_quantile_pos = current_lower_quantile_pos
+            prev_upper_quantile_pos = current_upper_quantile_pos
+
+    def evolveAndSaveFirstPassageDoubleSided(self, quantile: np.quad, distances: int, save_file: str):
+        """
+        Measure the first passage time of a quantile at a given distance
+        """
         f = open(save_file, "a")
         writer = csv.writer(f)
 
@@ -473,17 +522,35 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
         writer.writerow(header)
         f.flush()
 
-        idx = 0
-        while idx < len(distances):
+        quantile_achieved = [False for _ in distances]
+        while not all(quantile_achieved):
             self.iterateTimeStep()
-            upper_dist = self.findQuantile(quantile)
-            lower_dist = abs(self.findLowerQuantile(quantile))
+            for i, distance in enumerate(distances):
+                if quantile_achieved[i]: 
+                    continue
+                else: 
+                    prob = self.getProbOutsidePositions(distance)
+                    if prob >= 1/quantile: 
+                        writer.writerow([distance, self.time])
+                        f.flush()
+                        quantile_achieved[i] = True
+        f.close()
 
-            if upper_dist >= distances[idx] or lower_dist >= distances[idx]:
-                row = [distances[idx], self.time]
-                writer.writerow(row)
-                f.flush()
-            idx += 1
+    def measureFirstPassageCDF(self, times, distance, save_file, write_header=True):
+        f = open(save_file, 'a')
+        writer = csv.writer(f)
+
+        if write_header:
+            header = ['Time', 'Prob']
+            writer.writerow(header)
+            f.flush()
+
+        for t in times:
+            self.evolveToTime(t)
+            writer.writerow(t, float(self.getProbOutsidePositions(distance)))
+            f.flush()
+        f.close()
+
 
 
 class DiffusionPositionCDF(libDiffusion.DiffusionPositionCDF):
@@ -498,8 +565,8 @@ class DiffusionPositionCDF(libDiffusion.DiffusionPositionCDF):
         return self.__str__()
 
     @property
-    def beta(self):
-        return self.getBeta()
+    def parameters(self):
+        return self.getParameters()
 
     @property
     def CDF(self):
@@ -508,10 +575,6 @@ class DiffusionPositionCDF(libDiffusion.DiffusionPositionCDF):
     @property
     def tMax(self):
         return self.gettMax()
-
-    @property
-    def setBetaSeed(self, seed):
-        super().setBetaSeed(seed)
 
     @property
     def position(self):

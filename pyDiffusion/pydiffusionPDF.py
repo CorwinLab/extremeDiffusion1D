@@ -83,8 +83,8 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         again.
     """
 
-    def __init__(self, nParticles: np.quad, beta: float, occupancySize: int, ProbDistFlag: bool=True, staticEnvironment: bool=False):
-        super().__init__(nParticles, beta, occupancySize, ProbDistFlag, staticEnvironment)
+    def __init__(self, nParticles: np.quad, distributionName: str, parameters: List[float], occupancySize: int, ProbDistFlag: bool=True, staticEnvironment: bool=False):
+        super().__init__(nParticles, distributionName, parameters, occupancySize, ProbDistFlag, staticEnvironment)
         self._last_saved_time = time.process_time()  # seconds
         self._save_interval = 3600 * 6  # Set to save occupancy every 2 hours.
         self.id = None  # Need to also get SLURM ID
@@ -107,7 +107,8 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             np.all(self.occupancy == other.occupancy)  # occupancy same
             and self.currentTime == other.currentTime
             and self.nParticles == other.nParticles
-            and self.beta == other.beta
+            and self.distributionName == other.distributionName
+            and self.parameters == other.parameters
             and self.probDistFlag == other.probDistFlag
             and self.edges == other.edges
             and self.id == other.id
@@ -117,6 +118,14 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             return True
 
         return False
+
+    @property
+    def distributionName(self):
+        return self.getDistributionName()
+
+    @distributionName.setter 
+    def distributionName(self, distributionName):
+        self.setDistributionName(distributionName)
 
     @property
     def time(self):
@@ -147,8 +156,12 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         return self.getNParticles()
 
     @property
-    def beta(self):
-        return self.getBeta()
+    def parameters(self):
+        return self.getParameters()
+
+    @parameters.setter
+    def parameters(self, parameters):
+        self.setParameters(parameters)
 
     @property
     def probDistFlag(self):
@@ -219,6 +232,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         """
 
         super().resizeOccupancy(size)
+        print("Resized Occuapancy to: ", self.getOccupancySize(), flush=True)
 
     def saveState(self):
         """
@@ -244,7 +258,8 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             "minIdx": minIdx,
             "maxIdx": maxIdx,
             "nParticles": str(self.nParticles),
-            "beta": self.beta,
+            "distributionName": self.distributionName,
+            "parameters": self.parameters,
             "probDistFlag": self.probDistFlag,
             "smallCutoff": self.smallCutoff,
             "largeCutoff": self.largeCutoff,
@@ -283,18 +298,17 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
 
         d = DiffusionPDF(
             np.quad(vars["nParticles"]),
-            vars["beta"],
+            vars["distributionName"],
+            vars["parameters"],
             vars["occupancySize"],
             vars["probDistFlag"],
             vars['staticEnvironment'],
         )
 
-        occupancyLoadLength = vars["maxIdx"] - vars["minIdx"] + 1
         loadOccupancy = fileIO.loadArrayQuad(occupancy_file)
         occupancy = np.zeros(vars["occupancySize"], dtype=np.quad)
         occupancy[vars["minIdx"] : vars["maxIdx"] + 1] = loadOccupancy
 
-        zerosConcate = np.zeros(vars["occupancySize"] - vars["time"])
         edges = (vars["minIdx"], vars["maxIdx"])
 
         d.occupancy = occupancy
@@ -306,18 +320,6 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         d.id = vars["id"]
 
         return d
-
-    def setBetaSeed(self, seed: int):
-        """
-        Set the random generator seed for the beta distribution.
-
-        Parameters
-        ----------
-        seed : int
-            Seed for random beta distribution generator
-        """
-
-        self.setBetaSeed(seed)
 
     def iterateTimestep(self):
         """
@@ -693,6 +695,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             header = ["Distance", "Time"]
             writer.writerow(header)
             f.flush()
+            print("Writing Header", flush=True)
         while idx < len(positions):
             self.iterateTimestep()
             maxIdx = self.getMaxIdx()

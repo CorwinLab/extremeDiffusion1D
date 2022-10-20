@@ -7,11 +7,12 @@
 
 #include "stat.hpp"
 #include "diffusionTimeCDF.hpp"
-#include "diffusionCDFBase.hpp"
+#include "randomDistribution.hpp"
 
-DiffusionTimeCDF::DiffusionTimeCDF(const double _beta,
+DiffusionTimeCDF::DiffusionTimeCDF(std::string _distributionName,
+                                   std::vector<double> _parameters,
                                    const unsigned long int _tMax)
-    : DiffusionCDF(_beta, _tMax)
+    : RandomDistribution(_distributionName, _parameters), tMax(_tMax)
 {
   CDF.resize(tMax + 1);
   CDF[0] = 1;
@@ -25,7 +26,7 @@ void DiffusionTimeCDF::iterateTimeStep()
       CDF_next[n] = 1; // Need CDF(n=0, t) = 1
     }
     else if (n == t + 1) {
-      RealType beta = RealType(generateBeta());
+      RealType beta = RealType(generateRandomVariable());
       CDF_next[n] = beta * CDF[n - 1];
     }
     else {
@@ -34,7 +35,7 @@ void DiffusionTimeCDF::iterateTimeStep()
         continue // or could even break?
       }
       */
-      RealType beta = RealType(generateBeta());
+      RealType beta = RealType(generateRandomVariable());
       CDF_next[n] = beta * CDF[n - 1] + (1 - beta) * CDF[n];
     }
   }
@@ -47,7 +48,7 @@ long int DiffusionTimeCDF::findQuantile(RealType quantile)
   unsigned long int quantilePosition;
   for (unsigned long int n = t; n >= 0; n--) {
     if (CDF[n] > 1 / quantile) {
-      quantilePosition = 2 * n + 2 - t;
+      quantilePosition = 2 * n - t;
       break;
     }
   }
@@ -57,8 +58,8 @@ long int DiffusionTimeCDF::findQuantile(RealType quantile)
 long int DiffusionTimeCDF::findLowerQuantile(RealType quantile) {
   long int quantilePosition=0;
   for (unsigned long int n = 0; n <= t; n++) {
-    if (CDF[n] < 1. - 1 / quantile) {
-      quantilePosition = 2 * n - t;
+    if (CDF[n] < 1. - 1. / quantile) {
+      quantilePosition = 2 * n - t - 2;
       break;
     }
   }
@@ -141,4 +142,37 @@ std::pair<RealType, float> DiffusionTimeCDF::getProbandV(RealType quantile)
 std::vector<RealType> DiffusionTimeCDF::getSaveCDF()
 {
   return slice(CDF, 0, t);
+}
+
+RealType DiffusionTimeCDF::getProbOutsidePositions(unsigned int x){
+  RealType probOutside = 0;
+  if (x > t){
+    return 0;
+  }
+
+  for (unsigned int n=t; n>=0; n--){
+    int xval = 2 * n - t;
+    if (xval == x){
+      probOutside += CDF.at(n);
+      break;
+    }
+    else if (xval < x)
+    {
+      probOutside += CDF.at(n+1);
+      break;
+    }
+  }
+
+  for (unsigned int n=0; n<=t; n++){
+    int xval = 2 * n - t;
+    if (xval == -x){
+      probOutside += 1 - CDF.at(n+1);
+      break;
+    }
+    if (xval > -x){
+      probOutside += 1 - CDF.at(n);
+      break;
+    }
+  }
+  return probOutside;
 }

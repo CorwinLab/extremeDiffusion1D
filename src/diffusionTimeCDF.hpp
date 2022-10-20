@@ -12,22 +12,27 @@
 #include <random>
 #include <utility>
 #include <vector>
-#include "diffusionCDFBase.hpp"
-#include "randomNumGenerator.hpp"
+#include "randomDistribution.hpp"
 
 typedef boost::multiprecision::float128 RealType;
 
 // Base Diffusion class
-class DiffusionTimeCDF : public DiffusionCDF {
+class DiffusionTimeCDF : public RandomDistribution {
 private:
   unsigned long int t = 0;
+  unsigned long int tMax;
+  std::vector<RealType> CDF;
 
 public:
-  DiffusionTimeCDF(const double _beta, const unsigned long int _tMax);
+  DiffusionTimeCDF(std::string _distributionName, std::vector<double> _parameters, const unsigned long int _tMax);
 
   unsigned long int getTime() { return t; };
   void setTime(unsigned long int _t) { t = _t; };
-
+  std::vector<RealType> getCDF() { return CDF; };
+  void setCDF(std::vector<RealType> _CDF) { CDF = _CDF; };
+  
+  unsigned long int gettMax() { return tMax; };
+  void settMax(unsigned int long _tMax) { tMax = _tMax; };
   // Functions that do things
   void iterateTimeStep();
 
@@ -35,6 +40,7 @@ public:
   std::vector<long int> findQuantiles(std::vector<RealType> quantiles);
 
   long int findLowerQuantile(RealType quantile);
+  RealType getProbOutsidePositions(unsigned int x);
 
   RealType getGumbelVariance(RealType nParticles);
   std::vector<RealType> getGumbelVariance(std::vector<RealType> nParticles);

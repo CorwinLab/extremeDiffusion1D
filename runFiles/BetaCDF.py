@@ -54,21 +54,22 @@ def runExperiment(
         save_times = save_times[save_times > rec.time]
         append = True
     else:
-        rec = DiffusionTimeCDF(beta, tMax)
+        rec = DiffusionTimeCDF('beta', [beta, beta], tMax)
         rec.id = sysID
         rec.save_dir = save_dir
         append = False
-     
     rec.evolveAndGetVariance(save_times, nParticles, save_file, append=append)
 
 if __name__ == "__main__":
+    # Test Line
+    # topDir, sysID, beta, num_of_save_times = '.', 1, 1, 10
     (
         topDir,
         sysID,
         beta,
         num_of_save_times,
     ) = sys.argv[1:]
-
+    
     save_dir = f"{topDir}"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
