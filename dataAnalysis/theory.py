@@ -426,7 +426,7 @@ def gumbel_var(t, N):
     )
 
 
-def log_moving_average(time, data, N, window_size=10):
+def log_moving_average(time, data, window_size=10):
     assert window_size > 1
     window_min = time[0]
     window_max = window_size * window_min

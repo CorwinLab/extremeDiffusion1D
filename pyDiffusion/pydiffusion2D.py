@@ -66,6 +66,87 @@ def generateGCF(pos, xi, fourierCutoff=20):
 	field /= np.sqrt(np.sum(field**2))
 	return field
 
+@njit
+def generateGCF1D(pos, xi, fourierCutoff=20):
+	"""
+	Parameters
+	----------
+	pos : numpy array
+		Position of particles. Array should have: rows = particleID and
+		cols = components
+
+	xi : float
+		Correlation length
+
+	fourierCutoff : int (20)
+		Number of terms to include in fourier transform.
+
+	Returns
+	-------
+	c : numpy array 
+		Gaussian correlated field with shape rows = particleID and 
+		cols = components
+
+	Examples
+	--------
+	import numpy as np
+	from pyDiffusion.pydiffusion2D import generateGCF1D
+	from matplotlib import pyplot as plt
+
+	pos = np.arange(-10, 10, 0.1)
+	xi = 1
+	field = generateGCF1D(pos, xi)
+
+	fig, ax = plt.subplots()
+	ax.scatter(pos, field)
+	ax.set_xlabel("Position")
+	ax.set_ylabel("Bias")
+	fig.savefig("Field.png", bbox_inches='tight')
+	"""
+	num_particles = len(pos)
+	Lx = 2*(max(pos) - min(pos)) + 3 * xi
+	# rotate positions
+
+	field = np.zeros(pos.shape)
+	A = np.random.normal(0, 1/(2*np.pi), size=(fourierCutoff, 1))
+	B = np.random.uniform(0, 2*np.pi, size=(fourierCutoff, 1))
+	for pID in range(num_particles):
+		for n in range(fourierCutoff):
+			kn = 2 * np.pi * n / Lx 
+			df = 2*np.pi*np.sqrt(2)*xi*A[n]*np.exp(-(kn**2)*xi**2 / 8)*np.cos(B[n] + kn * pos[pID])
+			field[pID] += df[0]
+
+	field -= np.mean(field)
+	field /= np.sqrt(np.sum(field**2))
+	return field
+
+@njit
+def iterateTimeStep1D(positions, xi):
+	'''
+	Parameters
+	----------
+	positions : numpy array 
+		Position of particles. Array should have: rows = particleID and
+		cols = components
+
+	xi : float 
+		Correlation length
+
+	Returns 
+	-------
+	positions : numpy array 
+		Updated position of particles 
+
+	maxPos : numpy array 
+		Position of particle furthest from the origin
+	'''
+	biases = generateGCF1D(positions, xi)
+	num_particles = len(positions)
+	for idx in range(num_particles):
+		positions[idx] += np.random.normal(biases[idx], xi)
+	maxPos = max(positions)
+	return positions, maxPos
+
 @njit 
 def iterateTimeStep(positions, xi):
 	'''
@@ -110,6 +191,21 @@ def iterateTimeStep(positions, xi):
 	maxPos = positions[maxIdx, :]
 	return positions, maxPos
 
+def evolveAndSaveMaxDistance1D(nParticles, save_times, xi, save_file, save_positions):
+	f = open(save_file, 'a')
+	writer = csv.writer(f)
+	writer.writerow(['Time', 'Position'])
+	positions = np.zeros(shape=(nParticles))
+	t = 0 
+	while t < max(save_times): 
+		positions, maxPos = iterateTimeStep1D(positions, xi)
+		t+=1
+		if t in save_times:
+			writer.writerow([t, maxPos])
+
+	f.close()
+	np.savetxt(save_positions, positions)
+	
 def evolveAndSaveMaxDistance(nParticles, save_times, xi, save_file, save_positions):
 	'''
 	Paramters

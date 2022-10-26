@@ -3,6 +3,7 @@ import os
 import sys
 sys.path.append("../../dataAnalysis")
 from fptTheory import variance, sam_variance_theory, var_power_long, var_short, mean_theory
+from theory import log_moving_average
 from matplotlib import pyplot as plt
 import glob
 import pandas as pd
@@ -69,12 +70,13 @@ def calculateMeanVarCDF(files, max_dist, verbose=True):
     new_df = pd.DataFrame(np.array([pos, mean[:, 1], mean[:, 2], variance[:, 1]]).T, columns=['Distance', 'Mean Quantile', 'Sampling Variance', 'Env Variance'])
     return new_df, number_of_files
 
-home_dir = '/home/jacob/Desktop/talapasMount/JacobData/FPTDiscretePaper'
+home_dir = '/home/jacob/Desktop/corwinLabMount/CleanData/FPTDiscretePaper'
 dirs = os.listdir(home_dir)
-max_dists = [2301, 4605, 11512, 27631]
+#max_dists = [2301, 4605, 11512, 27631]
 Ns = [1, 2, 5, 12, 28]
 N_vals = [float(f"1e{i}") for i in Ns]
-max_dists = np.array(np.log(N_vals)) * 750
+#max_dists = np.array(np.log(N_vals)) * 750
+max_dists = [1725, 3452, 8630, 20721, 41446]
 Nlabels = [r'$N=10$', r'$N=10^2$', r'$N=10^{5}$', r'$N=10^{12}$', r'$N=10^{28}$']
 recalculate_mean = False
 if recalculate_mean:
@@ -96,7 +98,7 @@ for N in Ns:
 
 cdf_dir = '/home/jacob/Desktop/corwinLabMount/CleanData/FPTCDFPaper'
 dirs = os.listdir(cdf_dir)
-recalculate_mean = False
+recalculate_mean = True
 if recalculate_mean: 
     nFiles = []
     for max_dist, N in zip(max_dists, Ns):
@@ -233,6 +235,11 @@ ax.plot(einstein_theoretical_data[:, 0] / logN, einstein_theoretical_data[:, 1],
 ax.plot(cdf_df['Distance'] / logN, env_theory, ls='--', c=quantile_color)
 ax.plot(cdf_df['Distance'] / logN, sam_theory, ls='--', c=gumbel_color)
 ax.plot(cdf_df['Distance'] / logN, env_theory + sam_theory, ls='--', c=max_color)
+
+decade_scaling = 25
+env_measured = max_df['Variance'] - sam_variance_theory(max_df['Distance'].values, N)
+dist_new, env_measured = log_moving_average(max_df['Distance'].values, env_measured, 10**(1/decade_scaling))
+ax.plot(dist_new / logN, env_measured, ls='--', c='tab:orange')
 
 xvals = np.array([100, 600])
 ax.plot(xvals, xvals ** 4, label=r'$L^{4}$', c='k', ls='--')
