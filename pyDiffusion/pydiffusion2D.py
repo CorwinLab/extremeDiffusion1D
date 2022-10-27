@@ -104,7 +104,7 @@ def generateGCF1D(pos, xi, fourierCutoff=20):
 	fig.savefig("Field.png", bbox_inches='tight')
 	"""
 	num_particles = len(pos)
-	Lx = 2*(max(pos) - min(pos)) + 3 * xi
+	Lx = 2*(np.max(pos) - np.min(pos)) + 3 * xi
 	# rotate positions
 
 	field = np.zeros(pos.shape)
@@ -144,7 +144,7 @@ def iterateTimeStep1D(positions, xi):
 	num_particles = len(positions)
 	for idx in range(num_particles):
 		positions[idx] += np.random.normal(biases[idx], xi)
-	maxPos = max(positions)
+	maxPos = np.max(positions)
 	return positions, maxPos
 
 @njit 
@@ -195,6 +195,7 @@ def evolveAndSaveMaxDistance1D(nParticles, save_times, xi, save_file, save_posit
 	f = open(save_file, 'a')
 	writer = csv.writer(f)
 	writer.writerow(['Time', 'Position'])
+	f.flush()
 	positions = np.zeros(shape=(nParticles))
 	t = 0 
 	while t < max(save_times): 
@@ -202,6 +203,7 @@ def evolveAndSaveMaxDistance1D(nParticles, save_times, xi, save_file, save_posit
 		t+=1
 		if t in save_times:
 			writer.writerow([t, maxPos])
+			f.flush()
 
 	f.close()
 	np.savetxt(save_positions, positions)
