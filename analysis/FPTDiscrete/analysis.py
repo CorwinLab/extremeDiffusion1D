@@ -76,9 +76,9 @@ dirs = os.listdir(home_dir)
 Ns = [1, 2, 5, 12, 28]
 N_vals = [float(f"1e{i}") for i in Ns]
 #max_dists = np.array(np.log(N_vals)) * 750
-max_dists = [1725, 3452, 8630, 20721, 41446]
+max_dists = [1725, 3452, 8630, 20721, np.log(1e28) * 750]
 Nlabels = [r'$N=10$', r'$N=10^2$', r'$N=10^{5}$', r'$N=10^{12}$', r'$N=10^{28}$']
-recalculate_mean = False
+recalculate_mean = True
 if recalculate_mean:
     nFiles = []
     for max_dist, N in zip(max_dists, Ns):

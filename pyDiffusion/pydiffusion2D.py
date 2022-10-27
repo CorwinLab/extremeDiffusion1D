@@ -117,7 +117,7 @@ def generateGCF1D(pos, xi, fourierCutoff=20):
 			field[pID] += df[0]
 
 	field -= np.mean(field)
-	field /= np.sqrt(np.sum(field**2))
+	#field /= np.sqrt(np.sum(field**2))
 	return field
 
 @njit
