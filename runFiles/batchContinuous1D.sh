@@ -1,22 +1,20 @@
 #!/bin/bash
 #SBATCH --job-name=Cont
-#SBATCH --time=0-12:00:00
-#SBATCH --error=/home/jhass2/CleanData/logs/Continuous/%A-%a.err
+#SBATCH --time=1-00:00:00
+#SBATCH --error=/home/jhass2/CleanData/logs/ContinuousCorrected/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --array=0-499
-#SBATCH --output=/home/jhass2/CleanDatalogs/Continuous/%A-%a.out
-#SBATCH --account=jamming
-#SBATCH --partition=preempt
-#SBATCH --requeue
+#SBATCH --output=/home/jhass2/CleanData/logs/ContinuousCorrected/%A-%a.out
 
-MINTIME=10
-MAXTIME=100000
+MINTIME=1
+MAXTIME=10000
 NPARTICLES=100000
-NUMSAVETIMES=5000
+NUMSAVETIMES=2500
 XI=5
-TOPDIR=/home/jhass2/CleanData/Continuous/
+D=1
+TOPDIR=/home/jhass2/CleanData/ContinuousCorrected/
 
 mkdir -p $TOPDIR
 
-python3 Continuous1D.py $TOPDIR $SLURM_ARRAY_TASK_ID $MINTIME $MAXTIME $NPARTICLES $NUMSAVETIMES $XI
+python3 Continuous1D.py $TOPDIR $SLURM_ARRAY_TASK_ID $MINTIME $MAXTIME $NPARTICLES $NUMSAVETIMES $XI $D

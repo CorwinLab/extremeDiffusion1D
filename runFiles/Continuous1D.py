@@ -5,14 +5,15 @@ import sys
 import os
 from datetime import date
 
-def runExperiment(nParticles, minTime, maxTime, num_save_times, xi, save_file, save_positions):
-    save_times = np.geomspace(minTime, maxTime, num_save_times)
-    pydiffusion2D.evolveAndSaveMaxDistance1D(nParticles, save_times, xi, save_file, save_positions)
+def runExperiment(nParticles, minTime, maxTime, num_save_times, xi, D, save_file, save_positions):
+    save_times = np.geomspace(minTime, maxTime, num_save_times).astype(int)
+    save_times = np.unique(save_times)
+    pydiffusion2D.evolveAndSaveMaxDistance1D(nParticles, save_times, xi, D, save_file, save_positions)
 
 if __name__ == '__main__':
     # testing code  
-    topDir, sysID, minTime, maxTime, nParticles, num_save_times, xi = '.', 0, 1, 1500, int(1e6), 2500, 2
-    '''(
+    # topDir, sysID, minTime, maxTime, nParticles, num_save_times, xi, D = '.', 0, 1, 1500, int(1e6), 2500, 2, 1
+    (
         topDir,
         sysID,
         minTime,
@@ -20,8 +21,9 @@ if __name__ == '__main__':
         nParticles,
         num_save_times,
         xi,
+        D, 
     ) = sys.argv[1:]
-    '''
+    
     save_dir = f"{topDir}"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -35,6 +37,7 @@ if __name__ == '__main__':
         "maxTime": maxTime,
         "num_save_times": num_save_times,
         "xi": xi,
+        "D": D,
         "save_file": save_file,
         "save_positions": save_positions
     }
