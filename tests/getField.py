@@ -2,7 +2,7 @@ import numpy as np
 from pyDiffusion import pydiffusion2D
 from matplotlib import pyplot as plt
 
-xi = 2
+xi = 1
 nParticles = int(1e4)
 tMax = 250
 D = 1/2
@@ -19,4 +19,5 @@ fig, ax = plt.subplots()
 ax.scatter(positions, field)
 ax.set_xlabel("Particle Position")
 ax.set_ylabel("Field Magnitude")
-fig.savefig("Field.png", bbox_inches='tight')
+ax.set_title(r"$\xi = 5$")
+fig.savefig(f"Field{xi}.png", bbox_inches='tight')

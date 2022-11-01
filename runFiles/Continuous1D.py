@@ -10,7 +10,9 @@ def runExperiment(nParticles, minTime, maxTime, num_save_times, xi, save_file, s
     pydiffusion2D.evolveAndSaveMaxDistance1D(nParticles, save_times, xi, save_file, save_positions)
 
 if __name__ == '__main__':
-    (
+    # testing code  
+    topDir, sysID, minTime, maxTime, nParticles, num_save_times, xi = '.', 0, 1, 1500, int(1e6), 2500, 2
+    '''(
         topDir,
         sysID,
         minTime,
@@ -19,7 +21,7 @@ if __name__ == '__main__':
         num_save_times,
         xi,
     ) = sys.argv[1:]
-
+    '''
     save_dir = f"{topDir}"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
