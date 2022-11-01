@@ -130,7 +130,7 @@ def iterateTimeStep1D(positions, xi, D):
 		Updated position of particles 
 	'''
 	biases = getGCF1D(positions, xi, D, grid_spacing=0.1)
-	positions += np.random.normal(biases, 2*D)
+	positions += np.random.normal(biases, np.sqrt(2*D))
 	return positions
 
 @njit 
