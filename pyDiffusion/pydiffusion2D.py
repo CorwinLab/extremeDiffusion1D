@@ -107,10 +107,9 @@ def getGCF1D(positions, correlation_length, D, grid_spacing=0.1):
     grid = np.linspace(np.min(positions) - 3 * correlation_length, np.max(positions) + 3 * correlation_length, int(noise_points))
     noise = np.random.randn(int(noise_points))
     
-    kernel_x = np.arange(-3 * correlation_length, 3 * correlation_length + 0.1, grid_spacing)
+    kernel_x = np.arange(-3 * correlation_length, 3 * correlation_length, grid_spacing)
     kernel = np.sqrt(D/correlation_length / np.sqrt(np.pi)) * np.exp(-kernel_x**2/2/correlation_length**2)
     noise = np.convolve(noise, kernel, 'same')
-
     field = np.interp(positions, grid, noise)
     return field
 
@@ -186,10 +185,10 @@ def evolveAndSaveMaxDistance1D(nParticles, save_times, xi, D, save_file, save_po
 	positions = np.zeros(shape=(nParticles))
 	t = 0 
 	while t < max(save_times): 
-		positions, maxPos = iterateTimeStep1D(positions, xi, D)
+		positions = iterateTimeStep1D(positions, xi, D)
 		t+=1
 		if t in save_times:
-			writer.writerow([t, maxPos])
+			writer.writerow([t, np.max(positions)])
 			f.flush()
 
 	f.close()
