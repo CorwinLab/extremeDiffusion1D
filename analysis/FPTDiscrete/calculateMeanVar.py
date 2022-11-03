@@ -15,8 +15,19 @@ recalculate_mean = True
 if recalculate_mean:
     nFiles = []
     for max_dist, N in zip(max_dists, Ns):
+        if not (N==12):
+            continue
         dir = home_dir + f'/{N}/Q*.txt'
         files = glob.glob(dir)
+        '''This is to analyze only the last 5000 files
+        analysis_files = []
+        for f in files: 
+            sysID = os.path.basename(f)
+            sysID = sysID.replace("Quartiles", '')
+            sysID = int(sysID.replace(".txt", ''))
+            if sysID >= 15000:
+                analysis_files.append(f)
+                print(sysID)'''
         df, number_of_files = calculateMeanVarDiscrete(files, max_dist, verbose=True)
         path = os.path.join(home_dir,f'{N}', 'MeanVariance.csv')
         df.to_csv(path, index=False)
@@ -31,7 +42,7 @@ for N in Ns:
 
 cdf_dir = '/home/jacob/Desktop/corwinLabMount/CleanData/FPTCDFPaper'
 dirs = os.listdir(cdf_dir)
-recalculate_mean = True
+recalculate_mean = False
 if recalculate_mean: 
     nFiles = []
     for max_dist, N in zip(max_dists, Ns):
@@ -51,7 +62,7 @@ for N in Ns:
 
 einstein_files = glob.glob('/home/jacob/Desktop/talapasMount/JacobData/FPTDiscreteE/12/Q*.txt')
 max_dist = 20721
-recalculate_mean = True
+recalculate_mean = False
 if recalculate_mean: 
     df, number_of_files = calculateMeanVarDiscrete(einstein_files, max_dist)
     df.to_csv('/home/jacob/Desktop/talapasMount/JacobData/FPTDiscreteE/12/MeanVariance.csv', index=False)

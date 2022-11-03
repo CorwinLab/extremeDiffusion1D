@@ -67,7 +67,7 @@ def generateGCF(pos, xi, fourierCutoff=20):
 	return field
 
 def getGCF1D(positions, correlation_length, D, grid_spacing=0.1):
-    '''
+	'''
     Generate a gaussian correlated field at given positions and correlation length.  
 
     Paramters
@@ -102,16 +102,17 @@ def getGCF1D(positions, correlation_length, D, grid_spacing=0.1):
     ax.set_title(f"Correlation Length = {correlation_length}")
     fig.savefig(f"TestingField{correlation_length}.png", bbox_inches='tight')
     '''
+	positions = np.array(positions) / grid_spacing
+	correlation_length = correlation_length / grid_spacing
 
-    noise_points = (np.max(positions) - np.min(positions) + 6 * correlation_length) / grid_spacing
-    grid = np.linspace(np.min(positions) - 3 * correlation_length, np.max(positions) + 3 * correlation_length, int(noise_points))
-    noise = np.random.randn(int(noise_points))
-    
-    kernel_x = np.arange(-3 * correlation_length, 3 * correlation_length, grid_spacing)
-    kernel = np.sqrt(D/correlation_length / np.sqrt(np.pi)) * np.exp(-kernel_x**2/2/correlation_length**2)
-    noise = np.convolve(noise, kernel, 'same')
-    field = np.interp(positions, grid, noise)
-    return field
+	grid = np.arange(np.min(positions) - 3 * correlation_length, np.max(positions) + 3 * correlation_length, step=1)
+	noise = np.random.randn(len(grid))
+
+	kernel_x = np.arange(-3 * correlation_length, 3 * correlation_length, 1)
+	kernel = np.sqrt(D/correlation_length / np.sqrt(np.pi)) * np.exp(-kernel_x**2/2/correlation_length**2)
+	field = np.convolve(kernel, noise, 'same')
+	field = np.interp(positions, grid, field)
+	return field
 
 def iterateTimeStep1D(positions, xi, D):
 	'''

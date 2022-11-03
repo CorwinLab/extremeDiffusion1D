@@ -28,7 +28,7 @@ meanFile = os.path.join(dir, 'MeanVariance.csv')
 max_df = pd.read_csv(meanFile)
 N = float(f'1e{Nexp}')
 logN = np.log(N)
-ax.set_title(f"N={prettifyQuad(N)}")
+ax.set_title(f"N=1e12")
 
 cdf_dir = f'/home/jacob/Desktop/corwinLabMount/CleanData/FPTCDFPaper/{Nexp}/'
 cdf_file = os.path.join(cdf_dir, 'MeanVariance.csv')
@@ -56,6 +56,12 @@ decade_scaling = 25
 env_measured = max_df['Variance'] - sam_variance_theory(max_df['Distance'].values, N)
 dist_new, env_measured = log_moving_average(max_df['Distance'].values, env_measured, 10**(1/decade_scaling))
 dist_new, forth_moment = log_moving_average(max_df['Distance'].values, max_df['Forth Moment'], 10**(1/decade_scaling))
+
+'''Reset variables so no averaging
+env_measured = max_df['Variance'] - sam_variance_theory(max_df['Distance'].values, N)
+dist_new = max_df['Distance'].values 
+forth_moment = max_df['Forth Moment'].values
+'''
 ax.plot(dist_new / logN, env_measured, c='tab:orange', label=r'$\mathrm{Var}(\tau_{\mathrm{Min}}) - \mathrm{Var}(\tau_{\mathrm{Sam}})$')
 ax.fill_between(dist_new / logN, env_measured - np.sqrt(forth_moment), env_measured + np.sqrt(forth_moment), color='tab:orange', alpha=0.2)
 
