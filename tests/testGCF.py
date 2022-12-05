@@ -1,6 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from pyDiffusion.pydiffusion2D import getGCFEric, getGCF1D
+from pyDiffusion.pydiffusion2D import getGCF1D
 
 step_size = 0.1
 
@@ -11,8 +11,7 @@ numSystems = 1000
 two_point = None
 average_field = None
 for j in range(numSystems):
-    print(j)
-    field = getGCFEric(positions, xi, D, grid_spacing=0.01)
+    field = getGCF1D(positions, xi, D, grid_spacing=0.01)
     field_at_middle = field[0]
     if two_point is None:
         two_point = field_at_middle * field[0: ]
@@ -35,16 +34,16 @@ ax.plot(x, theoretical, ls='--', c='k')
 ax.set_xlabel(r"$|x-x'|$")
 ax.set_ylabel(r"$\langle \xi(x) \xi(x') \rangle$")
 ax.set_xlim([0, 200])
-fig.savefig("TwoPointCorrelator.png", bbox_inches='tight')
+fig.savefig("TwoPointCorrelator.pdf", bbox_inches='tight')
 
 fig, ax = plt.subplots()
 ax.plot(positions, field)
-ax.set_xlabel("Position")
-ax.set_ylabel("Field Strength")
-fig.savefig("Field.png", bbox_inches='tight')
+ax.set_xlabel(r"$x$")
+ax.set_ylabel(r"$\xi(x)$")
+fig.savefig("Field.pdf", bbox_inches='tight')
 
 fig, ax = plt.subplots()
 ax.plot(positions, average_field)
 ax.set_xlabel("Position")
 ax.set_ylabel("Average Field Strength")
-fig.savefig("AverageField.png", bbox_inches='tight')
+fig.savefig("AverageField.pdf", bbox_inches='tight')

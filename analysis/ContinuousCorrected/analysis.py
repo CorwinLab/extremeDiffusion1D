@@ -3,15 +3,36 @@ from matplotlib import pyplot as plt
 import glob
 import pandas as pd
 import os 
+import sys 
+sys.path.append("../../dataAnalysis")
+from theory import KPZ_mean_fit, KPZ_var_fit
+
+tw_mean = -1.771 
+tw_var = 0.813
+gumbel_mean = 0.577
+gumbel_var = np.pi**2 / 6
 
 def theoretical_mean(r0, D, N, t):
-    return 4 * np.sqrt(6) * D / r0 * np.sqrt(np.sqrt(1+ r0**2 *np.log(N) / 12 / D / t) - 1) * t
+    gamma = np.log(N) / t
+    return t * np.sqrt(4 * D * gamma) * (1 - gamma * r0**2/96/D) + 1/2 * r0**(2/3) * (4*D*gamma)**(1/6)*t**(1/3) * tw_mean + np.sqrt(D / gamma) * gumbel_mean
 
-dir = "/home/jacob/Desktop/corwinLabMount/CleanData/ContinuousLonger/"
+def theoretical_var(r0, D, N, t): 
+    gamma = np.log(N) / t
+    return (1/2 * r0**(2/3) * (4*D*gamma)**(1/6)*t**(1/3))**2 * tw_var + D / gamma * np.pi**2 / 6
+
+def theoretical_mean_long_time(r0, D, N, t):
+    g = r0 * np.log(N) / np.sqrt(4 * D * t)
+    return r0 * np.sqrt(g) * (4 * D * t / r0**2)**(3/4) + r0 / 2 / np.sqrt(g) * (4*D*t/r0**2)**(1/4) * (gumbel_mean + KPZ_mean_fit(g**2))
+
+def theoretical_var_long_time(r0, D, N, t):
+    g = r0 * np.log(N) / np.sqrt(4 * D * t)
+    return (r0 / 2 / np.sqrt(g) * (4*D*t/r0**2)**(1/4))**2 * (gumbel_var + KPZ_var_fit(g**2))
+
+dir = "/home/jacob/Desktop/corwinLabMount/CleanData/Continuous/"
 folders = os.listdir(dir)
 for d in folders:
-    files = glob.glob(f"/home/jacob/Desktop/corwinLabMount/CleanData/ContinuousLonger/{d}/Max*.txt")
-    max_dist = 100000
+    files = glob.glob(f"/home/jacob/Desktop/corwinLabMount/CleanData/Continuous/{d}/Max*.txt")
+    max_dist = 10000
     mean = None
     var = None
     num_files = 0
@@ -24,7 +45,6 @@ for d in folders:
             continue
 
         time = data[:, 0]
-        num_files += 1
         if mean is None: 
             mean = data[:, 1]
         else: 
@@ -34,8 +54,11 @@ for d in folders:
             var = data[:, 1]**2
         else: 
             var += data[:, 1]**2
+        num_files += 1
+    
     if num_files == 0:
         continue
+    print("Number of files:", num_files)
     mean /= num_files
     var = var / num_files - mean**2
     np.savetxt(dir + d + "/Mean.txt", mean)
@@ -44,29 +67,29 @@ for d in folders:
 
 xvals = np.array([100, 1000])
 N = 100000
-D = 2
+D = 1
 
 fig, ax = plt.subplots()
 ax.set_xscale("log")
 ax.set_yscale("log")
 ax.set_xlabel("Time")
 ax.set_ylabel("Mean Maximum")
-ax.set_xlim([1, 100000])
+ax.set_xlim([1, 10000])
 
 for r0 in folders:
     if not os.path.exists(dir + r0 + "/Mean.txt"):
         continue
     mean = np.loadtxt(dir + r0 + "/Mean.txt")
     time = np.loadtxt(dir + r0 + "/Time.txt")
-    ax.plot(time, mean, label=fr"$r_c={r0}$")
+    ax.plot(time, mean, label=fr"$r_c={r0}, D=1$")
     r0 = float(r0)
     ax.plot(time, theoretical_mean(2 * np.sqrt(np.pi) * r0, D, N, time), ls='--')
-    #ax.plot(np.geomspace(1, 10**5), np.sqrt(4 * D * np.log(N) * np.geomspace(1, 10**5)))
+    ax.plot(time, theoretical_mean_long_time(2 * np.sqrt(np.pi) * r0, D, N, time), ls='-.')
 
 #ax.plot(xvals, np.sqrt(xvals) * 10, c='k', ls='--', label=r'$\sqrt{x}$')
-ax.grid(True, 'both')
+ax.grid(True)
 ax.legend()
-fig.savefig("Mean.png", bbox_inches='tight')
+fig.savefig("Mean.pdf", bbox_inches='tight')
 
 fig, ax = plt.subplots()
 ax.set_xscale("log")
@@ -81,9 +104,12 @@ for r0 in folders:
     var = np.loadtxt(dir + r0 + "/Var.txt")
     time = np.loadtxt(dir + r0 + "/Time.txt")
     ax.plot(time, var, label=fr"$r_c={r0}$")
+    r0 = float(r0)
+    ax.plot(time, theoretical_var(2 * np.sqrt(np.pi) * r0, D, N, time), ls='--')
+    ax.plot(time, theoretical_var_long_time(2 * np.sqrt(np.pi) * r0, D, N, time), ls='-.')
 
-#ax.plot(xvals, np.sqrt(xvals)*50, c='k', ls='--', label=r'$\sqrt{x}$')
-#ax.plot(xvals, xvals*10, ls='--', c='r', label=r'$x$')
+ax.set_xlim([1, 10000])
+
 ax.grid(True)
 ax.legend()
-fig.savefig("Var.png", bbox_inches='tight')
+fig.savefig("Var.pdf", bbox_inches='tight')

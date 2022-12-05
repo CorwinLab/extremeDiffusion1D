@@ -6,35 +6,27 @@ from FPTDataAnalysis import calculateMeanVarDiscrete, calculateMeanVarCDF
 import glob
 import pandas as pd
 
-home_dir = '/home/jacob/Desktop/talapasMount/JacobData/FPTDiscretePaper'
+home_dir = '/home/jacob/Desktop/talapasMount/JacobData/FPTDiscreteTimeCorrected'
 dirs = os.listdir(home_dir)
 Ns = [1, 2, 5, 12, 28]
 N_vals = [float(f"1e{i}") for i in Ns]
-max_dists = [1723, 3436, 8531, 20461, 47967]
-recalculate_mean = False
+max_dists = [500 * np.log(N) for N in N_vals]
+recalculate_mean = True
 if recalculate_mean:
     nFiles = []
     for max_dist, N in zip(max_dists, Ns):
-        if not (N==12):
-            continue
         dir = home_dir + f'/{N}/Q*.txt'
         files = glob.glob(dir)
-        '''This is to analyze only the last 5000 files
-        analysis_files = []
-        for f in files: 
-            sysID = os.path.basename(f)
-            sysID = sysID.replace("Quartiles", '')
-            sysID = int(sysID.replace(".txt", ''))
-            if sysID >= 15000:
-                analysis_files.append(f)
-                print(sysID)'''
-        df, number_of_files = calculateMeanVarDiscrete(files, max_dist, verbose=True)
-        path = os.path.join(home_dir,f'{N}', 'MeanVariance.csv')
-        df.to_csv(path, index=False)
-        nFiles.append(number_of_files)
-        print(f"Max {N}: {number_of_files} files")
+        for i, split_files in enumerate(np.array_split(files, 10)):
+            df, number_of_files = calculateMeanVarDiscrete(split_files, max_dist, verbose=True)
+            if df is None: 
+                continue
+            path = os.path.join(home_dir,f'{N}', f'MeanVariance{i}.csv')
+            df.to_csv(path, index=False)
+            nFiles.append(number_of_files)
+            print(f"Max {N}: {number_of_files} files")
 
-        np.savetxt(home_dir + f'/{N}/NumberOfSystems.txt', [number_of_files])
+        np.savetxt(home_dir + f'/{N}/NumberOfSystems{i}.txt', [number_of_files])
 
 for N in Ns: 
     num_files = np.loadtxt(home_dir + f'/{N}/NumberOfSystems.txt')
@@ -42,7 +34,7 @@ for N in Ns:
 
 cdf_dir = '/home/jacob/Desktop/corwinLabMount/CleanData/FPTCDFPaper'
 dirs = os.listdir(cdf_dir)
-recalculate_mean = True
+recalculate_mean = False
 if recalculate_mean: 
     nFiles = []
     for max_dist, N in zip(max_dists, Ns):
