@@ -2,6 +2,7 @@ import numpy as np
 import npquad
 from scipy.special import erf
 from scipy.interpolate import interp1d
+import warnings
 
 # Going to define latex strings of each equation here to render in matplotlib labels
 quantileMeanStr = r"$t\sqrt{1 - (1 - \frac{ln(N)}{t})^{2}}$"

@@ -75,7 +75,12 @@ def calculateMeanVarCDF(files, max_dist, verbose=True):
     number_of_files = 0
     pos = None
     for f in files: 
-        data = pd.read_csv(f) # columns are Position, Quantile, Variance
+        try: 
+            data = pd.read_csv(f) # columns are Position, Quantile, Variance
+        except pd.io.common.EmptyDataError:
+            print(f"Empty file: {f}")
+            continue
+        
         if max(data['Position']) < max_dist:
             print("Not Enough Data: ", f, max(data['Position']))
             continue
@@ -92,6 +97,7 @@ def calculateMeanVarCDF(files, max_dist, verbose=True):
 
         if verbose:
             print(f, max(data[:, 0]))
+            
     if number_of_files == 0:
         return None
     

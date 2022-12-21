@@ -6,41 +6,45 @@ from FPTDataAnalysis import calculateMeanVarDiscrete, calculateMeanVarCDF
 import glob
 import pandas as pd
 
-home_dir = '/home/jacob/Desktop/talapasMount/JacobData/FPTDiscreteTimeCorrected'
-dirs = os.listdir(home_dir)
 Ns = [1, 2, 5, 12, 28]
 N_vals = [float(f"1e{i}") for i in Ns]
-max_dists = [500 * np.log(N) for N in N_vals]
-recalculate_mean = True
+max_dists = [1723, 3436, 8531, 20461, 47967]
+
+home_dir = '/home/jacob/Desktop/talapasMount/JacobData/FPTDiscreteTimeCorrected'
+dirs = os.listdir(home_dir)
+recalculate_mean = False
 if recalculate_mean:
     nFiles = []
     for max_dist, N in zip(max_dists, Ns):
         dir = home_dir + f'/{N}/Q*.txt'
         files = glob.glob(dir)
-        for i, split_files in enumerate(np.array_split(files, 10)):
-            df, number_of_files = calculateMeanVarDiscrete(split_files, max_dist, verbose=True)
-            if df is None: 
-                continue
-            path = os.path.join(home_dir,f'{N}', f'MeanVariance{i}.csv')
-            df.to_csv(path, index=False)
-            nFiles.append(number_of_files)
-            print(f"Max {N}: {number_of_files} files")
+        df, number_of_files = calculateMeanVarDiscrete(files, max_dist, verbose=True)
+        if df is None: 
+            continue
+        path = os.path.join(home_dir,f'{N}', f'MeanVariance.csv')
+        df.to_csv(path, index=False)
+        nFiles.append(number_of_files)
+        print(f"Max {N}: {number_of_files} files")
 
-        np.savetxt(home_dir + f'/{N}/NumberOfSystems{i}.txt', [number_of_files])
+        np.savetxt(home_dir + f'/{N}/NumberOfSystems.txt', [number_of_files])
 
 for N in Ns: 
     num_files = np.loadtxt(home_dir + f'/{N}/NumberOfSystems.txt')
     print(f"Discrete {N}: {num_files} files")
 
+
 cdf_dir = '/home/jacob/Desktop/corwinLabMount/CleanData/FPTCDFPaper'
+talapas_dir = '/home/jacob/Desktop/corwinLabMount/CleanData/TalapasFPTCDF/FPTCDFPaper'
 dirs = os.listdir(cdf_dir)
 recalculate_mean = False
 if recalculate_mean: 
     nFiles = []
     for max_dist, N in zip(max_dists, Ns):
         dir = cdf_dir + f'/{N}/First*.txt'
-        files = glob.glob(dir)
-        df, number_of_files = calculateMeanVarCDF(files, max_dist)
+        talapas_file_dir = talapas_dir + f'/{N}/First*.txt'
+        talapas_files = glob.glob(talapas_file_dir)
+        files = glob.glob(dir) + talapas_files
+        df, number_of_files = calculateMeanVarCDF(files, max_dist, verbose=False)
         path = os.path.join(cdf_dir,f'{N}', 'MeanVariance.csv')
         df.to_csv(path, index=False)
         nFiles.append(number_of_files)

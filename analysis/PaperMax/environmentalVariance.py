@@ -12,9 +12,8 @@ import json
 import pandas as pd
 
 """
-Make figure plot showing environmental recovery
+Make figure plot showing environmental recovery error
 """
-
 
 db = Database()
 einstein_dir = "/home/jacob/Desktop/corwinLabMount/CleanData/JacobData/EinsteinPaper/"

@@ -14,7 +14,7 @@ gumbel_var = np.pi**2 / 6
 
 def theoretical_mean(r0, D, N, t):
     gamma = np.log(N) / t
-    return t * np.sqrt(4 * D * gamma) * (1 - gamma * r0**2/96/D) + 1/2 * r0**(2/3) * (4*D*gamma)**(1/6)*t**(1/3) * tw_mean + np.sqrt(D / gamma) * gumbel_mean
+    return np.sqrt(4*D*np.log(N) * t) + 0.5 * np.sqrt(D * t / np.log(N))
 
 def theoretical_var(r0, D, N, t): 
     gamma = np.log(N) / t

@@ -36,7 +36,9 @@ if __name__ == '__main__':
     ax.set_yscale("log")
     ax.set_xlabel("x")
     ax.set_ylabel(r'$p^{\infty}_{\mathbf{B}}(x, t)$')
-    ax.set_yticks([10**-200, 10**-150, 10**-100, 10**-50, 10**0])
+    ax.set_ylim([10**-30, 1])
+    ax.set_xlim([-400, 400])
+    #ax.set_yticks([10**-200, 10**-150, 10**-100, 10**-50, 10**0])
     L = 200 
     lower_fill_x = xvals[xvals < -L]
     lower_fill_prob = pdf[xvals < -L]
@@ -50,7 +52,7 @@ if __name__ == '__main__':
     new_pdf = np.insert(new_pdf, 0, sum(lower_fill_prob))
     new_pdf = np.append(new_pdf, sum(upper_fill_prob))
     #ax.plot(new_xvals, new_pdf)
-    ax.fill_between(lower_fill_x, lower_fill_prob, np.ones(lower_fill_prob.shape)*min(lower_fill_prob), alpha=0.5, color='r', label=r'$P^{\infty}_{\mathbf{B}}(X > L, t)$')
-    ax.fill_between(upper_fill_x, upper_fill_prob, np.ones(upper_fill_prob.shape)*min(upper_fill_prob), alpha=0.5, color='r', label=r'$P^{\infty}_{\mathbf{B}}(X < -L, t)$')
+    ax.fill_between(lower_fill_x, lower_fill_prob, np.ones(lower_fill_prob.shape)*min(lower_fill_prob), alpha=0.5, color='r', label=r'$P^{\infty}_{\mathbf{B}}(X > L, t)$', edgecolor=None)
+    ax.fill_between(upper_fill_x, upper_fill_prob, np.ones(upper_fill_prob.shape)*min(upper_fill_prob), alpha=0.5, color='r', label=r'$P^{\infty}_{\mathbf{B}}(X < -L, t)$', edgecolor=None)
     ax.legend()
     fig.savefig("RWREPDF.pdf", bbox_inches='tight')

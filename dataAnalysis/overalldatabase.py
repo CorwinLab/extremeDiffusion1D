@@ -47,13 +47,6 @@ def calculateMeanVarHelper(
         time = data[:, 0].astype(np.float64)
         data = data[:, 1:]
 
-        """ This implementation didn't work b/c flip is kind of weird with a 2D array
-        # We need to remove the artifacts of stopping and then restarting at
-        # an earlier time.  We want to retain the *last* valid element
-        time, index = np.unique(np.flip(rawtime), return_index=True)
-        data = np.flip(data)[index]
-        data = np.flip(data)
-        """
         if maxTime is not None:
             if max(time) < maxTime:
                 continue
@@ -88,7 +81,44 @@ def calculateMeanVarHelper(
     mean = (sum / number_of_files).astype(np.float64)
     var = (squared_sum / number_of_files).astype(np.float64) - mean ** 2
 
-    return return_time, mean, var, maxTime, number_of_files
+    forth_moment = None 
+    forth_moment_files = 0
+    for f in files: 
+        try:
+            data = np.loadtxt(f, delimiter=delimiter, skiprows=skiprows)
+        except StopIteration:
+            continue
+
+        df = pd.DataFrame(data.astype(float))
+        df = df.drop_duplicates(subset=[0], keep="last")
+
+        data = df.to_numpy()
+        time = data[:, 0].astype(np.float64)
+        data = data[:, 1:]
+
+        if maxTime is not None:
+            if max(time) < maxTime:
+                continue
+            elif max(time) == maxTime:
+                time = time[time <= maxTime]
+                if return_time is not None:
+                    if len(time) < len(return_time):
+                        print("Missing times:", np.setdiff1d(return_time, time))
+                        continue
+                return_time = time
+        else:
+            maxTime = max(time)
+
+        maxIdx = len(time)
+        data = data[:maxIdx, :]
+        if forth_moment is None:
+            forth_moment = np.zeros(data.shape)
+        forth_moment += (data - mean) ** 4
+        forth_moment_files += 1
+
+    forth_moment = (forth_moment / forth_moment_files - var**2) / forth_moment_files
+
+    return return_time, mean, var, maxTime, forth_moment, number_of_files
 
 
 class Database:
@@ -123,10 +153,13 @@ class Database:
         self.dirs[directory]["type"] = dir_type
         mean_file = os.path.join(directory, "Mean.txt")
         var_file = os.path.join(directory, "Var.txt")
+        forth_moment_file = os.path.join(directory, "ForthMoment.txt")
 
-        if os.path.exists(mean_file) and os.path.exists(var_file):
+        if os.path.exists(mean_file) and os.path.exists(var_file) and os.path.exists(forth_moment_file):
             self.dirs[directory]["mean"] = mean_file
             self.dirs[directory]["var"] = var_file
+            self.dirs[directory]["forth_moment"] =  forth_moment_file
+
 
     @classmethod
     def fromDirs(cls, dirs, dir_types):
@@ -216,13 +249,16 @@ class Database:
             search_path = os.path.join(directories, "Q*.txt")
             files += glob.glob(search_path)
 
-        time, mean, var, maxTime, number_of_files = calculateMeanVarHelper(
+        time, mean, var, maxTime, forth_moment, number_of_files = calculateMeanVarHelper(
             files, verbose=verbose, maxTime=maxTime
         )
         time = time.reshape((mean.shape[0], 1))
 
         mean = np.hstack([time, mean])
         var = np.hstack([time, var])
+
+        if isinstance(directories, str):
+            directories = [directories]
 
         if isinstance(directories, list):
             for directory in directories:
@@ -231,35 +267,20 @@ class Database:
 
                 mean_file = os.path.join(directory, "Mean.txt")
                 var_file = os.path.join(directory, "Var.txt")
+                forth_moment_file = os.path.join(directory, "ForthMoment.txt")
                 np.savetxt(mean_file, mean, header=header, comments="", delimiter=",")
                 np.savetxt(var_file, var, header=header, comments="", delimiter=",")
+                np.savetxt(forth_moment_file, forth_moment, header=header, comments='', delimiter=',')
 
                 self.dirs[directory]["mean"] = mean_file
                 self.dirs[directory]["var"] = var_file
+                self.dirs[directory]["forth_moment"] = forth_moment_file
                 self.dirs[directory]["number_of_systems"] = number_of_files
                 self.dirs[directory]["maxTime"] = maxTime
 
                 analysis_file = os.path.join(directory, "analysis.json")
                 with open(analysis_file, "w") as f:
                     json.dump(self.dirs[directory], f)
-
-        elif isinstance(directories, str):
-            with open(os.path.join(directories, "Quartiles0.txt")) as f:
-                header = f.readline().replace("\n", "")
-
-            mean_file = os.path.join(directories, "Mean.txt")
-            var_file = os.path.join(directories, "Var.txt")
-            np.savetxt(mean_file, mean, header=header, comments="", delimiter=",")
-            np.savetxt(var_file, var, header=header, comments="", delimiter=",")
-
-            self.dirs[directories]["mean"] = mean_file
-            self.dirs[directories]["var"] = var_file
-            self.dirs[directories]["number_of_systems"] = number_of_files
-            self.dirs[directories]["maxTime"] = maxTime
-
-            analysis_file = os.path.join(directories, "analysis.json")
-            with open(analysis_file, "w") as f:
-                json.dump(self.dirs[directories], f)
 
         print("Done Calculating Mean")
 
@@ -272,7 +293,10 @@ class Database:
             var_df = pd.read_csv(db.dirs[d]["var"], sep=delimiter)
 
             if db.dirs[d]["type"] == "Gumbel":
+                forth_moment = pd.read_csv(db.dirs[d]["forth_moment"], sep=delimiter)
                 cdf_df["time"] = mean_df["time"]
+
+                # Get mean Sampling Variance and Mean quantile from mean file
                 for column in mean_df.columns[1:]:
                     if "var" in column:
                         N_column = np.quad(column.replace("var", ""))
@@ -285,14 +309,27 @@ class Database:
                         if int(exp) == N:
                             cdf_df["Mean Quantile"] = mean_df[column]
 
+                # Get variance of quantile and variance of sampling from variance file
                 for column in var_df.columns[1:]:
                     if "var" in column:
-                        continue
+                        N_column = np.quad(column.replace("var", ""))
+                        exp = quadMath.prettifyQuad(N_column).split("e")[-1]
+                        if int(exp) == N:
+                            cdf_df["Var Gumbel Variance"] = var_df[column]
                     else:
                         N_column = np.quad(column)
                         exp = quadMath.prettifyQuad(N_column).split("e")[-1]
                         if int(exp) == N:
                             cdf_df["Var Quantile"] = var_df[column]
+
+                for column in forth_moment.columns[1:]: 
+                    if "var" in column: 
+                        continue 
+                    else: 
+                        N_column = np.quad(column)
+                        exp = quadMath.prettifyQuad(N_column).split("e")[-1]
+                        if int(exp) == N:
+                            cdf_df["Var Var Quantile"] = forth_moment[column]
 
             if db.dirs[d]["type"] == "Max":
                 mean_df = pd.read_csv(db.dirs[d]["mean"], sep=delimiter)

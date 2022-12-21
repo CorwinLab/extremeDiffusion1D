@@ -34,7 +34,7 @@ for dir in e_dirs:
 
 db.add_directory(cdf_path, dir_type="Gumbel")
 db.add_directory(cdf_path_talapas, dir_type="Gumbel")
-# db.calculateMeanVar([cdf_path, cdf_path_talapas], verbose=True, maxTime=3453876)
+db.calculateMeanVar([cdf_path, cdf_path_talapas], verbose=True, maxTime=3453876)
 
 db1 = db.getBetas(1)
 for dir in db.dirs.keys():

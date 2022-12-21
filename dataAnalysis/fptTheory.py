@@ -54,7 +54,7 @@ def variance(x, N, samples=10000):
     theory[x < np.log(N)] = 0
     return theory
 
-def sam_variance_theory(x, N, samples=10000):
+def sam_variance_theory(x, N):
     #N = N/2
     t_vals = t0(x, N)
     t_vals = np.array(t_vals)

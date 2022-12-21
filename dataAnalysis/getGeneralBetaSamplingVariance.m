@@ -20,14 +20,14 @@ dervI[\[Theta]_, \[Alpha]_, \[Beta]_] = N[D[II[\[Theta],beta, beta], \[Theta]]];
 dervV[\[Theta]_, \[Alpha]_, \[Beta]_] =  N[D[x[\[Theta],beta, beta], \[Theta]]];
 theta0[t_] := \[Theta] /. FindRoot[II[\[Theta],beta,beta]== Log[n]/t, {\[Theta], 0.00001, 0, 5000}];
 theta0vals = Map[theta0, t];
-var=varChi*t^(2/3) * (\[Sigma][theta0vals, beta, beta]*dervV[theta0vals, beta, beta] / (dervI[theta0vals, beta, beta]))^2;
+var=(dervV[theta0vals, beta, beta] / (dervI[theta0vals, beta, beta]))^2 * Pi^2 / 6;
 Return[var, Module]] ;
 
 t = 10.0^Range[N[Log10[minDistance]], N[Log10[maxDistance]], (N[Log10[maxDistance]]-N[Log10[minDistance]])/(500-1)];
 var = fShortAsym[nParticles, t, beta];
 
 Export[
-    "/home/jacob/Desktop/EnvironmentalVariance" <> ToString[beta] <> ".txt", var, "Table"
+    "/home/jacob/Desktop/SamplingVariance" <> ToString[beta] <> ".txt", var, "Table"
 ]; Export[
     "/home/jacob/Desktop/times" <> ToString[beta] <> ".txt", t
 ];
