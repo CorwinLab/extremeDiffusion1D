@@ -1,12 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=BSweep
-#SBATCH --time=14-00:00:00
-#SBATCH --error=/home/jhass2/CleanData/logs/CDFBetaSweep/%A-%a.err
+#SBATCH --time=1-00:00:00
+#SBATCH --error=/home/jamming/JacobData/logs/CDFBetaSweep/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --array=0-500
-#SBATCH --output=/home/jhass2/CleanData/logs/CDFBetaSweep/%A-%a.out
-#SBATCH --nice=2000
+#SBATCH --array=0-1000
+#SBATCH --output=/home/jamming/JacobData/logs/CDFBetaSweep/%A-%a.out
+#SBATCH --account=jamming
+#SBATCH --queue=preempt
 
 NUM_OF_SAVE_TIMES=7500
 

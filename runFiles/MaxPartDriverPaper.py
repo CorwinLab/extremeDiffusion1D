@@ -1,12 +1,6 @@
 import sys
 import os
-
-src_path = os.path.join(os.path.dirname(__file__), "..", "src")
-sys.path.append(src_path)
-
-from pydiffusionPDF import DiffusionPDF
-import quadMath
-import fileIO
+from pyDiffusion import DiffusionPDF, fileIO, quadMath
 import numpy as np
 import npquad
 from datetime import date
@@ -72,7 +66,7 @@ def runExperiment(
     #    append = True
     # else:
     d = DiffusionPDF(
-        N, beta=beta, occupancySize=num_of_steps, ProbDistFlag=probDistFlag
+        N, distributionName='beta', parameters=[beta, beta], occupancySize=num_of_steps, ProbDistFlag=probDistFlag
     )
     d.save_dir = save_dir
     d.id = sysID

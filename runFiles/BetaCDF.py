@@ -77,7 +77,7 @@ if __name__ == "__main__":
     save_file = os.path.abspath(save_file)
 
     n_exp = [2, 7, 24, 85, 300]
-    tMax = np.log(1e24) * 5 * 10**3
+    tMax = np.log(1e24) * 100
 
     vars = {
         "beta": beta,
