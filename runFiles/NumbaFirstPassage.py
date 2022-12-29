@@ -13,7 +13,7 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
     dMax = int(dMax * np.log(N))
     distances = np.geomspace(1, dMax, num_of_points)
     distances = np.unique(distances.astype(int))
-    distances = distances[distances <= np.log(N)*750]
+    distances = distances[distances <= 750 * np.log(N)]
 
     write_header = True
     save_file = os.path.join(save_dir, f"FirstPassageCDF{sysID}.txt")

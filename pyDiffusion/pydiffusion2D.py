@@ -66,6 +66,74 @@ def generateGCF(pos, xi, fourierCutoff=20):
 	field /= np.sqrt(np.sum(field**2))
 	return field
 
+def getGCF1D(positions, correlation_length, D, grid_spacing=0.1):
+	'''
+    Generate a gaussian correlated field at given positions and correlation length.  
+
+    Paramters
+    ---------
+    positions : numpy array (1D)
+        Positions of particles
+    
+    correlation_length : float 
+        Correlation length in space of the field 
+    
+    D : float 
+        Diffusion coefficient to use 
+    
+    grid_spacing : float (optional 0.1)
+        Grid spacing of the random field to generate. 
+    
+    Returns
+    -------
+    field : numpy array
+        Field stregnth at each particle position.
+    
+    Example
+    -------
+    from matplotlib import pyplot as plt
+    x = np.random.normal(0, 100, size=100000)
+    correlation_length = 10
+    field = getGCF1D(x, correlation_length=correlation_length, D=1, grid_spacing=0.1)
+    fig, ax = plt.subplots()
+    ax.scatter(x, field)
+    ax.set_xlabel("Position")
+    ax.set_ylabel("Field Strength")
+    ax.set_title(f"Correlation Length = {correlation_length}")
+    fig.savefig(f"TestingField{correlation_length}.png", bbox_inches='tight')
+    '''
+	positions = np.array(positions) / grid_spacing
+	correlation_length = correlation_length / grid_spacing
+
+	grid = np.arange(np.min(positions) - 3 * correlation_length, np.max(positions) + 3 * correlation_length, step=1)
+	noise = np.random.randn(len(grid))
+
+	kernel_x = np.arange(-3 * correlation_length, 3 * correlation_length, 1)
+	kernel = np.sqrt(D/correlation_length / np.sqrt(np.pi)) * np.exp(-kernel_x**2/2/correlation_length**2)
+	field = np.convolve(kernel, noise, 'same')
+	field = np.interp(positions, grid, field)
+	return field
+
+def iterateTimeStep1D(positions, xi, D):
+	'''
+	Parameters
+	----------
+	positions : numpy array 
+		Position of particles. Array should have: rows = particleID and
+		cols = components
+
+	xi : float 
+		Correlation length
+
+	Returns 
+	-------
+	positions : numpy array 
+		Updated position of particles 
+	'''
+	biases = getGCF1D(positions, xi, D, grid_spacing=0.1)
+	positions += np.random.normal(biases, np.sqrt(2*D))
+	return positions
+
 @njit 
 def iterateTimeStep(positions, xi):
 	'''
@@ -110,6 +178,23 @@ def iterateTimeStep(positions, xi):
 	maxPos = positions[maxIdx, :]
 	return positions, maxPos
 
+def evolveAndSaveMaxDistance1D(nParticles, save_times, xi, D, save_file, save_positions):
+	f = open(save_file, 'a')
+	writer = csv.writer(f)
+	writer.writerow(['Time', 'Position'])
+	f.flush()
+	positions = np.zeros(shape=(nParticles))
+	t = 0 
+	while t < max(save_times): 
+		positions = iterateTimeStep1D(positions, xi, D)
+		t+=1
+		if t in save_times:
+			writer.writerow([t, np.max(positions)])
+			f.flush()
+
+	f.close()
+	np.savetxt(save_positions, positions)
+	
 def evolveAndSaveMaxDistance(nParticles, save_times, xi, save_file, save_positions):
 	'''
 	Paramters

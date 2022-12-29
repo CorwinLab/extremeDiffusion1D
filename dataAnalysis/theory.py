@@ -2,6 +2,7 @@ import numpy as np
 import npquad
 from scipy.special import erf
 from scipy.interpolate import interp1d
+import warnings
 
 # Going to define latex strings of each equation here to render in matplotlib labels
 quantileMeanStr = r"$t\sqrt{1 - (1 - \frac{ln(N)}{t})^{2}}$"
@@ -425,8 +426,7 @@ def gumbel_var(t, N):
         ],
     )
 
-
-def log_moving_average(time, data, N, window_size=10):
+def log_moving_average(time, data, window_size=10):
     assert window_size > 1
     window_min = time[0]
     window_max = window_size * window_min
@@ -444,6 +444,25 @@ def log_moving_average(time, data, N, window_size=10):
 
     return np.array(new_times), np.array(mean_data)
 
+def log_moving_average_error(time, data, window_size=10):
+    assert window_size > 1
+    window_min = time[0]
+    window_max = window_size * window_min
+    new_times = []
+    mean_data = []
+    while window_min <= max(time):
+        window_time = time[(time >= window_min) & (time < window_max)]
+        window_data = data[(time >= window_min) & (time < window_max)]
+        if len(window_data) == 0:
+            mean_data.append(np.nan)
+        else:
+            mean_data.append(np.mean(window_data) / len(window_data))
+        new_times.append(np.exp(np.mean(np.log(window_time))))
+
+        window_min = window_max
+        window_max = window_size * window_min
+
+    return np.array(new_times), np.array(mean_data)
 
 def quantileVarWrittenOut(t, N): 
     """

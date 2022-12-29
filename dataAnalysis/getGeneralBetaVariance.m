@@ -11,25 +11,23 @@ maxDistance = Read[StringToStream[Part[arguments, 5]], Number];
 beta = Read[StringToStream[Part[arguments, 6]], Number];
 
 
-minDistance = IntegerPart[Log[nParticles]]+1
+minDistance = 1
 
 
 fShortAsym[nParticles_, time_, betaval_] := 
 Module[{n=nParticles, t=time,beta=betaval, theta0, theta0vals, varChi=0.8133, var, dervI,dervV, \[Theta]}, 
 dervI[\[Theta]_, \[Alpha]_, \[Beta]_] = N[D[II[\[Theta],beta, beta], \[Theta]]]; 
 dervV[\[Theta]_, \[Alpha]_, \[Beta]_] =  N[D[x[\[Theta],beta, beta], \[Theta]]];
-theta0[t_] := \[Theta] /. FindRoot[II[\[Theta],beta,beta]== Log[n]/t, {\[Theta], 0.001, 0, 500}];
+theta0[t_] := \[Theta] /. FindRoot[II[\[Theta],beta,beta]== Log[n]/t, {\[Theta], 0.00001, 0, 5000}];
 theta0vals = Map[theta0, t];
 var=varChi*t^(2/3) * (\[Sigma][theta0vals, beta, beta]*dervV[theta0vals, beta, beta] / (dervI[theta0vals, beta, beta]))^2;
 Return[var, Module]] ;
 
-
-t = Range[minDistance, maxDistance];
-var = fShortAsym[nParticles, t, 0.1];
-stringfile = "/home/jacob/Desktop/variance" <> ToString[beta] <> ".txt"
+t = 10.0^Range[N[Log10[minDistance]], N[Log10[maxDistance]], (N[Log10[maxDistance]]-N[Log10[minDistance]])/(500-1)];
+var = fShortAsym[nParticles, t, beta];
 
 Export[
-    "/home/jacob/Desktop/variance" <> ToString[beta] <> ".txt", var, "Table"
+    "/home/jacob/Desktop/EnvironmentalVariance" <> ToString[beta] <> ".txt", var, "Table"
 ]; Export[
     "/home/jacob/Desktop/times" <> ToString[beta] <> ".txt", t
 ];

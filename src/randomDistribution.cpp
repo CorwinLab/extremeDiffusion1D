@@ -40,6 +40,12 @@ RandomDistribution::RandomDistribution(std::string _distributionName,
         disc_dist.param(disc_params);
     }
 
+    /* Set up bates distribution */
+    if (distributionName == "bates"){
+        std::uniform_real_distribution<>::param_type params(parameters[1], parameters[2]);
+        bates_uniform.param(params);
+    }
+
     /* Set up random uniform distribution*/
     std::uniform_real_distribution<>::param_type unifParams(0.0, 1.0);
     dis.param(unifParams);
@@ -77,7 +83,7 @@ double RandomDistribution::getBetaDistributed(){
 double RandomDistribution::getBatesDistributed(){
     double mean = 0;
     for (unsigned int i=0; i < (unsigned int)parameters[0]; i++){
-        mean += dis(gen);
+        mean += bates_uniform(gen);
     }
     return mean / parameters[0];
 }

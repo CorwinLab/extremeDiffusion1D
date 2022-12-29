@@ -24,6 +24,7 @@ class RandomDistribution{
         double getBetaDistributed();
 
         // Bates distribution
+        std::uniform_real_distribution<> bates_uniform;
         double getBatesDistributed();
 
         // Triangular distribution
