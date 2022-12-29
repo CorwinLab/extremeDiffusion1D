@@ -22,7 +22,7 @@ for dir in dirs:
     #db.calculateMeanVar(path, verbose=True, maxTime=276310)
 
 betas = db.betas()
-Nexp = 300
+Nexp = 24
 N = float(f"1e{Nexp}")
 logN = np.log(N).astype(float)
 print(betas)
@@ -31,8 +31,8 @@ ax.set_xscale("log")
 ax.set_yscale("log")
 ax.set_xlabel(r"$t/\log(N)$")
 ax.set_ylabel(r"$\mathrm{Var}(\mathrm{Sam}_t^N)$")
-ax.set_xlim([1 / logN, 100])
-ax.set_ylim([10**-3, 2*10**2])
+ax.set_xlim([0.1, 5000])
+ax.set_ylim([10**-3, 10**4])
 cm = LinearSegmentedColormap.from_list(
     "rg", ["tab:orange", "tab:red", "tab:purple", "tab:blue"], N=256
 )
@@ -55,7 +55,7 @@ for i, b in enumerate(betas):
     sampling_variance.replace("Indeterminate", np.nan, inplace=True)
     time = pd.read_csv(f"./Theory/times{b}.txt")
     sampling_variance = sampling_variance.values.astype(float)
-    #ax.plot(time / logN, sampling_variance, c=colors[i], ls='--')
+    ax.plot(time / logN, sampling_variance, c=colors[i], ls='--')
 
 leg = ax.legend(
     loc="upper left",

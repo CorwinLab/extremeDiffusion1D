@@ -49,6 +49,7 @@ ax.plot(cdf_df['Distance'] / logN, cdf_df['Env Variance'], label=r'$\mathrm{Var}
 ax.fill_between(cdf_df['Distance'] / logN, cdf_df['Env Variance'] - np.sqrt(cdf_df['Var Env Variance']), cdf_df['Env Variance'] + np.sqrt(cdf_df['Var Env Variance']), color=quantile_color, alpha=alpha/2, edgecolor=None)
 
 ax.plot(einstein_df['Distance'] / logN, einstein_df['Variance'], label=r'$\mathrm{Var}(\tau_{\mathrm{SSRW}})$', c=einstein_color, alpha=alpha)
+ax.fill_between(einstein_df['Distance'] / logN, einstein_df['Variance'] - np.sqrt(einstein_df['Forth Moment']), einstein_df['Variance'] + np.sqrt(einstein_df['Forth Moment']), color=einstein_color, alpha=alpha/2, edgecolor=None)
 
 ax.plot(einstein_theoretical_data[:, 0] / logN, einstein_theoretical_data[:, 1], ls='--', c=einstein_color)
 ax.plot(cdf_df['Distance'] / logN, env_theory, ls='--', c=quantile_color)

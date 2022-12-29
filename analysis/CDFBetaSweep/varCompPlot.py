@@ -9,7 +9,7 @@ sys.path.append("../../dataAnalysis")
 from overalldatabase import Database
 
 db = Database()
-beta_dir = "/home/jacob/Desktop/talapasMount/JacobData/BetaSweep/0.1"
+beta_dir = "/home/jacob/Desktop/talapasMount/JacobData/BetaSweepPaper/0.1"
 db.add_directory(beta_dir, dir_type="Max")
 #db.calculateMeanVar(beta_dir, verbose=True, maxTime=276310)
 

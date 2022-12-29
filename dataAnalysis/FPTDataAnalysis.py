@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 
-def calculateMeanVarDiscrete(files, max_dist, verbose=True):
+def calculateMeanVarDiscrete(files, max_dist, verbose=True, nFile=np.inf):
     average_data = None
     average_data_squared = None
     number_of_files = 0
@@ -34,6 +34,8 @@ def calculateMeanVarDiscrete(files, max_dist, verbose=True):
         else:
             average_data += data
             average_data_squared += data ** 2
+        if number_of_files >= nFile:
+            break
 
     if number_of_files == 0:
         return None, None
@@ -63,12 +65,14 @@ def calculateMeanVarDiscrete(files, max_dist, verbose=True):
             forth_moment += (data['Time'].values - mean) ** 4
         if verbose:
             print(f)
+        if forth_moment_files >= nFile:
+            break
             
     forth_moment = (forth_moment / forth_moment_files - variance ** 2) / forth_moment_files
     new_df = pd.DataFrame(np.array([pos, mean, variance, forth_moment]).T, columns=['Distance', 'Mean', 'Variance', 'Forth Moment'])
     return new_df, number_of_files
 
-def calculateMeanVarCDF(files, max_dist, verbose=True):
+def calculateMeanVarCDF(files, max_dist, verbose=True, nFile=np.inf):
     # Calculate mean and variance
     average_data = None
     average_data_squared = None
@@ -94,6 +98,8 @@ def calculateMeanVarCDF(files, max_dist, verbose=True):
         else:
             average_data += data
             average_data_squared += data ** 2
+        if number_of_files >= nFile:
+            break
 
         if verbose:
             print(f, max(data[:, 0]))
@@ -121,6 +127,9 @@ def calculateMeanVarCDF(files, max_dist, verbose=True):
             forth_moment = (data- mean) ** 4
         else: 
             forth_moment += (data - mean) ** 4
+        
+        if forth_moment_files >= nFile:
+            break
 
 
     forth_moment = (forth_moment / forth_moment_files - variance ** 2) / forth_moment_files

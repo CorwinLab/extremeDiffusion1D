@@ -36,15 +36,16 @@ for N in Ns:
 cdf_dir = '/home/jacob/Desktop/corwinLabMount/CleanData/FPTCDFPaper'
 talapas_dir = '/home/jacob/Desktop/corwinLabMount/CleanData/TalapasFPTCDF/FPTCDFPaper'
 dirs = os.listdir(cdf_dir)
+maxFiles = [1500, 1500, 1500, 1500, 500]
 recalculate_mean = False
 if recalculate_mean: 
     nFiles = []
-    for max_dist, N in zip(max_dists, Ns):
+    for max_dist, N, nFile in zip(max_dists, Ns, maxFiles):
         dir = cdf_dir + f'/{N}/First*.txt'
         talapas_file_dir = talapas_dir + f'/{N}/First*.txt'
         talapas_files = glob.glob(talapas_file_dir)
         files = glob.glob(dir) + talapas_files
-        df, number_of_files = calculateMeanVarCDF(files, max_dist, verbose=False)
+        df, number_of_files = calculateMeanVarCDF(files, max_dist, verbose=False, nFile=nFile)
         path = os.path.join(cdf_dir,f'{N}', 'MeanVariance.csv')
         df.to_csv(path, index=False)
         nFiles.append(number_of_files)

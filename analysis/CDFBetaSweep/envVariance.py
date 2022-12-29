@@ -34,16 +34,14 @@ cm = LinearSegmentedColormap.from_list(
 colors = [cm(1.0 * i / len(betas) / 1) for i in range(len(betas))]
 alpha=0.5
 ax.set_xlim([3*10**-1, 5000])
+ax.set_ylim([1*10**-3, 10**5])
 for i, b in enumerate(betas): 
     db_new = db.getBetas(b)
     cdf_df, max_df = db_new.getMeanVarN(Nexp)
     time = cdf_df['time'].values
     var = cdf_df['Var Quantile'].values
     b = float(b)
-    decadeScaling = 25
-    time_avg, var = log_moving_average(time, var, 10**(1/decadeScaling))
-    time_avg, var_error = log_moving_average_error(time, cdf_df['Var Var Quantile'].values, 10**(1/decadeScaling))
-    ax.plot(time_avg / logN, var, c=colors[i], alpha=alpha, label=fr"$\beta={b}$")
+    ax.plot(time / logN, var, c=colors[i], alpha=alpha, label=fr"$\beta={b}$")
     if b == 1: 
         ax.plot(time / logN, quantileVar(N, time), ls='--', c=colors[i])
     if b < 1: 
