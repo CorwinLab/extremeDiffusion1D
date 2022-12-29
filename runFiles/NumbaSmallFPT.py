@@ -8,12 +8,11 @@ import time
 from experimentUtils import saveVars
 
 
-def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
-    N = float(f"1e{nExp}")
+def runExperiment(N, dMax, num_of_points, save_dir, sysID):
+    N=int(N)
     dMax = int(dMax * np.log(N))
     distances = np.geomspace(1, dMax, num_of_points)
     distances = np.unique(distances.astype(int))
-    distances = distances[distances <= np.log(N)*750]
 
     write_header = True
     save_file = os.path.join(save_dir, f"FirstPassageCDF{sysID}.txt")
@@ -40,7 +39,7 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
 
         pdf = pyfirstPassageNumba.initializePDF(d)
         firstPassageCDF = pdf[0] + pdf[-1]
-        if N==10:
+        if N <= 10:
             nFirstPassageCDFPrev = 1 - (1-firstPassageCDF)**N
         else:
             nFirstPassageCDFPrev = 1 - np.exp(-firstPassageCDF * N)
@@ -50,7 +49,7 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
             pdf = pyfirstPassageNumba.iteratePDF(pdf)
 
             firstPassageCDF = pdf[0] + pdf[-1]
-            if N==10:
+            if N<=10:
                 nFirstPassageCDF = 1 - (1-firstPassageCDF)**N
             else: 
                 nFirstPassageCDF = 1 - np.exp(-firstPassageCDF * N)
@@ -78,11 +77,11 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
 if __name__ == "__main__":
     # Test line:
     # save_dir, sysID, dMin, dMax, nExp, num_of_points = '.', 1, 0, 50, 24, 250
-    (save_dir, sysID, dMax, nExp, num_of_points) = sys.argv[1:]
+    (save_dir, sysID, dMax, N, num_of_points) = sys.argv[1:]
     dMax = float(dMax)
     num_of_points = int(num_of_points)
 
-    vars = {"nExp": nExp,
+    vars = {"N": N,
             "dMax": dMax,
             "num_of_points": num_of_points,
             "save_dir": save_dir,

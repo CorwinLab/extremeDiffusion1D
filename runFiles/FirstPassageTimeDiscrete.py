@@ -29,8 +29,9 @@ def runExperiment(
     max_distance = int(max_distance)
 
     logN = np.log(N).astype(float)
-    distances = np.geomspace(1, max_distance, num_of_save_distances, dtype=np.int64)
+    distances = np.geomspace(1, max_distance, num_of_save_distances).astype(int)
     distances = np.unique(distances)
+    distances = distances[distances <= (750 * logN)]
 
     occupancy_file = os.path.join(save_dir, f"Occupancy{sysID}.txt")
     scalars_file = os.path.join(save_dir, f"Scalars{sysID}.json")
@@ -43,7 +44,7 @@ def runExperiment(
         append = True
         print("Loaded from file", flush=True)
     else:
-        d = DiffusionPDF(N, beta=beta, occupancySize=tMax, ProbDistFlag=probDistFlag)
+        d = DiffusionPDF(N, distributionName='beta', parameters=[beta, beta], occupancySize=tMax, ProbDistFlag=probDistFlag)
         d.save_dir = save_dir
         d.id = sysID
         append = False
@@ -85,7 +86,7 @@ if __name__ == "__main__":
         print("Found FinalOccupancy file so exiting", flush=True)
         exit()
 
-    max_distance = 1000 * np.log(float(f"1e{N_exp}"))
+    max_distance = int(1000 * np.log(float(f"1e{N_exp}")))
 
     vars = {
         "beta": beta,

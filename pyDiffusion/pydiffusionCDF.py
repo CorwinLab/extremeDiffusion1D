@@ -547,7 +547,7 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
 
         for t in times:
             self.evolveToTime(t)
-            writer.writerow(t, float(self.getProbOutsidePositions(distance)))
+            writer.writerow([t, float(self.getProbOutsidePositions(distance))])
             f.flush()
         f.close()
 
