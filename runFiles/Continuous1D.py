@@ -30,7 +30,12 @@ if __name__ == '__main__':
     save_file = os.path.join(save_dir, f"MaxPositions{sysID}.txt")
     save_file = os.path.abspath(save_file)
     save_positions = os.path.join(save_dir, f"ParticlePositions{sysID}.txt")
-
+    minTime = int(minTime)
+    maxTime = int(maxTime)
+    nParticles = int(nParticles)
+    num_save_times = int(num_save_times)
+    xi = float(xi)
+    D = float(D)
     vars = {
         "nParticles": nParticles,
         "minTime": minTime,

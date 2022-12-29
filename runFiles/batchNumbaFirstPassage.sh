@@ -1,17 +1,17 @@
 #!/bin/bash
-#SBATCH --job-name=FCDF
+#SBATCH --job-name=12FCDF
 #SBATCH --time=14-00:00:00
 #SBATCH --error=/home/jhass2/CleanData/logs/FPTCDFPaper/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --array=0-499
+#SBATCH --array=1005-1008
 #SBATCH --output=/home/jhass2/CleanData/logs/FPTCDFPaper/%A-%a.out
 #SBATCH --nice=2000
 
 DMAX=1000
 NUMOFPOINTS=750
 
-for N_EXP in 1 2 5 12 28
+for N_EXP in 28
 do
     TOPDIR=/home/jhass2/CleanData/FPTCDFPaper/$N_EXP
     mkdir -p $TOPDIR
