@@ -79,7 +79,7 @@ for i, r0 in enumerate(folders):
     r0 = vars['xi']
     ax.plot(time, mean, label=fr"$r_c={r0}, D=1$", c=colors[i])
 
-    ax.plot(time, theoretical_mean(2 * np.sqrt(np.pi) * r0, D, N, time), ls='--', c=colors[i])
+    ax.plot(time, theoretical_mean(r0 / 2, D, N, time), ls='--', c=colors[i])
 
 #xvals = np.array([100, 1000])
 #ax.plot(xvals, np.sqrt(4 * D * np.log(N) * xvals), c='k', ls='--', label=r'$\sqrt{x}$')
@@ -101,7 +101,7 @@ for i, r0 in enumerate(folders):
     time = np.loadtxt(dir + r0 + "/Time.txt")
     ax.plot(time, var, label=fr"$r_c={r0}$", c=colors[i])
     r0 = float(r0)
-    ax.plot(time, theoretical_variance(2 * np.sqrt(np.pi) * r0, D, N, time), ls='--', c=colors[i])
+    ax.plot(time, theoretical_variance(2 * np.sqrt(np.pi) * r0/2, 2*D, N, time), ls='--', c=colors[i])
 
 ax.set_xlim([1, 10000])
 

@@ -5,7 +5,7 @@ RandomDistribution::RandomDistribution(std::string _distributionName,
                                        std::vector<double> _parameters)
     : distributionName(_distributionName), parameters(_parameters)
 {
-    if (distributionName != "beta" && distributionName != "delta" && distributionName != "bates" && distributionName != "triangular" && distributionName != "uniform" && distributionName != "quadratic"){
+    if (distributionName != "beta" && distributionName != "delta" && distributionName != "bates" && distributionName != "triangular" && distributionName != "uniform" && distributionName != "quadratic" && distributionName != "inv triangular"){
         throw std::runtime_error("distributionName must be either 'beta' or 'bates'");
     }
     /* Set up beta distribution */
@@ -123,6 +123,16 @@ double RandomDistribution::getDeltaDistributed(){
     }
 }
 
+double RandomDistribution::getInvTriangularDistributed(){
+    double y = dis(gen);
+    if (y <= 0.5){
+        return parameters[0] * (1 - pow(1-2 * y, 0.5));
+    }
+    else{
+        return parameters[0] * (pow(2 * (y-0.5), 0.5) - 1) + 1;
+    }
+}
+
 double RandomDistribution::generateRandomVariable(){
     if (distributionName == "beta"){
         return getBetaDistributed();
@@ -141,6 +151,9 @@ double RandomDistribution::generateRandomVariable(){
     }
     else if (distributionName == "delta"){
         return getDeltaDistributed();
+    }
+    else if (distributionName == "inv triangular"){
+        return getInvTriangularDistributed();
     }
     else {
         throw;

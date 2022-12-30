@@ -44,6 +44,9 @@ class RandomDistribution{
         std::discrete_distribution<> disc_dist;
         double getDeltaDistributed();
         
+        // Inv Triangular distribution 
+        double getInvTriangularDistributed();
+
         std::string distributionName;
         std::vector<double> parameters;
         
