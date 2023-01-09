@@ -6,9 +6,8 @@ from datetime import date
 import sys
 from pyDiffusion import DiffusionTimeCDF
 
-
 def runExperiment(
-    a, 
+    a,
     b,
     tMax,
     save_file,
@@ -58,11 +57,12 @@ def runExperiment(
         rec.id = sysID
         rec.save_dir = save_dir
         append = False
+        
     # Make sure this is actually bates distributed:
     vars = []
     for _ in range(100000):
         vars.append(rec.generateRandomVariable())
-    np.savetxt(f"RandomNums{sysID}.txt", vars)
+    np.savetxt(os.path.join(save_dir, f"RandomNums{sysID}.txt"), vars)
 
     rec.evolveAndGetVariance(save_times, nParticles, save_file, append=append)
 
@@ -82,9 +82,9 @@ if __name__ == "__main__":
     save_file = os.path.abspath(save_file)
 
     n_exp = [2, 7, 24, 85, 300]
-    tMax = np.log(1e24) * 5 * 10**2
-    a = 1/2 - 1/(2*np.sqrt(7))
-    b = 1/2 + 1/(2*np.sqrt(7))
+    tMax = np.log(1e24) * 5 * 10**3
+    a = 1/2 * (1 - 1/np.sqrt(67))
+    b = 1-a
     vars = {
         "a": a,
         "b": b,
