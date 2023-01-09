@@ -23,19 +23,36 @@ for i in range(num_samples):
     delta_vals[i] = delta.generateRandomVariable()
     inv_triang_vals[i] = inv_triang.generateRandomVariable()
 
+delta_color = 'tab:blue'
+beta_color = 'tab:red'
+inv_triang_color = 'tab:purple'
+
 # Check all values and distributions are reasonable
 bins = np.linspace(0, 1, 1000)
+fontsize=14
+
 fig, ax = plt.subplots()
-ax.hist(delta_vals, label='Delta', bins=bins, density=True, histtype='step', lw=2)
-ax.hist(beta_vals, label='Beta', bins=bins, density=True, histtype='step')
-ax.hist(inv_triang_vals, label='Inv Triangle', bins=bins, density=True, histtype='step')
+ax.hist(delta_vals, label='Delta', bins=bins, density=True, histtype='step', lw=2, color=delta_color)
+ax.hist(beta_vals, label='Beta', bins=bins, density=True, histtype='step', color=beta_color, lw=2)
+ax.hist(inv_triang_vals, label='Inv Triangle', bins=bins, density=True, histtype='step', color=inv_triang_color, lw=2)
 ax.set_xlim([0, 1])
 ax.set_ylim([10**-2, 2*10**3])
 ax.set_yscale("log")
-ax.set_ylabel("Prbability Density")
-ax.set_xlabel(r"$x$")
-ax.set_title(r"$\sigma^2_w = \frac{25}{102}$")
-ax.legend()
+ax.set_ylabel("Prbability Density", fontsize=fontsize)
+ax.set_xlabel(r"$x$", fontsize=fontsize)
+ax.set_title(r"$\sigma^2_w = \frac{25}{102}, c_2 = 10^4$", fontsize=fontsize)
+
+leg = ax.legend(
+    loc="upper left",
+    framealpha=0,
+    labelcolor=[delta_color, beta_color, inv_triang_color],
+    handlelength=0,
+    handletextpad=0,
+    fontsize=fontsize,
+)
+for item in leg.legendHandles:
+    item.set_visible(False)
+
 fig.savefig("Beta001.pdf", bbox_inches='tight')
 
 print('Delta:', np.var(delta_vals))

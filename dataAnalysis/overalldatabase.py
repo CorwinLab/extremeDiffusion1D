@@ -160,7 +160,6 @@ class Database:
             self.dirs[directory]["var"] = var_file
             self.dirs[directory]["forth_moment"] =  forth_moment_file
 
-
     @classmethod
     def fromDirs(cls, dirs, dir_types):
         """
@@ -207,7 +206,7 @@ class Database:
             raise ValueError(f"beta=={beta} not in database")
 
         return self.fromDirs(beta_dirs, dir_types)
-
+        
     def getN(self, N):
         """
         Get all datasets with specified number of particles.
