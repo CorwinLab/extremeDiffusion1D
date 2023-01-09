@@ -8,9 +8,7 @@ from pyDiffusion import DiffusionTimeCDF
 
 
 def runExperiment(
-    n,
-    a,
-    b,
+    A,
     tMax,
     save_file,
     n_exp,
@@ -39,7 +37,7 @@ def runExperiment(
         Number of times to save the quartiles.
     """
 
-    n = float(n)
+    A = float(A)
     tMax = int(tMax)
     num_of_save_times = int(num_of_save_times)
     
@@ -56,7 +54,7 @@ def runExperiment(
         save_times = save_times[save_times > rec.time]
         append = True
     else:
-        rec = DiffusionTimeCDF('bates', [n, a, b], tMax)
+        rec = DiffusionTimeCDF('delta', [A, 1-2*A, A], tMax)
         rec.id = sysID
         rec.save_dir = save_dir
         append = False
@@ -85,13 +83,9 @@ if __name__ == "__main__":
 
     n_exp = [2, 7, 24, 85, 300]
     tMax = np.log(1e24) * 5 * 10**3
-    n = 3
-    a = 1/2 * (1 - np.sqrt(3/7))
-    b = 1-a
+    A = 25/51
     vars = {
-        "n": n,
-        "a": a,
-        "b": b,
+        "A": A,
         "tMax": tMax,
         "save_file": save_file,
         "num_of_save_times": num_of_save_times,
