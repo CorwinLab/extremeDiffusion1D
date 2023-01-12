@@ -74,7 +74,8 @@ for i, r0 in enumerate(folders):
     time = np.loadtxt(dir + r0 + "/Time.txt")
     with open(os.path.join(dir, r0, 'variables.json')) as f:
         vars = json.load(f)
-    N = vars['nParticles'] 
+    N = vars['nParticles']
+    print(N)
     D = vars['D'] 
     r0 = vars['xi']
     ax.plot(time, mean, label=fr"$r_c={r0}, D=1$", c=colors[i])

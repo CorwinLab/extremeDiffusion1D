@@ -194,36 +194,3 @@ def evolveAndSaveMaxDistance1D(nParticles, save_times, xi, D, save_file, save_po
 
 	f.close()
 	np.savetxt(save_positions, positions)
-	
-def evolveAndSaveMaxDistance(nParticles, save_times, xi, save_file, save_positions):
-	'''
-	Paramters
-	---------
-	nParticles : int
-		Number of particles of the system
-
-	save_times : numpy array
-		Times to save max position at
-
-	xi : float 
-		Correlation length
-
-	save_file : str
-		Path of file to save data to
-
-	save_positions: str
-		Path of file to save final positions to
-	'''
-	f = open(save_file, 'a')
-	writer = csv.writer(f)
-	writer.writerow(['time', 'x', 'y'])
-	
-	positions = np.zeros(shape=(nParticles, 2))
-	t = 0
-	while t < max(save_times):
-		positions, maxPos = iterateTimeStep(positions, xi)
-		t += 1
-		if t in save_times: 
-			writer.writerow([t, maxPos[0], maxPos[1]])
-	f.close()
-	np.savetxt(save_positions, positions)
