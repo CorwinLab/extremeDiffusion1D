@@ -27,6 +27,7 @@ testFirstPass.py
 *.avi
 *.csv
 *.zip
+*.pdf
 
 # Keep example files
 !/examples/*

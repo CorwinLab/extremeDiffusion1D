@@ -54,9 +54,9 @@ for i, b in enumerate(betas):
         var[time <= logN / (digamma(2 * b) - digamma(b))] = 0
         ax.plot(time / logN, var, ls='--', c=colors[i])
 
-    xval = np.log(N) **(3/2) * (digamma(2 * b) - digamma(b))
-    print(xval, b)
-    ax.vlines(xval, 10**-3, 10**5, color=colors[i])
+    xval = np.log(N) **(3/2) * (digamma(2 * b) - digamma(b))**(3/2)
+    print(xval)
+    ax.vlines(xval / np.log(N), 10**-3, 10**5, color=colors[i])
 
 end_coord = (100, 10**-2)
 start_coord = (20, 3*10**3)

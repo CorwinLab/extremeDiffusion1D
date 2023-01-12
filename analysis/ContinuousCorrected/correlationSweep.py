@@ -100,7 +100,11 @@ for i, r0 in enumerate(folders):
     var = np.loadtxt(dir + r0 + "/Var.txt")
     time = np.loadtxt(dir + r0 + "/Time.txt")
     ax.plot(time, var, label=fr"$r_c={r0}$", c=colors[i])
-    r0 = float(r0)
+    with open(os.path.join(dir, r0, 'variables.json')) as f:
+        vars = json.load(f)
+    N = vars['nParticles'] 
+    D = vars['D'] 
+    r0 = vars['xi']
     ax.plot(time, theoretical_variance(2 * np.sqrt(np.pi) * r0/2, 2*D, N, time), ls='--', c=colors[i])
 
 ax.set_xlim([1, 10000])

@@ -48,3 +48,33 @@ if run_again:
         path = os.path.join(delta_dir, dir)
         db.add_directory(path, dir_type="Gumbel")
         db.calculateMeanVar(path, verbose=True, maxTime=276310)
+
+# Calculate quadratic distribution cdf
+quadratic_dir = "/home/jacob/Desktop/talapasMount/JacobData/Quadratic"
+dirs = os.listdir(quadratic_dir)
+run_again = False
+if run_again:
+    for dir in dirs:
+        path = os.path.join(quadratic_dir, dir)
+        db.add_directory(path, dir_type="Gumbel")
+        db.calculateMeanVar(path, verbose=True, maxTime=276310)
+
+# Calculate Uniform distribution cdf
+uniform_dir = "/home/jacob/Desktop/talapasMount/JacobData/Uniform"
+dirs = os.listdir(uniform_dir)
+run_again = False
+if run_again:
+    for dir in dirs:
+        path = os.path.join(uniform_dir, dir)
+        db.add_directory(path, dir_type="Gumbel")
+        db.calculateMeanVar(path, verbose=True, maxTime=276310)
+
+# Calculate Uniform distribution cdf
+invtriangle_dir = "/home/jacob/Desktop/talapasMount/JacobData/InvTriangle"
+dirs = os.listdir(invtriangle_dir)
+run_again = True
+if run_again:
+    for dir in dirs:
+        path = os.path.join(invtriangle_dir, dir)
+        db.add_directory(path, dir_type="Gumbel")
+        db.calculateMeanVar(path, verbose=True, maxTime=276310)

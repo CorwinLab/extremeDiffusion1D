@@ -1,4 +1,5 @@
 import numpy as np
+from theory import KPZ_var_fit
 
 gamma = 0.577
 tw_var = 0.813
@@ -25,6 +26,9 @@ def theoretical_mean(r0, D, N, t):
 def environmental_variance(r0, D, N, t):
     v = v0(r0, D, N, t)
     return t**(2/3) * (sigma(r0, D, v) / Iprime(r0, D, v)) ** 2 * tw_var 
+
+def theoretical_long_time_variance(r0, D, N, t):
+    return D * t / np.log(N) * KPZ_var_fit(r0**2 * np.log(N)**2 / 4 / D / t) + sampling_variance(r0, D, N, t)
 
 def sampling_variance(r0, D, N, t):
     v = v0(r0, D, N, t)
