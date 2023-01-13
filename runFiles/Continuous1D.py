@@ -5,10 +5,10 @@ import sys
 import os
 from datetime import date
 
-def runExperiment(nParticles, minTime, maxTime, num_save_times, xi, D, save_file, save_positions):
+def runExperiment(nParticles, minTime, maxTime, num_save_times, xi, D, sigma, save_file, save_positions):
     save_times = np.geomspace(minTime, maxTime, num_save_times).astype(int)
     save_times = np.unique(save_times)
-    pydiffusion2D.evolveAndSaveMaxDistance1D(nParticles, save_times, xi, D, save_file, save_positions)
+    pydiffusion2D.evolveAndSaveMaxDistance1D(nParticles, save_times, xi, D, sigma, save_file, save_positions)
 
 if __name__ == '__main__':
     # testing code  
@@ -22,6 +22,7 @@ if __name__ == '__main__':
         num_save_times,
         xi,
         D, 
+        sigma,
     ) = sys.argv[1:]
     
     save_dir = f"{topDir}"
@@ -36,6 +37,7 @@ if __name__ == '__main__':
     num_save_times = int(num_save_times)
     xi = float(xi)
     D = float(D)
+    sigma = float(sigma)
     vars = {
         "nParticles": nParticles,
         "minTime": minTime,
@@ -43,6 +45,7 @@ if __name__ == '__main__':
         "num_save_times": num_save_times,
         "xi": xi,
         "D": D,
+        "sigma": sigma,
         "save_file": save_file,
         "save_positions": save_positions
     }

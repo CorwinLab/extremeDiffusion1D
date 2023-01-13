@@ -66,7 +66,7 @@ def generateGCF(pos, xi, fourierCutoff=20):
 	field /= np.sqrt(np.sum(field**2))
 	return field
 
-def getGCF1D(positions, correlation_length, D, grid_spacing=0.1):
+def getGCF1D(positions, correlation_length, sigma, grid_spacing=0.1):
 	'''
     Generate a gaussian correlated field at given positions and correlation length.  
 
@@ -109,12 +109,13 @@ def getGCF1D(positions, correlation_length, D, grid_spacing=0.1):
 	noise = np.random.randn(len(grid))
 
 	kernel_x = np.arange(-3 * correlation_length, 3 * correlation_length, 1)
-	kernel = np.sqrt(D/correlation_length / np.sqrt(np.pi)) * np.exp(-kernel_x**2/2/correlation_length**2)
+	kernel = np.exp(-kernel_x**2 / correlation_length**2)
 	field = np.convolve(kernel, noise, 'same')
 	field = np.interp(positions, grid, field)
-	return field
+	scaling_factor = np.sqrt(sigma / correlation_length  ** 3 / np.pi)
+	return field * scaling_factor / grid_spacing
 
-def iterateTimeStep1D(positions, xi, D):
+def iterateTimeStep1D(positions, xi, D, sigma):
 	'''
 	Parameters
 	----------
@@ -130,7 +131,7 @@ def iterateTimeStep1D(positions, xi, D):
 	positions : numpy array 
 		Updated position of particles 
 	'''
-	biases = getGCF1D(positions, xi, D, grid_spacing=0.1)
+	biases = getGCF1D(positions, xi, sigma, grid_spacing=0.1)
 	positions += np.random.normal(biases, np.sqrt(2*D))
 	return positions
 
@@ -178,7 +179,7 @@ def iterateTimeStep(positions, xi):
 	maxPos = positions[maxIdx, :]
 	return positions, maxPos
 
-def evolveAndSaveMaxDistance1D(nParticles, save_times, xi, D, save_file, save_positions):
+def evolveAndSaveMaxDistance1D(nParticles, save_times, xi, D, sigma, save_file, save_positions):
 	f = open(save_file, 'a')
 	writer = csv.writer(f)
 	writer.writerow(['Time', 'Position'])
@@ -186,7 +187,7 @@ def evolveAndSaveMaxDistance1D(nParticles, save_times, xi, D, save_file, save_po
 	positions = np.zeros(shape=(nParticles))
 	t = 0 
 	while t < max(save_times): 
-		positions = iterateTimeStep1D(positions, xi, D)
+		positions = iterateTimeStep1D(positions, xi, D, sigma)
 		t+=1
 		if t in save_times:
 			writer.writerow([t, np.max(positions)])
