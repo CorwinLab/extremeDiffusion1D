@@ -9,19 +9,38 @@
 #include <random>
 #include <utility>
 #include <vector>
+#include "gsl/gsl_rng.h"
+#include "gsl/gsl_randist.h"
 
 typedef boost::multiprecision::float128 RealType;
 
 #ifndef DIFFUSIONCDF_HPP_
 #define DIFFUSIONCDF_HPP_
 
+class RandDistribution{
+  protected:
+    std::vector<double> alpha;
+    gsl_rng *gen = gsl_rng_alloc(gsl_rng_mt19937);
+    size_t K; 
+    std::vector<double> theta;
+
+  public: 
+    RandDistribution(const std::vector<double> _alpha);
+    ~RandDistribution(){};
+
+    std::vector<RealType> getRandomNumbers();
+};
+
 // Base Diffusion class
-class DiffusionND{
+class DiffusionND : public RandDistribution {
 protected:
   std::vector<std::vector<RealType> > CDF;
-  double beta;
+  std::vector<double> alpha;
   unsigned long int tMax;
   unsigned long int t;
+  int L;
+  RealType absorbedProb;
+  RealType tol = pow(10, -4500);
 
   // It would be nice if this could be a generic distribution as:
   // boost::random::distribution bias
@@ -32,16 +51,14 @@ protected:
 
   std::uniform_real_distribution<> dis;
   boost::random::beta_distribution<> beta_dist;
-  std::vector<float> biases;
-  std::vector<double> maxDist;
-  std::vector<double> maxTheta;
+  std::vector<RealType> biases;
 
 public:
-  DiffusionND(const double _beta, const unsigned long int _tMax);
+  DiffusionND(const std::vector<double> _alpha, const unsigned long int _tMax, int _L);
   ~DiffusionND(){};
 
-  double getBeta() { return beta; };
-  void setBeta(double _beta){ beta = _beta; };
+  std::vector<double> getAlpha() { return alpha; };
+  void setAlpha(std::vector<double> _alpha){ alpha = _alpha; };
 
   std::vector<std::vector<RealType> > getCDF() { return CDF; };
   void setCDF(std::vector<std::vector<RealType> > _CDF){ CDF = _CDF; };
@@ -50,11 +67,14 @@ public:
   void settMax(unsigned long int _tMax){ tMax = _tMax; };
 
   void setBetaSeed(const unsigned int seed) { gen.seed(seed); };
-  std::vector<float> getBiases() { return biases;}
+  std::vector<RealType> getBiases() { return biases;}
+
+  unsigned long int getTime(){ return t; };
+  int getL() { return L; }
+  
+  RealType getAbsorbedProb() { return absorbedProb; }
 
   void iterateTimestep();
-  std::vector<double> getDistance() { return maxDist;}
-  std::vector<double> getTheta() {return maxTheta; }
 };
 
 #endif /* DIFFUSIONCDF_HPP_ */

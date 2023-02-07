@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 nParticles = 10000
 maxTime = 10000
 D = 5
-numSystems = 10
+numSystems = 100
 maxPos = np.zeros(shape=(maxTime))
 for j in range(numSystems):
     positions = np.zeros(shape=(nParticles))

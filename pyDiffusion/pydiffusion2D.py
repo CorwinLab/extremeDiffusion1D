@@ -41,30 +41,34 @@ def generateGCF(pos, xi, fourierCutoff=20):
 	fig.colorbar(qp, ax=ax)
 	fig.savefig(f"GCF{xi}.pdf", bbox_inches="tight")
 	"""
+	
+	_pos = pos.copy()
+	num_particles, dims = _pos.shape
+	Lx = (np.max(_pos[:,0]) - np.min(_pos[:,0])) + 3 * xi
+	Ly = (np.max(_pos[:,1]) - np.min(_pos[:,1])) + 3 * xi
+	L = np.max(np.array([Lx, Ly]))
 
-	num_particles, dims = pos.shape
-	Lx = 2*(max(pos[:,0]) - min(pos[:,0])) + 3 * xi
-	Ly = 2*(max(pos[:,1]) - min(pos[:,1])) + 3 * xi
-	# rotate positions
+	# Coerce all particles to be in the box from [0, 1]
+	_pos[:, 0] = (_pos[:, 0] + np.min(_pos[:, 0])) / L 
+	_pos[:, 1] = (_pos[:, 1] + np.min(_pos[:, 1])) / L
+	xi = xi / L
 	theta = np.random.uniform(0, 2*np.pi)
 
-	field = np.zeros(pos.shape)
+	field = np.zeros(_pos.shape)
 	for d in range(dims):
-		A = np.random.normal(0, 1/(2*np.pi), size=(fourierCutoff, fourierCutoff))
-		B = np.random.uniform(0, 2*np.pi, size=(fourierCutoff, fourierCutoff))
+		A = np.random.normal(0, 1/np.sqrt(2*np.pi), size=(fourierCutoff, fourierCutoff))
+		B = np.random.uniform(0, 2 * np.pi, size=(fourierCutoff, fourierCutoff))
 		for pID in range(num_particles):
-			for n in range(fourierCutoff):
-				kn = 2 * np.pi * n / Lx 
-				for m in range(fourierCutoff):
-					km = -2 * np.pi * m / Ly
-					xrot = np.cos(theta) * pos[pID, 0] - np.sin(theta) * pos[pID, 1]
-					yrot = np.sin(theta) * pos[pID, 0] + np.cos(theta) * pos[pID, 1]
-					field[pID,d] += 2*np.pi*np.sqrt(2)*xi*A[n,m]*np.exp(-(kn**2 + km**2)*xi**2 / 8)*np.cos(B[n,m] + kn * xrot + km * yrot)
+			for n in np.arange(-fourierCutoff, fourierCutoff):
+				kn = 2 * np.pi * n
+				for m in np.arange(-fourierCutoff, fourierCutoff):
+					km = 2 * np.pi * m
+					# This could shift the two point correlator to something we don't want 
+					#xrot = np.cos(theta) * pos[pID, 0] - np.sin(theta) * pos[pID, 1]
+					#yrot = np.sin(theta) * pos[pID, 0] + np.cos(theta) * pos[pID, 1]
+					field[pID, d] += np.sqrt(2) * np.pi * A[n,m] * np.exp(-(kn**2 + km**2) * xi**2 / 8) * np.cos(B[n,m] + kn * _pos[pID, 0] + km * _pos[pID, 1])
 
-	field[:, 0] -= np.mean(field[:, 0])
-	field[:, 1] -= np.mean(field[:, 1])
-	field /= np.sqrt(np.sum(field**2))
-	return field
+	return field / L
 
 def getGCF1D(positions, correlation_length, sigma, grid_spacing=0.1):
 	'''
@@ -111,6 +115,8 @@ def getGCF1D(positions, correlation_length, sigma, grid_spacing=0.1):
 	kernel_x = np.arange(-3 * correlation_length, 3 * correlation_length, 1)
 	kernel = np.exp(-kernel_x**2 / correlation_length**2)
 	field = np.convolve(kernel, noise, 'same')
+	
+	assert np.all(np.diff(grid) > 0), "Sampling points on grid are not monotonically increasing"
 	field = np.interp(positions, grid, field)
 	scaling_factor = np.sqrt(sigma / correlation_length  ** 3 / np.pi)
 	return field * scaling_factor / grid_spacing

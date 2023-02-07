@@ -18,9 +18,9 @@ SIGMA=1
 
 for D in 0.1 1 10
 do
-	TOPDIR=/home/jhass2/jamming/JacobData/ContinuousNew/$D
+	TOPDIR=/home/jacob/Desktop/Code/extremeDiffusion1D/testContinuous/
 
 	mkdir -p $TOPDIR
 
-	python3 Continuous1D.py $TOPDIR $SLURM_ARRAY_TASK_ID $MINTIME $MAXTIME $NPARTICLES $NUMSAVETIMES $XI $D $SIGMA
+	python3 Continuous1D.py $TOPDIR 0 $MINTIME $MAXTIME $NPARTICLES $NUMSAVETIMES $XI $D $SIGMA
 done

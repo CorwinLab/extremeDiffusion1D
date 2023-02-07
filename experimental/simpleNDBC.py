@@ -3,6 +3,7 @@ import numpy as np
 # from numba import jit
 from matplotlib import pyplot as plt
 import time
+from numba import jit
 
 
 def numbaDirichlet(numSites, shape):
@@ -12,11 +13,7 @@ def numbaDirichlet(numSites, shape):
             a[i, j, 0] = 0
             a[i, j, 1:numSites] = np.sort(np.random.rand(numSites - 1))
     return np.diff(a)
-    # return np.append(2,3)
-    # return np.diff(np.hstack( ( np.sort(np.random.rand(3)), np.array(1) )))
 
-
-# @jit(nopython=True)
 def twoDBCModelPDF(occupancy, tMax):
 
     for t in range(1, tMax + 1):
@@ -30,11 +27,6 @@ def twoDBCModelPDF(occupancy, tMax):
         newOccupancy[:t, 1 : t + 1] += bias[:, :, 2] * occupancy[:t, :t]
         newOccupancy[1 : t + 1, 1 : t + 1] += bias[:, :, 3] * occupancy[:t, :t]
         occupancy = newOccupancy
-        fig, ax = plt.subplots()
-        ax2 = ax.contourf(newOccupancy)
-        fig.colorbar(ax2)
-        fig.savefig(f"Data/Occ{t}.png")
-        plt.close(fig)
 
     return occupancy
 
