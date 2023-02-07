@@ -15,6 +15,7 @@
 #include "pybind11_numpy_scalar.h"
 #include "randomDistribution.hpp"
 #include "randomNumGenerator.hpp"
+#include "diffusionND.hpp"
 
 typedef boost::multiprecision::float128 RealType;
 
@@ -226,4 +227,19 @@ PYBIND11_MODULE(libDiffusion, m)
       .def("getQuantilePositions", &DiffusionPositionCDF::getQuantilePositions)
       .def("getQuantiles", &DiffusionPositionCDF::getQuantiles)
       .def("stepPosition", &DiffusionPositionCDF::stepPosition);
+
+  py::class_<RandDistribution>(m, "RandDistribution")
+      .def(py::init<const std::vector<double>>())
+      .def("getRandomNumbers", &RandDistribution::getRandomNumbers);
+  py::class_<DiffusionND, RandDistribution>(m, "DiffusionND")
+      .def(py::init<const std::vector<double>, const unsigned long int, int>())
+      .def("getBiases", &DiffusionND::getBiases)
+      .def("getCDF", &DiffusionND::getCDF)
+      .def("setCDF", &DiffusionND::setCDF, py::arg("CDF"))
+      .def("iterateTimestep", &DiffusionND::iterateTimestep)
+      .def("getRandomNumbers", &DiffusionND::getRandomNumbers)
+      .def("getTime", &DiffusionND::getTime)
+      .def("getAbsorbedProb", &DiffusionND::getAbsorbedProb)
+      .def("gettMax", &DiffusionND::gettMax)
+      .def("getL", &DiffusionND::getL);
 }

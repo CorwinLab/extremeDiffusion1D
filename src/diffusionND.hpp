@@ -35,6 +35,7 @@ class RandDistribution{
 class DiffusionND : public RandDistribution {
 protected:
   std::vector<std::vector<RealType> > CDF;
+  std::vector<std::vector<RealType> > CDF_new;
   std::vector<double> alpha;
   unsigned long int tMax;
   unsigned long int t;

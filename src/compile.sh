@@ -8,6 +8,7 @@ c++ -O3 -c -march=native -Wall -std=gnu++11 -fPIC $(python3-config --includes) f
 c++ -O3 -c -march=native -Wall -std=gnu++11 -fPIC $(python3-config --includes) firstPassagePDF.cpp -I/c/modular-boost -lquadmath -o firstPassagePDF.o
 c++ -O3 -c -march=native -Wall -std=gnu++11 -fPIC $(python3-config --includes) firstPassageDriver.cpp -I/c/modular-boost -lquadmath -o firstPassageDriver.o
 c++ -O3 -c -march=native -Wall -std=gnu++11 -fPIC $(python3-config --includes) firstPassageEvolve.cpp -I/c/modular-boost -lquadmath -o firstPassageEvolve.o
-c++ -O3 -c -march=native -Wall -std=gnu++11 -fPIC $(python3-config --includes) libDiffusion.cpp -I/c/modular-boost -lquadmath -o libDiffusion.o -I"../pybind11/include"
+c++ -O3 -c -march=native -Wall -std=gnu++11 -fPIC $(python3-config --includes) diffusionND.cpp -I/c/modular-boost -lquadmath -o diffusionND.o
+c++ -O3 -c -march=native -Wall -std=gnu++11 -fPIC $(python3-config --includes) libDiffusion.cpp -I/c/modular-boost -lgsl -lgslcblas -lquadmath -o libDiffusion.o -I"../pybind11/include"
 
-g++ -shared -o "libDiffusion.so" libDiffusion.o diffusionPDF.o diffusionPositionCDF.o diffusionTimeCDF.o firstPassageBase.o firstPassageDriver.o firstPassagePDF.o randomNumGenerator.o firstPassageEvolve.o randomDistribution.o -I/c/modular-boost -lquadmath -I"../pybind11/include" $(python3-config --includes)
+g++ -shared -o "libDiffusion.so" libDiffusion.o diffusionPDF.o diffusionPositionCDF.o diffusionTimeCDF.o firstPassageBase.o firstPassageDriver.o firstPassagePDF.o randomNumGenerator.o firstPassageEvolve.o randomDistribution.o diffusionND.o -I/c/modular-boost -lquadmath -lgsl -lgslcblas -I"../pybind11/include" $(python3-config --includes)
