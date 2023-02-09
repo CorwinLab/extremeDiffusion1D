@@ -9,7 +9,6 @@ import sys
 
 
 def runExperiment(N, alpha, Lmin, Lmax, tMax, save_file):
-    process = psutil.Process(os.getpid())
     f = open(save_file, 'a')
     writer = csv.writer(f)
     writer.writerow(['Position', 'Quantile', 'Variance'])
