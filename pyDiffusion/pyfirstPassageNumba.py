@@ -2,8 +2,11 @@ import numpy as np
 from numba import jit
 
 @jit(nopython=True)
-def iteratePDF(pdf):
-    biases = np.random.uniform(0.0, 1.0, size=pdf.shape)
+def iteratePDF(pdf, model='RWRE'):
+    if model=='RWRE':
+        biases = np.random.uniform(0.0, 1.0, size=pdf.shape)
+    elif model=='SSRW':
+        biases = np.zeros(shape=pdf.shape) + 1/2
     new_pdf = np.zeros(shape=pdf.shape)
     # Deal with the boundaries and then with the rest of the system
     #Absorbing boundary (i == 0)
