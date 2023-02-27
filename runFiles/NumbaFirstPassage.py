@@ -32,6 +32,7 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
         f.flush()
     
     time_interval = 3600 * 12
+    N = np.quad(N)
 
     for d in distances:
         quantile = None
@@ -39,7 +40,7 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
         running_sum = 0
 
         pdf = pyfirstPassageNumba.initializePDF(d)
-        firstPassageCDF = pdf[0] + pdf[-1]
+        firstPassageCDF = np.quad(pdf[0] + pdf[-1])
         nFirstPassageCDFPrev = 1 - (1-firstPassageCDF)**N
         
         t = 1
@@ -47,12 +48,12 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
         while (nFirstPassageCDFPrev < 1) or (firstPassageCDF < 1 / N):
             pdf = pyfirstPassageNumba.iteratePDF(pdf)
 
-            firstPassageCDF = pdf[0] + pdf[-1]
+            firstPassageCDF = np.quad(pdf[0] + pdf[-1])
             nFirstPassageCDF = 1 - (1-firstPassageCDF)**N
             nFirstPassagePDF = nFirstPassageCDF - nFirstPassageCDFPrev
             
-            running_sum_squared += t ** 2 * nFirstPassagePDF
-            running_sum += t * nFirstPassagePDF
+            running_sum_squared += np.quad(t) ** 2 * nFirstPassagePDF
+            running_sum += np.quad(t) * nFirstPassagePDF
             if (quantile is None) and (firstPassageCDF > 1 / N):
                 quantile = t
 

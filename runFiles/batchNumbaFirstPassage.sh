@@ -13,7 +13,7 @@
 DMAX=1000
 NUMOFPOINTS=750
 
-for N_EXP in 1 2 5 12 28
+for N_EXP in 28
 do
     TOPDIR=/home/jhass2/jamming/JacobData/CleanData/FPTCDFPaperFixed/$N_EXP
     mkdir -p $TOPDIR
