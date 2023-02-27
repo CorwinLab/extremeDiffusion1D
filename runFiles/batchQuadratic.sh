@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=Quad
+#SBATCH --job-name=Quad12
 #SBATCH --time=3-00:00:00
 #SBATCH --error=/home/jhass2/jamming/JacobData/logs/Quadratic/%A-%a.err
 #SBATCH --nodes=1
@@ -10,7 +10,7 @@
 #SBATCH --partition=preempt
 
 NUM_OF_SAVE_TIMES=7500
-TOPDIR=/home/jhass2/jamming/JacobData/Quadratic/804
+TOPDIR=/home/jhass2/jamming/JacobData/Quadratic/12
 mkdir -p $TOPDIR
 
 python3 ./QuadraticCDF.py $TOPDIR $SLURM_ARRAY_TASK_ID $NUM_OF_SAVE_TIMES

@@ -40,7 +40,7 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
 
         pdf = pyfirstPassageNumba.initializePDF(d)
         firstPassageCDF = pdf[0] + pdf[-1]
-        nFirstPassageCDFPrev = 1 - (1-firstPassageCDF)**N
+        nFirstPassageCDFPrev = 1 - np.exp(-N * firstPassageCDF)
         
         t = 1
         last_save_time = time.time()
@@ -48,7 +48,7 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
             pdf = pyfirstPassageNumba.iteratePDF(pdf)
 
             firstPassageCDF = pdf[0] + pdf[-1]
-            nFirstPassageCDF = 1 - (1-firstPassageCDF)**N
+            nFirstPassageCDF = 1 - np.exp(-N * firstPassageCDF)
             nFirstPassagePDF = nFirstPassageCDF - nFirstPassageCDFPrev
             
             running_sum_squared += t ** 2 * nFirstPassagePDF

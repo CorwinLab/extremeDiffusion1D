@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     n_exp = [2, 7, 24, 85, 300]
     tMax = np.log(1e24) * 5 * 10**3
-    c = 1 - np.sqrt(1-6*(1/4-25/102))
+    c = 1 - np.sqrt(1-6*(1/4-5/24))
     vars = {
         "c": c,
         "tMax": tMax,

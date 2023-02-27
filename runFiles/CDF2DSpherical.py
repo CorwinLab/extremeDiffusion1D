@@ -46,6 +46,7 @@ def runExperiment(N, alpha, Rmin, Rmax, save_file):
             
         variance = running_sum_squared - running_sum ** 2
         writer.writerow([R, quantile, variance])
+        f.flush()
     
     f.close()
 

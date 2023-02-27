@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=2DFPT
+#SBATCH --job-name=Sphere
 #SBATCH --time=1-00:00:00
 #SBATCH --error=/home/jhass2/jamming/JacobData/logs/2DLatticeSpherical/%A-%a.err
 #SBATCH --nodes=1
@@ -7,7 +7,7 @@
 #SBATCH --array=0-1000
 #SBATCH --output=/home/jhass2/jamming/JacobData/logs/2DLatticeSpherical/%A-%a.out
 #SBATCH --account=jamming
-#SBATCH --queue=preempt
+#SBATCH --partition=preempt
 
 TOPDIR=/home/jhass2/jamming/JacobData/2DLatticeRWRESpherical/
 ALPHA=1
@@ -17,4 +17,4 @@ RMAX=1000
 
 mkdir -p $TOPDIR
 
-python3 ./CDFFirstPassage.py $TOPDIR $SLURM_ARRAY_TASK_ID $ALPHA $N $RMIN $RMAX
+python3 ./CDF2DSpherical.py $TOPDIR $SLURM_ARRAY_TASK_ID $ALPHA $N $RMIN $RMAX

@@ -37,7 +37,6 @@ def runExperiment(
         Number of times to save the quartiles.
     """
 
-    n = float(n)
     tMax = int(tMax)
     num_of_save_times = int(num_of_save_times)
     
@@ -84,7 +83,7 @@ if __name__ == "__main__":
 
     n_exp = [2, 7, 24, 85, 300]
     tMax = np.log(1e24) * 5 * 10**3
-    a = 1/2 * (1 - np.sqrt(5/603))
+    a = 1/2 * (1 - np.sqrt(5/9))
     b = 1-a
     vars = {
         "a": a,

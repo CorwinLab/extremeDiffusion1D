@@ -2,6 +2,7 @@ import numpy as np
 from pyDiffusion import pyfirstPassageNumba
 import csv
 import os
+import sys
 
 def runExperiment(Lvalues, N, save_file, model='SSRW'):
     f = open(save_file, "a")
@@ -36,11 +37,10 @@ def runExperiment(Lvalues, N, save_file, model='SSRW'):
     f.close()
 
 if __name__ == '__main__':
-    Nexps = [2, 5, 12]
-    for Nexp in Nexps:
-        N = float(f"1e{Nexp}")
-        Lvalues = np.geomspace(1, np.log(N)*1000, 750).astype(int)
-        Lvalues = np.unique(Lvalues)
-        Lvalues = Lvalues[Lvalues <= 750*np.log(N)]
-        save_file = os.path.join("./NoApprox", f"MeanVar{Nexp}.txt")
-        runExperiment(Lvalues, N, save_file)
+    (topDir, Nexp) = sys.argv[1:]
+    N = float(f"1e{Nexp}")
+    Lvalues = np.geomspace(1, np.log(N)*1000, 750).astype(int)
+    Lvalues = np.unique(Lvalues)
+    Lvalues = Lvalues[Lvalues <= 750*np.log(N)]
+    save_file = os.path.join(topDir, "MeanVariance.txt")
+    runExperiment(Lvalues, N, save_file)
