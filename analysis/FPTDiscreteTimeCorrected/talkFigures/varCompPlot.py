@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from matplotlib import pyplot as plt
 import sys 
-sys.path.append("../../dataAnalysis")
+sys.path.append("../../../dataAnalysis")
 from fptTheory import variance, sam_variance_theory
 plt.rcParams.update({'font.size': 15})
 
@@ -36,23 +36,23 @@ einstein_df = pd.read_csv('/home/jacob/Desktop/talapasMount/JacobData/FPTDiscret
 env_theory = variance(cdf_df['Distance'].values, N)
 sam_theory = sam_variance_theory(cdf_df['Distance'].values, N)
 new_row = [np.log2(N), 0]
-einstein_theoretical_data = np.loadtxt("etheoretical12.txt")
+einstein_theoretical_data = np.loadtxt("../etheoretical12.txt")
 einstein_theoretical_data = np.vstack([new_row, einstein_theoretical_data])
 
-ax.plot(max_df['Distance'] / logN, max_df['Variance'], label=r'$\mathrm{Var}(\tau_{\mathrm{Min}})$', c=max_color, alpha=alpha)
+#ax.plot(max_df['Distance'] / logN, max_df['Variance'], label=r'$\mathrm{Var}(\tau_{\mathrm{Min}})$', c=max_color, alpha=alpha)
 #ax.fill_between(max_df['Distance'] / logN, max_df['Variance'] - np.sqrt(max_df['Forth Moment']), max_df['Variance'] + np.sqrt(max_df['Forth Moment']), color=max_color, alpha=alpha/2, edgecolor=None)
 
 ax.plot(cdf_df['Distance'] / logN, cdf_df['Sampling Variance'], label=r'$\mathrm{Var}(\tau_{\mathrm{Sam}})$', c=gumbel_color, alpha=alpha)
 #ax.fill_between(cdf_df['Distance'] / logN, cdf_df['Sampling Variance'] - np.sqrt(cdf_df['Var Sampling Variance']), cdf_df['Sampling Variance'] + np.sqrt(cdf_df['Var Sampling Variance']), color=gumbel_color, alpha=alpha/2, edgecolor=None)
 
-ax.plot(cdf_df['Distance'] / logN, cdf_df['Env Variance'], label=r'$\mathrm{Var}(\tau_{\mathrm{Env}})$', c=quantile_color, alpha=alpha)
+#ax.plot(cdf_df['Distance'] / logN, cdf_df['Env Variance'], label=r'$\mathrm{Var}(\tau_{\mathrm{Env}})$', c=quantile_color, alpha=alpha)
 #ax.fill_between(cdf_df['Distance'] / logN, cdf_df['Env Variance'] - np.sqrt(cdf_df['Var Env Variance']), cdf_df['Env Variance'] + np.sqrt(cdf_df['Var Env Variance']), color=quantile_color, alpha=alpha/2, edgecolor=None)
 
-#ax.plot(einstein_df['Distance'] / logN, einstein_df['Variance'], label=r'$\mathrm{Var}(\tau_{\mathrm{SSRW}})$', c=einstein_color, alpha=alpha)
+ax.plot(einstein_df['Distance'] / logN, einstein_df['Variance'], label=r'$\mathrm{Var}(\tau_{\mathrm{SSRW}})$', c=einstein_color, alpha=alpha)
 #ax.fill_between(einstein_df['Distance'] / logN, einstein_df['Variance'] - np.sqrt(einstein_df['Forth Moment']), einstein_df['Variance'] + np.sqrt(einstein_df['Forth Moment']), color=einstein_color, alpha=alpha/2, edgecolor=None)
 
 #ax.plot(einstein_theoretical_data[:, 0] / logN, einstein_theoretical_data[:, 1], ls='--', c=einstein_color)
-ax.plot(cdf_df['Distance'] / logN, env_theory, ls='--', c=quantile_color)
+#@ax.plot(cdf_df['Distance'] / logN, env_theory, ls='--', c=quantile_color)
 ax.plot(cdf_df['Distance'] / logN, sam_theory, ls='--', c=gumbel_color)
 #ax.plot(cdf_df['Distance'] / logN, env_theory + sam_theory, ls='--', c=max_color)
 
@@ -75,4 +75,4 @@ ax.set_ylim([10**-3, 10**12])
 for item in leg.legendHandles:
     item.set_visible(False)
 
-fig.savefig("CompleteVariance.png", bbox_inches='tight')
+fig.savefig("CompleteVarianceWithEinstein.svg", bbox_inches='tight')

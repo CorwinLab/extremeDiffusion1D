@@ -3,7 +3,7 @@ from pyDiffusion import pyfirstPassageNumba
 import csv
 import os
 
-def runExperiment(Lvalues, N, save_file):
+def runExperiment(Lvalues, N, save_file, model='SSRW'):
     f = open(save_file, "a")
     writer = csv.writer(f)
     writer.writerow(["Position", "Mean", "Variance"])
@@ -22,7 +22,7 @@ def runExperiment(Lvalues, N, save_file):
         running_sum_squared = 0
         running_sum = 0
         while (nFirstPassageCDFPrev < 1):
-            pdf = pyfirstPassageNumba.iteratePDF(pdf)
+            pdf = pyfirstPassageNumba.iteratePDF(pdf, model='SSRW')
 
             firstPassageCDF = pdf[0] + pdf[-1]
             if N==10:
@@ -43,10 +43,11 @@ def runExperiment(Lvalues, N, save_file):
     f.close()
 
 if __name__ == '__main__':
-    Nexps = [2, 5, 12, 28]
+    Nexps = [2, 5, 12]
     for Nexp in Nexps:
         N = float(f"1e{Nexp}")
-        Lvalues = np.geomspace(1, np.log(N)*750).astype(int)
+        Lvalues = np.geomspace(1, np.log(N)*1000, 750).astype(int)
         Lvalues = np.unique(Lvalues)
-        save_file = os.path.join("./SSRWVariance", f"MeanVar{Nexp}.txt")
+        Lvalues = Lvalues[Lvalues <= 750*np.log(N)]
+        save_file = os.path.join("./ExpApprox", f"MeanVar{Nexp}.txt")
         runExperiment(Lvalues, N, save_file)

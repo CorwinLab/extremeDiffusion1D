@@ -3,7 +3,7 @@ from numba import njit
 import csv
 
 @njit
-def generateGCF(pos, xi, fourierCutoff=20):
+def generateGCF(pos, xi, tol=0.01):
 	"""
 	Parameters
 	----------
@@ -41,34 +41,89 @@ def generateGCF(pos, xi, fourierCutoff=20):
 	fig.colorbar(qp, ax=ax)
 	fig.savefig(f"GCF{xi}.pdf", bbox_inches="tight")
 	"""
-	
 	_pos = pos.copy()
 	num_particles, dims = _pos.shape
+	
+	_pos[:, 0] -= np.min(_pos[:, 0])
+	_pos[:, 1] -= np.min(_pos[:, 1])
+
 	Lx = (np.max(_pos[:,0]) - np.min(_pos[:,0])) + 3 * xi
 	Ly = (np.max(_pos[:,1]) - np.min(_pos[:,1])) + 3 * xi
 	L = np.max(np.array([Lx, Ly]))
+	fourierCutoff = int(np.sqrt(-L**2 * 8 * np.log(tol)/(2 * np.pi**2)**2))
 
 	# Coerce all particles to be in the box from [0, 1]
-	_pos[:, 0] = (_pos[:, 0] + np.min(_pos[:, 0])) / L 
-	_pos[:, 1] = (_pos[:, 1] + np.min(_pos[:, 1])) / L
-	xi = xi / L
-	theta = np.random.uniform(0, 2*np.pi)
+	_pos[:, 0] /= L # need to account for minimum values! (i.e. if the minimum is not 0)
+	_pos[:, 1] /= L
+	xi /= L
+	#theta = np.random.uniform(0, 2*np.pi)
 
 	field = np.zeros(_pos.shape)
+	
 	for d in range(dims):
-		A = np.random.normal(0, 1/np.sqrt(2*np.pi), size=(fourierCutoff, fourierCutoff))
-		B = np.random.uniform(0, 2 * np.pi, size=(fourierCutoff, fourierCutoff))
+		A = np.random.normal(0, 1/np.sqrt(2*np.pi), size=(2*fourierCutoff, 2*fourierCutoff))
+		B = np.random.uniform(0, 2 * np.pi, size=(2*fourierCutoff, 2*fourierCutoff))
 		for pID in range(num_particles):
-			for n in np.arange(-fourierCutoff, fourierCutoff):
+			for n in np.arange(-fourierCutoff, fourierCutoff): # I think negative values of n means we're iterating over the same values of A[-n]
 				kn = 2 * np.pi * n
-				for m in np.arange(-fourierCutoff, fourierCutoff):
+				for m in np.arange(-fourierCutoff, fourierCutoff): 
 					km = 2 * np.pi * m
 					# This could shift the two point correlator to something we don't want 
 					#xrot = np.cos(theta) * pos[pID, 0] - np.sin(theta) * pos[pID, 1]
 					#yrot = np.sin(theta) * pos[pID, 0] + np.cos(theta) * pos[pID, 1]
-					field[pID, d] += np.sqrt(2) * np.pi * A[n,m] * np.exp(-(kn**2 + km**2) * xi**2 / 8) * np.cos(B[n,m] + kn * _pos[pID, 0] + km * _pos[pID, 1])
+					field[pID, d] += np.sqrt(2) * np.pi * A[n+fourierCutoff, m+fourierCutoff] * np.exp(-(kn**2 + km**2) * xi**2 / 8) * np.cos(B[n+fourierCutoff, m+fourierCutoff] + kn * _pos[pID, 0] + km * _pos[pID, 1])
 
 	return field / L
+
+@njit
+def generateGCF1D(pos, xi, tol=0.01):
+	"""
+	Parameters
+	----------
+	pos : numpy array
+		Position of particles. Array should have: rows = particleID and
+		cols = components
+
+	xi : float
+		Correlation length
+
+	fourierCutoff : int (20)
+		Number of terms to include in fourier transform.
+
+	Returns
+	-------
+	c : numpy array 
+		Gaussian correlated field with shape rows = particleID and 
+		cols = components
+
+	Examples
+	--------
+	"""
+	
+	_pos = pos.copy()
+	_pos = (_pos - np.min(_pos)) # need to account for negative minimum value
+	
+	L = (np.max(_pos) - np.min(_pos)) + 3 * xi
+	fourierCutoff = int(np.sqrt(-L**2 * 4 * np.log(tol)/(2 * np.pi)**2))
+
+	# Coerce all particles to be in the box from [0, 1]
+	_pos = _pos / L
+	xi = xi / L
+	#theta = np.random.uniform(0, 2*np.pi)
+
+	field = np.zeros(_pos.shape)
+	A = np.random.normal(0, 1/np.sqrt(2*np.pi), size=(2*fourierCutoff))
+	B = np.random.uniform(0, 2 * np.pi, size=(2*fourierCutoff))
+	
+	for pID in range(len(_pos)):
+		for n in np.arange(-fourierCutoff, fourierCutoff):
+			kn = 2 * np.pi * n
+			# This could shift the two point correlator to something we don't want 
+			#xrot = np.cos(theta) * pos[pID, 0] - np.sin(theta) * pos[pID, 1]
+			#yrot = np.sin(theta) * pos[pID, 0] + np.cos(theta) * pos[pID, 1]
+			field[pID] += np.sqrt(2) * np.pi * A[n+fourierCutoff] * np.exp(-kn**2 * xi**2 / 8) * np.cos(B[n+fourierCutoff] + kn * _pos[pID])
+
+	return field / np.sqrt(L)
 
 def getGCF1D(positions, correlation_length, sigma, grid_spacing=0.1):
 	'''
@@ -121,7 +176,7 @@ def getGCF1D(positions, correlation_length, sigma, grid_spacing=0.1):
 	scaling_factor = np.sqrt(sigma / correlation_length  ** 3 / np.pi)
 	return field * scaling_factor / grid_spacing
 
-def iterateTimeStep1D(positions, xi, D, sigma):
+def iterateTimeStep1D(positions, xi, D, tol, dt):
 	'''
 	Parameters
 	----------
@@ -137,8 +192,8 @@ def iterateTimeStep1D(positions, xi, D, sigma):
 	positions : numpy array 
 		Updated position of particles 
 	'''
-	biases = getGCF1D(positions, xi, sigma, grid_spacing=0.1)
-	positions += np.random.normal(biases, np.sqrt(2*D))
+	biases = generateGCF1D(positions, xi, tol)
+	positions += np.random.normal(biases * dt, np.sqrt(2 * D * dt))
 	return positions
 
 @njit 
@@ -185,16 +240,16 @@ def iterateTimeStep(positions, xi):
 	maxPos = positions[maxIdx, :]
 	return positions, maxPos
 
-def evolveAndSaveMaxDistance1D(nParticles, save_times, xi, D, sigma, save_file, save_positions):
+def evolveAndSaveMaxDistance1D(nParticles, save_times, xi, D, tol, dt, save_file, save_positions):
 	f = open(save_file, 'a')
 	writer = csv.writer(f)
 	writer.writerow(['Time', 'Position'])
 	f.flush()
 	positions = np.zeros(shape=(nParticles))
-	t = 0 
+	t = 0
 	while t < max(save_times): 
-		positions = iterateTimeStep1D(positions, xi, D, sigma)
-		t+=1
+		positions = iterateTimeStep1D(positions, xi, D, tol, dt)
+		t += dt
 		if t in save_times:
 			writer.writerow([t, np.max(positions)])
 			f.flush()

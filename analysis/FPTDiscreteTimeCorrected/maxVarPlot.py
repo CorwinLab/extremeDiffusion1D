@@ -71,10 +71,13 @@ for i, Nexp in enumerate(Ns):
     axin1.fill_between(df['Distance'], df['Variance'] - np.sqrt(df['Forth Moment']), df['Variance'] + np.sqrt(df['Forth Moment']), color=colors[i], alpha=alpha/2, edgecolor=None)
     axin1.plot(d, var_theory, ls='--', c=colors[i])
 
+xvals = np.array([100, 600])
+ax.plot(xvals, xvals**4, ls='--', c='k', label=r'$L^4$')
+
 leg = ax.legend(
     loc="upper left",
     framealpha=0,
-    labelcolor=colors,
+    labelcolor=colors + ['k'],
     handlelength=0,
     handletextpad=0,
 )

@@ -37,7 +37,7 @@ cdf_dir = '/home/jacob/Desktop/corwinLabMount/CleanData/FPTCDFPaper'
 talapas_dir = '/home/jacob/Desktop/corwinLabMount/CleanData/TalapasFPTCDF/FPTCDFPaper'
 dirs = os.listdir(cdf_dir)
 maxFiles = [1500, 1500, 1500, 1500, 500]
-recalculate_mean = False
+recalculate_mean = True
 if recalculate_mean: 
     nFiles = []
     for max_dist, N, nFile in zip(max_dists, Ns, maxFiles):
@@ -50,6 +50,8 @@ if recalculate_mean:
         df.to_csv(path, index=False)
         nFiles.append(number_of_files)
         print(f"CDF {N}: {number_of_files} files")
+        print("Incorrect saving to ", path)
+        print(f"Directories used: {dir} and {talapas_file_dir}")
 
         np.savetxt(os.path.join(cdf_dir, f'{N}', 'NumberOfSystems.txt'), [number_of_files])
 
@@ -67,3 +69,22 @@ if recalculate_mean:
     
 num_files = np.loadtxt('/home/jacob/Desktop/talapasMount/JacobData/FPTDiscreteE/12/NumberOfSystems.csv')
 print(f"Einstein Discrete: {num_files} files")
+
+talapas_dir = "/home/jacob/Desktop/talapasMount/JacobData/CleanData/FPTCDFPaperFixed"
+dirs = os.listdir(talapas_dir)
+maxFiles = [1000, 1000, 1000, 1000, 1000]
+recalculate_mean = True
+if recalculate_mean: 
+    nFiles = []
+    for max_dist, N, nFile in zip(max_dists, Ns, maxFiles):
+        talapas_file_dir = talapas_dir + f'/{N}/First*.txt'
+        files = glob.glob(talapas_file_dir)
+        df, number_of_files = calculateMeanVarCDF(files, max_dist, verbose=False, nFile=nFile)
+        path = os.path.join(talapas_dir, f'{N}', 'MeanVariance.csv')
+        df.to_csv(path, index=False)
+        nFiles.append(number_of_files)
+        print(f"CDF {N}: {number_of_files} files")
+        print("Fixed saving to:", path)
+        print(f"Directories used: {talapas_dir}")
+
+        np.savetxt(os.path.join(talapas_dir, f'{N}', 'NumberOfSystems.txt'), [number_of_files])

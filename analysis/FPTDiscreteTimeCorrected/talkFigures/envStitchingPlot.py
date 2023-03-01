@@ -1,5 +1,5 @@
 import sys 
-sys.path.append("../../dataAnalysis")
+sys.path.append("../../../dataAnalysis")
 from fptTheory import variance, var_power_long, var_short
 import numpy as np
 from matplotlib import pyplot as plt
@@ -29,7 +29,7 @@ long = var_power_long(theory_distances, N)
 short = var_short(theory_distances, N)
 var = variance(theory_distances, N)
 ax.plot(np.insert(theory_distances / logN, 0, 0.99), np.insert(short, 0, 0), ls='--', c='tab:orange')#, label=r'$V_1(L, N)$')
-#ax.plot(theory_distances / logN, long, ls='--', c='m')#, label=r'$V_2(L, N)$')
+ax.plot(theory_distances / logN, long, ls='--', c='m')#, label=r'$V_2(L, N)$')
 #ax.plot(theory_distances / logN, var, ls='--', c='k', zorder=-1)
 #ax.vlines(logN**(3/2) / logN, 10**-1, 10**10, ls='--', color='k')
 #ax.annotate(r'$L=\log(N)^{3/2}$', (3.5, 10**6), rotation=90)
@@ -52,4 +52,4 @@ leg = ax.legend(
 for item in leg.legendHandles:
     item.set_visible(False)
 
-fig.savefig("EnvironmentalStitching.png", bbox_inches='tight')
+fig.savefig("EnvironmentalStitching.svg", bbox_inches='tight')

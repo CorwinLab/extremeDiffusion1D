@@ -3,12 +3,12 @@ from matplotlib import pyplot as plt
 from pyDiffusion.pydiffusion2D import getGCF1D
 import time
 
-dx = 0.5
+dx = 0.1
 D = 1
-dt = dx**2 / 2 / D / 2
+dt = dx**2 / 2 / D / 4
 rc = 1
 sigma = 1
-L = 500
+L = 50
 
 grid = np.arange(-L, L+dx, step=dx)
 p0 = np.zeros(grid.size)
@@ -26,6 +26,8 @@ def forwardEuler(f, grid, dx, dt, D, rc, sigma):
     for i in range(1, len(f)-1):
         field_contributions = 1/v*(f[i] * field[i+1] + field[i] * f[i+1] - 2 * field[i] * f[i])
         f_new[i] = s * (f[i+1] + f[i-1]) + (1-2*s) * f[i] - field_contributions
+    f_new[0] = s * (f[1]) + (1-2*s) * f[0] -  1/v*(field[0] * f[1] - 2 * field[0] * f[0])
+    f_new[-1] = s * (f[-2]) + (1-2*s) * f[-1] - 1/v*(- 2 * field[-1] * f[-1])
     #print(sum(f_new))
     return f_new
 
@@ -33,6 +35,8 @@ start = time.time()
 t = 0 
 for i in range(50000):
     p0 = forwardEuler(p0, grid, dx, dt, D, rc, sigma)
+    if np.sum(p0 < 0) != 0:
+        print(f"Less than zero = {np.sum(p0 <0)}")
     t += dt
     if i % 100 == 0:
         print(i, t, sum(p0))

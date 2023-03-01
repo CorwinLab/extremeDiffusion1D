@@ -37,10 +37,16 @@ for i, Nexp in enumerate(Ns):
     ax.fill_between(df['Distance'] / logN, df['Mean'] - np.sqrt(df['Variance']), df['Mean'] + np.sqrt(df['Variance']), color=colors[i], alpha=alpha/2, edgecolor=None)
     ax.plot(df['Distance'] / logN, mean, c=colors[i], ls='--')
 
+xvals = np.array([100, 600])
+ax.plot(xvals, 50*xvals**2, ls='--', c='k', label=r'$L^2$')
+
+xvals = np.array([0.05, 0.5])
+ax.plot(xvals, xvals*100, ls='--', c='k', label=r'$L$')
+
 leg = ax.legend(
     loc="upper left",
     framealpha=0,
-    labelcolor=colors,
+    labelcolor=colors +['k', 'k'],
     handlelength=0,
     handletextpad=0,
 )

@@ -15,8 +15,12 @@ def initializePDF(maxPosition):
     pdf[maxPosition] = 1
     return pdf
 
-def iteratePDF(pdf):
-    biases = np.random.uniform(0, 1, size=pdf.shape)
+def iteratePDF(pdf, model='RWRE'):
+    if model=='RWRE':
+        biases = np.random.uniform(0, 1, size=pdf.shape)
+    else:
+        biases = np.ones(shape=pdf.shape) / 2
+        
     pdf_new = np.zeros(pdf.shape)
     for i in range(1, len(pdf)-1):
         pdf_new[i] = pdf[i-1] * biases[i-1] + pdf[i+1] * (1- biases[i+1])

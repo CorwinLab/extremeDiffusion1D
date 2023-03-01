@@ -45,8 +45,8 @@ def var_short(xvals, N, samples=10000):
     return var 
 
 def variance(x, N, samples=10000):
-    crossover = (np.log(N).astype(float)) ** (3/2)
-    width = (np.log(N).astype(float))**(4/3)
+    crossover = (np.log(N).astype(float)) ** (5/4)
+    width = (np.log(N).astype(float))**(6/5)
     theory_short = var_short(x, N, samples)
     theory_long =  var_power_long(x, N)
     error_func = (erf((x - crossover) / width) + 1) / 2
