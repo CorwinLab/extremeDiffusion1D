@@ -12,10 +12,12 @@ max_dists = [1723, 3436, 8531, 20461, 47967]
 
 home_dir = '/home/jacob/Desktop/talapasMount/JacobData/FPTDiscreteTimeCorrected'
 dirs = os.listdir(home_dir)
-recalculate_mean = False
+recalculate_mean = True
 if recalculate_mean:
     nFiles = []
     for max_dist, N in zip(max_dists, Ns):
+        if N != 28:
+            continue
         dir = home_dir + f'/{N}/Q*.txt'
         files = glob.glob(dir)
         df, number_of_files = calculateMeanVarDiscrete(files, max_dist, verbose=True)
@@ -37,7 +39,7 @@ cdf_dir = '/home/jacob/Desktop/corwinLabMount/CleanData/FPTCDFPaper'
 talapas_dir = '/home/jacob/Desktop/corwinLabMount/CleanData/TalapasFPTCDF/FPTCDFPaper'
 dirs = os.listdir(cdf_dir)
 maxFiles = [1500, 1500, 1500, 1500, 500]
-recalculate_mean = True
+recalculate_mean = False
 if recalculate_mean: 
     nFiles = []
     for max_dist, N, nFile in zip(max_dists, Ns, maxFiles):
@@ -72,14 +74,14 @@ print(f"Einstein Discrete: {num_files} files")
 
 talapas_dir = "/home/jacob/Desktop/talapasMount/JacobData/CleanData/FPTCDFPaperFixed"
 dirs = os.listdir(talapas_dir)
-maxFiles = [1000, 1000, 1000, 1000, 1000]
-recalculate_mean = True
+maxFiles = [2000, 2000, 2000, 2000, 2000]
+recalculate_mean = False
 if recalculate_mean: 
     nFiles = []
     for max_dist, N, nFile in zip(max_dists, Ns, maxFiles):
         talapas_file_dir = talapas_dir + f'/{N}/First*.txt'
         files = glob.glob(talapas_file_dir)
-        df, number_of_files = calculateMeanVarCDF(files, max_dist, verbose=False, nFile=nFile)
+        df, number_of_files = calculateMeanVarCDF(files, max_dist, verbose=True, nFile=nFile)
         path = os.path.join(talapas_dir, f'{N}', 'MeanVariance.csv')
         df.to_csv(path, index=False)
         nFiles.append(number_of_files)

@@ -20,14 +20,14 @@ alpha = 0.6
 
 fig, ax = plt.subplots()
 ax.set_xscale("log")
-ax.set_yscale("symlog")
-ax.set_xlabel(r"$L / \log(N)$")
-ax.set_ylabel(r"$\mathrm{Var}^{\mathrm{Num}}(\tau_{\mathrm{Sam}})-\mathrm{Var}^{\mathrm{Theory}}(\tau_{\mathrm{Sam}})$")
-
+ax.set_yscale("log")
+ax.set_xlabel(r"$L / \ln(N)$")
+ax.set_ylabel(r"$|\mathrm{Var}^{\mathrm{Num}}(\tau_{\mathrm{Sam}})-\mathrm{Var}^{\mathrm{Asy}}(\tau_{\mathrm{Sam}})|$")
+ax.set_ylim([10**-2, 10**11])
 colors_used = []
 
 for i, Nexp in enumerate(Ns):
-    cdf_dir_specific = f'/home/jacob/Desktop/corwinLabMount/CleanData/FPTCDFPaper/{Nexp}'
+    cdf_dir_specific = f"/home/jacob/Desktop/talapasMount/JacobData/CleanData/FPTCDFPaperFixed/{Nexp}"
     dir = f'/home/jacob/Desktop/talapasMount/JacobData/FPTDiscreteTimeCorrected/{Nexp}/'
     N = float(f"1e{Nexp}")
     logN = np.log(N)
@@ -37,15 +37,12 @@ for i, Nexp in enumerate(Ns):
     sampling_variance = sam_variance_theory(cdf_df['Distance'].values, N)
 
     decade_scaling = 15
-    dist_new, sampling_residual = log_moving_average(cdf_df['Distance'], cdf_df['Sampling Variance'] - sampling_variance, 10 ** (1/decade_scaling))
-    dist_new, sampling_residual_err = log_moving_average(cdf_df['Distance'], cdf_df['Var Sampling Variance'], 10 ** (1/decade_scaling))
-    ax.errorbar(dist_new / logN, sampling_residual, np.sqrt(sampling_residual_err), fmt='o', label=Nlabels[i], color=colors[i], ms=1, lw=0.5, alpha=0.5)
+    ax.plot(cdf_df['Distance'] / logN, np.abs(cdf_df['Sampling Variance'] - sampling_variance), 10 ** (1/decade_scaling), c=colors[i])
     colors_used.append(colors[i])
 
 
 xvals = np.array([100, 600])
-ax.plot(xvals, xvals**4 / 4, ls='--', c='k')
-ax.plot(xvals, -xvals**4, ls='--', c='k', label=r'$L^4$')
+ax.plot(xvals, xvals**4 / 4, ls='--', c='k', label=r'$L^{4}$')
 
 leg = ax.legend(
     loc="upper left",
@@ -56,7 +53,6 @@ leg = ax.legend(
 )
 for item in leg.legendHandles:
     item.set_visible(False)
-
 
 ax.set_xlim([0.5, 750])
 fig.savefig("SamplingResidual.pdf", bbox_inches='tight')

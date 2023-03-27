@@ -12,6 +12,7 @@ import json
 import os
 
 db = Database()
+''' I moved these to /corwinLabMount/MaxParticlePaperData/ '''
 einstein_dir = "/home/jacob/Desktop/corwinLabMount/CleanData/JacobData/EinsteinPaper/"
 directory = "/home/jacob/Desktop/corwinLabMount/CleanData/Paper/Max/"
 cdf_path = "/home/jacob/Desktop/corwinLabMount/CleanData/Paper/CDF/"

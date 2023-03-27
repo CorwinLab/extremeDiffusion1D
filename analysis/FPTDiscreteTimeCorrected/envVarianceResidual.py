@@ -11,7 +11,7 @@ from numericalFPT import getNParticleMeanVar
 plt.rcParams.update({'font.size': 12})
 
 Nlabels = [r'$N=10$', r'$N=10^2$', r'$N=10^{5}$', r'$N=10^{12}$', r'$N=10^{28}$']
-Ns = [1, 2, 5, 12]
+Ns = [1, 2, 5, 12, 28]
 
 cm = LinearSegmentedColormap.from_list(
     "rg", ["tab:orange", "tab:red", "tab:purple", "tab:blue"], N=256
@@ -22,8 +22,8 @@ alpha = 0.6
 fig, ax = plt.subplots()
 ax.set_xscale("log")
 ax.set_yscale("symlog")
-ax.set_xlabel(r"$L / \log(N)$")
-ax.set_ylabel(r"$\mathrm{Var}^{\mathrm{Num}}(\tau_{\mathrm{Min}})-\mathrm{Var}^{\mathrm{Num}}(\tau_{\mathrm{Sam}})$")
+ax.set_xlabel(r"$L / \ln(N)$")
+ax.set_ylabel(r"$\frac{\mathrm{Var}^{\mathrm{Num}}(\tau_{\mathrm{Min}})-\mathrm{Var}^{\mathrm{Num}}(\tau_{\mathrm{Sam}})}{\sqrt{\ln(N)}}$")
 
 colors_used = []
 
@@ -39,7 +39,7 @@ for i, Nexp in enumerate(Ns):
     cdf_df = cdf_df[cdf_df['Distance'] <= 750 * logN]
     
     var_theory = variance(cdf_df['Distance'].values, N)
-    ax.plot(cdf_df['Distance'] / logN, var_theory, c=colors[i], ls='--', alpha=0.5)
+    ax.plot(cdf_df['Distance'] / logN, var_theory / np.sqrt(np.log(N)), c=colors[i], ls='--', alpha=0.5)
     
     max_file = os.path.join(dir, 'MeanVariance.csv')
     max_df = pd.read_csv(max_file)
@@ -48,7 +48,7 @@ for i, Nexp in enumerate(Ns):
     decade_scaling = 2
     dist_new, env_var = log_moving_average(max_df['Distance'], max_df['Variance'] - cdf_df['Sampling Variance'], 10 ** (1/decade_scaling))
     dist_new, err = log_moving_average_error(max_df['Distance'], max_df['Forth Moment'] + cdf_df['Var Sampling Variance'], 10 ** ( 1/decade_scaling))
-    ax.scatter(dist_new / logN, env_var, label=Nlabels[i], color=colors[i], s=2)
+    ax.scatter(dist_new / logN, env_var / np.sqrt(np.log(N)), label=Nlabels[i], color=colors[i], s=10)
     colors_used.append(colors[i])
 
 leg = ax.legend(
@@ -60,6 +60,6 @@ leg = ax.legend(
 )
 for item in leg.legendHandles:
     item.set_visible(False)
-
+ax.set_ylim([10**-2 / 2, 10**9])
 ax.set_xlim([0.5, 750])
 fig.savefig("EnvironmentalVarianceRecovery.pdf", bbox_inches='tight')
