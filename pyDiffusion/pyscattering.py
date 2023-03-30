@@ -11,7 +11,7 @@ def iteratePDF(right, left, quantile, beta=1):
 	elif beta == np.inf: 
 		biases = np.ones(right.shape) / 2
 	else: 
-		biases = np.random.beta(beta, beta, size=right.size)	
+		biases = np.random.beta(beta, beta, size=right.size)
 
 	right_new = np.zeros(right.shape)
 	left_new = np.zeros(left.shape)
@@ -34,7 +34,7 @@ def iteratePDF(right, left, quantile, beta=1):
 	
 	return right_new, left_new, pos
 
-def evolveAndGetQuantile(times, N, size):
+def evolveAndGetQuantile(times, N, size, beta):
 	right = np.zeros(size+1)
 	left = np.zeros(size+1)
 
@@ -45,7 +45,7 @@ def evolveAndGetQuantile(times, N, size):
 	quantiles = np.zeros(max(times))
 
 	for t in range(max(times)):
-		right, left, pos = iteratePDF(right, left, 1/N)
+		right, left, pos = iteratePDF(right, left, 1/N, beta)
 		quantiles[t] = pos
 	
 	return quantiles

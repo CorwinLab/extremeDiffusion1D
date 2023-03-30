@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=Scattering
-#SBATCH --time=0-02:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH --error=/home/jhass2/jamming/JacobData/logs/Scattering/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -10,8 +10,10 @@
 #SBATCH --partition=preempt
 #SBATCH --requeue
 
-TOPDIR=/home/jhass2/jamming/JacobData/Scattering/
+for BETA in 0 0.1 1 10
+do
+	TOPDIR=/home/jhass2/jamming/JacobData/ScatteringSweep/$BETA
+	mkdir -p $TOPDIR
 
-mkdir -p $TOPDIR
-
-python3 scatteringQuantile.py $TOPDIR $SLURM_ARRAY_TASK_ID
+	python3 scatteringQuantile.py $TOPDIR $SLURM_ARRAY_TASK_ID $BETA
+done
