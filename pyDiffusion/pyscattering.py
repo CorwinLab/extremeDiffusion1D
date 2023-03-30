@@ -2,19 +2,34 @@ import numpy as np
 from numba import njit
 
 @njit
-def iteratePDF(right, left, quantile):
-	biases = np.random.uniform(0, 1, right.size)
+def iteratePDF(right, left, quantile, beta=1):
+	if beta==1:
+		biases = np.random.uniform(0, 1, right.size)
+	elif beta==0:
+		biases = np.random.uniform(0, 1, right.size)
+		biases = np.array([np.round(i) for i in biases])
+	elif beta == np.inf: 
+		biases = np.ones(right.shape) / 2
+	else: 
+		biases = np.random.beta(beta, beta, size=right.size)	
+
 	right_new = np.zeros(right.shape)
 	left_new = np.zeros(left.shape)
 	cdf_new = 0
 	quantileSet = False
 
-	for i in range(1, len(right) - 1):
-		right_new[i] = right[i-1] * biases[i-1] + left[i-1] * (1-biases[i-1]) 
+	for i in range(1, right.size - 1):
+		# Scattering Model for diffusion
+		right_new[i] = right[i-1] * biases[i-1] + left[i-1] * (1-biases[i-1])
 		left_new[i] = left[i+1] * biases[i+1] + right[i+1] * (1-biases[i+1])
+		
+		# RWRE regular diffusion
+		#right_new[i] = right[i-1] * biases[i-1] + left[i-1] * (biases[i-1])
+		#left_new[i] = left[i+1] * (1-biases[i+1]) + right[i+1] * (1-biases[i+1])
+
 		cdf_new += right_new[i] + left_new[i]
 		if (1-cdf_new <= quantile) and not quantileSet: 
-			pos = i - (len(right_new) // 2)
+			pos = i - (right_new.size // 2)
 			quantileSet = True
 	
 	return right_new, left_new, pos
@@ -31,6 +46,6 @@ def evolveAndGetQuantile(times, N, size):
 
 	for t in range(max(times)):
 		right, left, pos = iteratePDF(right, left, 1/N)
-		quantiles[t] = pos 
+		quantiles[t] = pos
 	
 	return quantiles
