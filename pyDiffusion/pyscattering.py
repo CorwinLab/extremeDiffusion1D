@@ -1,6 +1,8 @@
 import numpy as np
 from numba import njit, jit
 import csv
+import os
+import sys
 
 @njit
 def iteratePDF(right, left, quantile, beta=1):
@@ -50,15 +52,32 @@ def evolveAndGetQuantile(times, N, size, beta, save_file):
 	# Start with all the particles moving to the right
 	right[right.size // 2] = 1
 
+	write_header = True 
+	# Check if save file has already been created and make sure we don't 
+	# redo any times we've already done
+	if os.path.exists(save_file):
+		data = np.loadtxt(save_file, skiprows=1, delimiter=',')
+		max_time = data[-1, 0]
+		if max_time == max(times):
+			sys.exit()
+		times = times[times > max_time]
+		write_header = False 
+
 	f = open(save_file, 'a')
 	writer = csv.writer(f)
-	writer.writerow(['Time', 'Position'])
-	f.flush()
+
+	# Ensure that we don't write a header twice
+	if write_header:
+		writer.writerow(['Time', 'Position'])
+		f.flush()
 
 	for t in range(max(times)):
+		# Only want to pass the part of the array that is non-zero
 		right_new, left_new, pos = iteratePDF(right[size // 2 - t - 2: size // 2 + t + 3], left[size // 2 - t - 2: size // 2 + t + 3], 1/N, beta=beta)
 		right[size // 2 - t - 2: size // 2 + t + 3] = right_new 
 		left[size // 2 - t - 2: size // 2 + t + 3] = left_new
+
+		# Ensure that the sum adds to roughly 1
 		assert np.abs(np.sum(right + left)-1) < 1e-10, np.abs(np.sum(right + left)-1)
 
 		if t in times:
