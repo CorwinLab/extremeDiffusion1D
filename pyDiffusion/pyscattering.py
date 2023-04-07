@@ -5,24 +5,29 @@ import os
 import sys
 
 @njit
-def iteratePDF(right, left, quantile, beta=1):
-	if beta==1:
-		# This is to only generate random numbers on the odd values
-		# which should be populated
+def iteratePDF(right, left, quantile, dist='beta', params=1):
+	if dist == 'beta':
+		if params==1:
+			# This is to only generate random numbers on the odd values
+			# which should be populated
+			biases = np.zeros(right.size)
+			rand_uniform = np.random.uniform(0, 1, right[::2].size)
+			biases[::2] = rand_uniform
+		elif params==0:
+			biases = np.zeros(right.size)
+			rand_uniform = np.random.uniform(0, 1, right[::2].size)
+			biases[::2] = rand_uniform
+			biases = np.array([np.round(i) for i in biases])
+		elif params == np.inf: 
+			biases = np.ones(right.shape) / 2
+		else:
+			biases = np.zeros(right.size)
+			rand_vals = np.random.beta(params, params, size=right[::2].size)
+			biases[::2] = rand_vals
+
+	elif dist == 'delta':
 		biases = np.zeros(right.size)
-		rand_uniform = np.random.uniform(0, 1, right[::2].size)
-		biases[::2] = rand_uniform
-	elif beta==0:
-		biases = np.zeros(right.size)
-		rand_uniform = np.random.uniform(0, 1, right[::2].size)
-		biases[::2] = rand_uniform
-		biases = np.array([np.round(i) for i in biases])
-	elif beta == np.inf: 
-		biases = np.ones(right.shape) / 2
-	else:
-		biases = np.zeros(right.size)
-		rand_vals = np.random.beta(beta, beta, size=right[::2].size)
-		biases[::2] = rand_vals
+		rand_nums = np.random.choice([0, 1/2, 1], size=right[::2].size, p=[params, 1-2*params, params])
 
 	right_new = np.zeros(right.shape)
 	left_new = np.zeros(left.shape)
@@ -45,7 +50,7 @@ def iteratePDF(right, left, quantile, beta=1):
 	
 	return right_new, left_new, pos
 
-def evolveAndGetQuantile(times, N, size, beta, save_file):
+def evolveAndGetQuantile(times, N, size, dist, params, save_file):
 	right = np.zeros(size+1)
 	left = np.zeros(size+1)
 
@@ -73,7 +78,7 @@ def evolveAndGetQuantile(times, N, size, beta, save_file):
 
 	for t in range(max(times)):
 		# Only want to pass the part of the array that is non-zero
-		right_new, left_new, pos = iteratePDF(right[size // 2 - t - 2: size // 2 + t + 3], left[size // 2 - t - 2: size // 2 + t + 3], 1/N, beta=beta)
+		right_new, left_new, pos = iteratePDF(right[size // 2 - t - 2: size // 2 + t + 3], left[size // 2 - t - 2: size // 2 + t + 3], 1/N, dist=dist, params=params)
 		right[size // 2 - t - 2: size // 2 + t + 3] = right_new 
 		left[size // 2 - t - 2: size // 2 + t + 3] = left_new
 
@@ -83,6 +88,51 @@ def evolveAndGetQuantile(times, N, size, beta, save_file):
 		if t in times:
 			writer.writerow([t+1, pos])
 			f.flush()
+	f.close()
+
+def evolveAndGetProbs(times, N, size, beta, save_file):
+	right = np.zeros(size+1)
+	left = np.zeros(size+1)
+
+	# Start with all the particles moving to the right
+	right[right.size // 2] = 1
+
+	write_header = True 
+	# Check if save file has already been created and make sure we don't 
+	# redo any times we've already done
+	if os.path.exists(save_file):
+		data = np.loadtxt(save_file, skiprows=1, delimiter=',')
+		max_time = data[-1, 0]
+		if max_time == max(times):
+			sys.exit()
+		times = times[times > max_time]
+		write_header = False 
+
+	f = open(save_file, 'a')
+	writer = csv.writer(f)
+
+	# Ensure that we don't write a header twice
+	if write_header:
+		writer.writerow(['Time', 'Position', 'Prob', 'Delta'])
+		f.flush()
+
+	for t in range(max(times)):
+		# Only want to pass the part of the array that is non-zero
+		right_new, left_new, pos = iteratePDF(right[size // 2 - t - 2: size // 2 + t + 3], left[size // 2 - t - 2: size // 2 + t + 3], 1/N, beta=beta)
+		right[size // 2 - t - 2: size // 2 + t + 3] = right_new 
+		left[size // 2 - t - 2: size // 2 + t + 3] = left_new
+
+		# Ensure that the sum adds to roughly 1
+		assert np.abs(np.sum(right + left)-1) < 1e-10, np.abs(np.sum(right + left)-1)
+		
+		idx = pos + (right.size // 2) 
+		prob = (right+left)[idx]
+		delta = (right - left)[idx]
+
+		if t in times:
+			writer.writerow([t+1, pos, prob, delta])
+			f.flush()
+
 	f.close()
 	
 @jit
