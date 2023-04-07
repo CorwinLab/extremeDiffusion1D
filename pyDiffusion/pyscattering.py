@@ -28,6 +28,7 @@ def iteratePDF(right, left, quantile, dist='beta', params=1):
 	elif dist == 'delta':
 		biases = np.zeros(right.size)
 		rand_nums = np.random.choice([0, 1/2, 1], size=right[::2].size, p=[params, 1-2*params, params])
+		biases[::2] = rand_nums
 
 	right_new = np.zeros(right.shape)
 	left_new = np.zeros(left.shape)
