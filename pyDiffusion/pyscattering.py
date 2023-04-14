@@ -105,6 +105,27 @@ def cyclicPDF(p1, p2, p3, p4, quantile):
 
 	return p1_new, p2_new, p3_new, p4_new, pos
 
+def cyclicDirichletPDF(p1, p2, p3, p4, quantile):
+	p1_new = np.zeros(p1.shape)
+	p2_new = np.zeros(p2.shape)
+	p3_new = np.zeros(p3.shape)
+	p4_new = np.zeros(p4.shape)
+
+	biases = np.random.dirichlet([1, 1, 1, 1], p1_new.size)
+	cdf_new = 0
+	quantileSet = False
+	for i in range(1, len(p1_new)-1):
+		p1_new[i] = p1[i-1] * biases[i-1][0] + p3[i-1] * biases[i-1][1] + p2[i-1] * biases[i-1][2] + p4[i-1] * biases[i-1][3]
+		p2_new[i] = p2[i+1] * biases[i+1][0] + p1[i+1] * biases[i+1][1] + p4[i+1] * biases[i+1][2] + p3[i+1] * biases[i+1][3]
+		p3_new[i] = p3[i-1] * biases[i-1][0] + p4[i-1] * biases[i-1][1] + p1[i-1] * biases[i-1][2] + p2[i-1] * biases[i-1][3]
+		p4_new[i] = p4[i+1] * biases[i+1][0] + p2[i+1] * biases[i+1][1] + p3[i+1] * biases[i+1][2] + p1[i+1] * biases[i+1][3]
+		
+		cdf_new += p1_new[i] + p2_new[i] + p3_new[i] + p4_new[i]
+		if (1 - cdf_new <= quantile) and not quantileSet:
+			pos = i - (p1_new.size // 2)
+			quantileSet = True
+
+	return p1_new, p2_new, p3_new, p4_new, pos
 
 def evolveAndGetQuantile(times, N, size, dist, params, save_file):
 	right = np.zeros(size + 1)
