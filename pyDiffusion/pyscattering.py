@@ -83,6 +83,29 @@ def generalizedPDF(prr, pll, prl, plr, quantile):
 	return prr_new, pll_new, prl_new, plr_new, pos
 
 
+def cyclicPDF(p1, p2, p3, p4, quantile):
+	p1_new = np.zeros(p1.shape)
+	p2_new = np.zeros(p2.shape)
+	p3_new = np.zeros(p3.shape)
+	p4_new = np.zeros(p4.shape)
+
+	biases = np.random.uniform(0, 1, p1_new.size) 
+	cdf_new = 0
+	quantileSet = False
+	for i in range(1, len(p1_new)-1):
+		p1_new[i] = p1[i-1] * biases[i-1] + p2[i-1] * (1-biases[i-1])
+		p2_new[i] = p2[i+1] * biases[i+1] + p3[i+1] * (1-biases[i+1])
+		p3_new[i] = p3[i-1] * biases[i-1] + p4[i-1] * (1-biases[i-1])
+		p4_new[i] = p4[i+1] * biases[i+1] + p1[i+1] * (1-biases[i+1])
+		
+		cdf_new += p1_new[i] + p2_new[i] + p3_new[i] + p4_new[i]
+		if (1 - cdf_new <= quantile) and not quantileSet:
+			pos = i - (p1_new.size // 2)
+			quantileSet = True
+
+	return p1_new, p2_new, p3_new, p4_new, pos
+
+
 def evolveAndGetQuantile(times, N, size, dist, params, save_file):
 	right = np.zeros(size + 1)
 	left = np.zeros(size + 1)
@@ -163,6 +186,59 @@ def evolveAndGetQuantileGeneralized(times, N, size, save_file):
 	for t in range(max(times)):
 		# Only want to pass the part of the array that is non-zero
 		prr_new, pll_new, prl_new, plr_new, pos = generalizedPDF(
+			prr[size // 2 - t - 2 : size // 2 + t + 3],
+			pll[size // 2 - t - 2 : size // 2 + t + 3],
+			prl[size // 2 - t - 2 : size // 2 + t + 3],
+			plr[size // 2 - t - 2 : size // 2 + t + 3],
+			1 / N,
+		)
+		prr[size // 2 - t - 2 : size // 2 + t + 3] = prr_new
+		pll[size // 2 - t - 2 : size // 2 + t + 3] = pll_new
+		prl[size // 2 - t - 2 : size // 2 + t + 3] = prl_new
+		plr[size // 2 - t - 2 : size // 2 + t + 3] = plr_new
+
+		# Ensure that the sum adds to roughly 1
+		assert np.abs(np.sum(prr + pll + prl + plr) - 1) < 1e-10, np.abs(
+			np.sum(prr + pll + prl + plr) - 1
+		)
+
+		if t in times:
+			writer.writerow([t + 1, pos])
+			f.flush()
+	f.close()
+
+
+def evolveAndGetQuantileCyclic(times, N, size, save_file):
+	prr = np.zeros(size + 1)
+	pll = np.zeros(size + 1)
+	prl = np.zeros(size + 1)
+	plr = np.zeros(size + 1)
+
+	# Start with all the particles moving to the right
+	prr[prr.size // 2] = 1
+
+	write_header = True
+	# Check if save file has already been created and make sure we don't
+	# redo any times we've already done
+	if os.path.exists(save_file):
+		data = np.loadtxt(save_file, skiprows=1, delimiter=",")
+		max_time = data[-1, 0]
+		if max_time == max(times):
+			sys.exit()
+		times = times[times > max_time]
+		write_header = False
+
+	f = open(save_file, "a")
+	writer = csv.writer(f)
+
+	# Ensure that we don't write a header twice
+	if write_header:
+		writer.writerow(["Time", "Position"])
+		f.flush()
+
+	for t in range(max(times)):
+		# Only want to pass the part of the array that is non-zero
+		prr_new, pll_new, prl_new, plr_new, pos = cyclicPDF(
 			prr[size // 2 - t - 2 : size // 2 + t + 3],
 			pll[size // 2 - t - 2 : size // 2 + t + 3],
 			prl[size // 2 - t - 2 : size // 2 + t + 3],
