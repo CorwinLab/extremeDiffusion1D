@@ -447,7 +447,7 @@ def evolveAndGetProbs(times, N, size, beta, save_file):
 	f.close()
 
 
-def evolveAndGetVelocities(times, vs, size, beta, save_file):
+def evolveAndGetVelocities(times, vs, size, dist, beta, save_file):
 	right = np.zeros(size + 1)
 	left = np.zeros(size + 1)
 
@@ -480,6 +480,7 @@ def evolveAndGetVelocities(times, vs, size, beta, save_file):
 			right[size // 2 - t - 2 : size // 2 + t + 3],
 			left[size // 2 - t - 2 : size // 2 + t + 3],
 			xval,
+			dist=dist,
 			beta=beta,
 		)
 		right[size // 2 - t - 2 : size // 2 + t + 3] = right_new
