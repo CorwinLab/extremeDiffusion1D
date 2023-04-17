@@ -57,6 +57,57 @@ def iteratePDF(right, left, quantile, dist="beta", params=1):
 	return right_new, left_new, pos
 
 
+@jit
+def iteratePDFModified(right, left, quantile, dist="beta", params=1):
+	if dist == "beta":
+		if params == 1:
+			# This is to only generate random numbers on the odd values
+			# which should be populated
+			biases = np.zeros(right.size)
+			rand_uniform = np.random.uniform(0, 1, right[::2].size)
+			biases[::2] = rand_uniform
+		elif params == 0:
+			biases = np.zeros(right.size)
+			rand_uniform = np.random.uniform(0, 1, right[::2].size)
+			biases[::2] = rand_uniform
+			biases = np.array([np.round(i) for i in biases])
+		elif params == np.inf:
+			biases = np.ones(right.shape) / 2
+		else:
+			biases = np.zeros(right.size)
+			rand_vals = np.random.beta(params, params, size=right[::2].size)
+			biases[::2] = rand_vals
+
+	elif dist == "delta":
+		biases = np.zeros(right.size)
+		rand_nums = np.random.choice(
+			np.array([0, 1 / 2, 1]),
+			size=right[::2].size,
+			p=np.array([params, 1 - 2 * params, params]),
+		)
+		biases[::2] = rand_nums
+
+	right_new = np.zeros(right.shape)
+	left_new = np.zeros(left.shape)
+	cdf_new = 0
+	quantileSet = False
+
+	for i in range(1, right.size - 1):
+		# Modified Scattering Model for diffusion
+		right_new[i] = right[i - 1] * biases[i - 1] + right[i + 1] * (1 - biases[i + 1])
+		left_new[i] = left[i + 1] * biases[i + 1] + left[i - 1] * (1 - biases[i - 1])
+
+		# RWRE regular diffusion
+		# right_new[i] = right[i-1] * biases[i-1] + left[i-1] * (biases[i-1])
+		# left_new[i] = left[i+1] * (1-biases[i+1]) + right[i+1] * (1-biases[i+1])
+
+		cdf_new += right_new[i] + left_new[i]
+		if (1 - cdf_new <= quantile) and not quantileSet:
+			pos = i - (right_new.size // 2)
+			quantileSet = True
+
+	return right_new, left_new, pos
+
 @njit
 def generalizedPDF(prr, pll, prl, plr, quantile):
 	biases = np.random.uniform(0, 1, size=prr.shape)
@@ -72,8 +123,8 @@ def generalizedPDF(prr, pll, prl, plr, quantile):
 	for i in range(1, prr.size - 1):
 		pll_new[i] = pll[i + 1] * biases[i + 1] + prl[i + 1] * biases[i + 1]
 		prr_new[i] = prr[i - 1] * biases[i - 1] + plr[i - 1] * biases[i - 1]
-		prl_new[i] = pll[i - 1] * (1 - biases[i - 1]) + prl[i - 1] * (1 - biases[i - 1])
-		plr_new[i] = prr[i + 1] * (1 - biases[i + 1]) + plr[i + 1] * (1 - biases[i + 1])
+		prl_new[i] = pll[i - 1] * (1 - biases[i - 1]) + prl[i - 1] * (1 - biases[i - 1]) # I'm not sure that this is correct, I think it should be plr
+		plr_new[i] = prr[i + 1] * (1 - biases[i + 1]) + plr[i + 1] * (1 - biases[i + 1]) # And I think this should be prl
 
 		cdf_new += prr_new[i] + pll_new[i] + prl_new[i] + plr_new[i]
 		if (1 - cdf_new <= quantile) and not quantileSet:
@@ -105,6 +156,7 @@ def cyclicPDF(p1, p2, p3, p4, quantile):
 
 	return p1_new, p2_new, p3_new, p4_new, pos
 
+@jit
 def cyclicDirichletPDF(p1, p2, p3, p4, quantile):
 	p1_new = np.zeros(p1.shape)
 	p2_new = np.zeros(p2.shape)
@@ -206,7 +258,7 @@ def evolveAndGetQuantileGeneralized(times, N, size, save_file):
 
 	for t in range(max(times)):
 		# Only want to pass the part of the array that is non-zero
-		prr_new, pll_new, prl_new, plr_new, pos = generalizedPDF(
+		prr_new, pll_new, prl_new, plr_new, pos = cyclicDirichletPDF(
 			prr[size // 2 - t - 2 : size // 2 + t + 3],
 			pll[size // 2 - t - 2 : size // 2 + t + 3],
 			prl[size // 2 - t - 2 : size // 2 + t + 3],
