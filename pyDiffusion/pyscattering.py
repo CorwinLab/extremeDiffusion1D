@@ -58,6 +58,65 @@ def iteratePDF(right, left, quantile, dist="beta", params=1):
 
 
 @jit
+def iteratePDFGetVelocities(right, left, xval, dist="beta", params=1):
+	''' Note: xvals should be in decending order '''
+	if dist == "beta":
+		if params == 1:
+			# This is to only generate random numbers on the odd values
+			# which should be populated
+			biases = np.zeros(right.size)
+			rand_uniform = np.random.uniform(0, 1, right[::2].size)
+			biases[::2] = rand_uniform
+		elif params == 0:
+			biases = np.zeros(right.size)
+			rand_uniform = np.random.uniform(0, 1, right[::2].size)
+			biases[::2] = rand_uniform
+			biases = np.array([np.round(i) for i in biases])
+		elif params == np.inf:
+			biases = np.ones(right.shape) / 2
+		else:
+			biases = np.zeros(right.size)
+			rand_vals = np.random.beta(params, params, size=right[::2].size)
+			biases[::2] = rand_vals
+
+	elif dist == "delta":
+		biases = np.zeros(right.size)
+		rand_nums = np.random.choice(
+			np.array([0, 1 / 2, 1]),
+			size=right[::2].size,
+			p=np.array([params, 1 - 2 * params, params]),
+		)
+		biases[::2] = rand_nums
+
+	right_new = np.zeros(right.shape)
+	left_new = np.zeros(left.shape)
+	cdf_new = 0
+	delta_new = 0 
+
+	prob = np.nan
+	delta = np.nan
+
+	for i in range(1, right.size - 1):
+		# Scattering Model for diffusion
+		right_new[i] = right[i - 1] * biases[i - 1] + left[i - 1] * (1 - biases[i - 1])
+		left_new[i] = left[i + 1] * biases[i + 1] + right[i + 1] * (1 - biases[i + 1])
+
+		# RWRE regular diffusion
+		# right_new[i] = right[i-1] * biases[i-1] + left[i-1] * (biases[i-1])
+		# left_new[i] = left[i+1] * (1-biases[i+1]) + right[i+1] * (1-biases[i+1])
+
+		cdf_new += right_new[i] + left_new[i]
+		delta_new += right_new[i] - left_new[i]
+		
+		pos = i - (right_new.size // 2)
+		if pos == xval:
+			prob = cdf_new[i] 
+			delta = delta_new[i]
+
+	return right_new, left_new, prob, delta
+
+
+@jit
 def iteratePDFModified(right, left, quantile, dist="beta", params=1):
 	if dist == "beta":
 		if params == 1:
@@ -94,8 +153,8 @@ def iteratePDFModified(right, left, quantile, dist="beta", params=1):
 
 	for i in range(1, right.size - 1):
 		# Modified Scattering Model for diffusion
-		right_new[i] = right[i - 1] * biases[i - 1] + right[i + 1] * (1 - biases[i + 1])
-		left_new[i] = left[i + 1] * biases[i + 1] + left[i - 1] * (1 - biases[i - 1])
+		right_new[i] = right[i - 1] * biases[i - 1] + right[i + 1] * (1 - biases[i + 1]) + left[i-1] * (1-biases[i-1])
+		left_new[i] = left[i + 1] * biases[i + 1]
 
 		# RWRE regular diffusion
 		# right_new[i] = right[i-1] * biases[i-1] + left[i-1] * (biases[i-1])
@@ -105,7 +164,7 @@ def iteratePDFModified(right, left, quantile, dist="beta", params=1):
 		if (1 - cdf_new <= quantile) and not quantileSet:
 			pos = i - (right_new.size // 2)
 			quantileSet = True
-
+		
 	return right_new, left_new, pos
 
 @njit
@@ -178,6 +237,7 @@ def cyclicDirichletPDF(p1, p2, p3, p4, quantile):
 			quantileSet = True
 
 	return p1_new, p2_new, p3_new, p4_new, pos
+
 
 def evolveAndGetQuantile(times, N, size, dist, params, save_file):
 	right = np.zeros(size + 1)
@@ -382,6 +442,56 @@ def evolveAndGetProbs(times, N, size, beta, save_file):
 
 		if t in times:
 			writer.writerow([t + 1, pos, prob, delta])
+			f.flush()
+
+	f.close()
+
+
+def evolveAndGetVelocities(times, vs, size, beta, save_file):
+	right = np.zeros(size + 1)
+	left = np.zeros(size + 1)
+
+	# Start with all the particles moving to the right
+	right[right.size // 2] = 1
+
+	write_header = True
+	# Check if save file has already been created and make sure we don't
+	# redo any times we've already done
+	if os.path.exists(save_file):
+		data = np.loadtxt(save_file, skiprows=1, delimiter=",")
+		max_time = data[-1, 0]
+		if max_time == max(times):
+			sys.exit()
+		times = times[times > max_time]
+		write_header = False
+
+	f = open(save_file, "a")
+	writer = csv.writer(f)
+
+	# Ensure that we don't write a header twice
+	if write_header:
+		writer.writerow(["Time", "Position", "Prob", "Delta"])
+		f.flush()
+
+	for t in range(max(times)):
+		# Only want to pass the part of the array that is non-zero
+		xval = np.floor(vs * t ** (3/4))
+		right_new, left_new, prob, delta = iteratePDFGetVelocities(
+			right[size // 2 - t - 2 : size // 2 + t + 3],
+			left[size // 2 - t - 2 : size // 2 + t + 3],
+			xval,
+			beta=beta,
+		)
+		right[size // 2 - t - 2 : size // 2 + t + 3] = right_new
+		left[size // 2 - t - 2 : size // 2 + t + 3] = left_new
+
+		# Ensure that the sum adds to roughly 1
+		assert np.abs(np.sum(right + left) - 1) < 1e-10, np.abs(
+			np.sum(right + left) - 1
+		)
+
+		if t in times:
+			writer.writerow([t + 1, xval, prob, delta])
 			f.flush()
 
 	f.close()
