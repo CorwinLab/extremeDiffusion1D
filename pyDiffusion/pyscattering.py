@@ -56,7 +56,6 @@ def iteratePDF(right, left, quantile, dist="beta", params=1):
 
 	return right_new, left_new, pos
 
-
 @jit
 def iteratePDFGetVelocities(right, left, xval, dist="beta", params=1):
 	''' Note: xvals should be in decending order '''
@@ -110,8 +109,8 @@ def iteratePDFGetVelocities(right, left, xval, dist="beta", params=1):
 		
 		pos = i - (right_new.size // 2)
 		if pos == xval:
-			prob = cdf_new[i] 
-			delta = delta_new[i]
+			prob = cdf_new
+			delta = delta_new
 
 	return right_new, left_new, prob, delta
 
@@ -447,7 +446,7 @@ def evolveAndGetProbs(times, N, size, beta, save_file):
 	f.close()
 
 
-def evolveAndGetVelocities(times, vs, size, dist, beta, save_file):
+def evolveAndGetVelocities(times, vs, size, dist, params, save_file):
 	right = np.zeros(size + 1)
 	left = np.zeros(size + 1)
 
@@ -481,7 +480,7 @@ def evolveAndGetVelocities(times, vs, size, dist, beta, save_file):
 			left[size // 2 - t - 2 : size // 2 + t + 3],
 			xval,
 			dist=dist,
-			beta=beta,
+			params=params,
 		)
 		right[size // 2 - t - 2 : size // 2 + t + 3] = right_new
 		left[size // 2 - t - 2 : size // 2 + t + 3] = left_new

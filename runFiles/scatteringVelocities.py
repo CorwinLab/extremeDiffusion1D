@@ -8,13 +8,13 @@ from experimentUtils import saveVars
 
 if __name__ == '__main__':
     # For testing purposes 
-    #save_dir, sysID, beta = '.', '0', '1'
-    (save_dir, sysID, beta, vs) = sys.argv[1:]
+    save_dir, sysID, beta, vs = '.', '0', '1', '0.1'
+    #(save_dir, sysID, beta, vs) = sys.argv[1:]
     beta = float(beta)
     save_file = os.path.join(save_dir, f'Quantile{sysID}.txt')
     times = np.geomspace(1, 1e5, 10000).astype(int)
     times = np.unique(times)
-
+    vs = float(vs)
     dist = 'beta'
 
     vars = {'times': times, 
