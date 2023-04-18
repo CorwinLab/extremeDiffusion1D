@@ -28,6 +28,7 @@ from .pydiffusionPDF import DiffusionPDF
 from .pyfirstPassagePDF import FirstPassagePDF
 from .pyfirstPassageDriver import FirstPassageDriver
 from .pyfirstPassageEvolve import FirstPassageEvolve
+from .pyscatteringC import ScatteringModel
 from . import fileIO
 from . import quadMath
 from . import pyfirstPassageNumba
