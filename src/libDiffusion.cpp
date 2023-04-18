@@ -16,6 +16,7 @@
 #include "randomDistribution.hpp"
 #include "randomNumGenerator.hpp"
 #include "diffusionND.hpp"
+#include "scattering.hpp"
 
 typedef boost::multiprecision::float128 RealType;
 
@@ -242,4 +243,19 @@ PYBIND11_MODULE(libDiffusion, m)
       .def("getAbsorbedProb", &DiffusionND::getAbsorbedProb)
       .def("gettMax", &DiffusionND::gettMax)
       .def("getL", &DiffusionND::getL);
+
+  py::class_<Scattering, RandomDistribution>(m, "Scattering")
+      .def(py::init<std::string, std::vector<double>, const unsigned long int>())
+      .def("getpright", &Scattering::getpright)
+      .def("getpleft", &Scattering::getpleft)
+      .def("getOccupancySize", &Scattering::getOccupancySize)
+      .def("getTime", &Scattering::getTime)
+      .def("setTime", &Scattering::setTime)
+      .def("getEdges", &Scattering::getEdges)
+      .def("setEdges", &Scattering::setEdges)
+      .def("getMaxIdx", &Scattering::getMaxIdx)
+      .def("getMinIdx", &Scattering::getMinIdx)
+      .def("iterateTimestep", &Scattering::iterateTimestep)
+      .def("getProbAbove", &Scattering::getProbAbove)
+      .def("getDeltaAt", &Scattering::getDeltaAt);
 }
