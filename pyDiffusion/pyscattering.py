@@ -3,7 +3,7 @@ from numba import njit, jit
 import csv
 import os
 import sys
-
+import npquad
 
 @jit
 def iteratePDF(right, left, quantile, dist="beta", params=1):
@@ -87,8 +87,8 @@ def iteratePDFGetVelocities(right, left, xval, dist="beta", params=1):
 		)
 		biases[::2] = rand_nums
 
-	right_new = np.zeros(right.shape)
-	left_new = np.zeros(left.shape)
+	right_new = np.zeros(right.shape, dtype=np.quad)
+	left_new = np.zeros(left.shape, dtype=np.quad)
 	cdf_new = 0
 	delta_new = 0 
 
@@ -105,12 +105,11 @@ def iteratePDFGetVelocities(right, left, xval, dist="beta", params=1):
 		# left_new[i] = left[i+1] * (1-biases[i+1]) + right[i+1] * (1-biases[i+1])
 
 		cdf_new += right_new[i] + left_new[i]
-		delta_new += right_new[i] - left_new[i]
 		
 		pos = i - (right_new.size // 2)
 		if pos == xval:
 			prob = cdf_new
-			delta = delta_new
+			delta = right_new[i] - left_new[i]
 
 	return right_new, left_new, prob, delta
 
@@ -447,8 +446,8 @@ def evolveAndGetProbs(times, N, size, beta, save_file):
 
 
 def evolveAndGetVelocities(times, vs, size, dist, params, save_file):
-	right = np.zeros(size + 1)
-	left = np.zeros(size + 1)
+	right = np.zeros(size + 1, dtype=np.quad)
+	left = np.zeros(size + 1, dtype=np.quad)
 
 	# Start with all the particles moving to the right
 	right[right.size // 2] = 1
@@ -469,7 +468,7 @@ def evolveAndGetVelocities(times, vs, size, dist, params, save_file):
 
 	# Ensure that we don't write a header twice
 	if write_header:
-		writer.writerow(["Time", "Position", "Prob", "Delta"])
+		writer.writerow(["Time", "Position", "logP", "Delta"])
 		f.flush()
 
 	for t in range(max(times)):
@@ -491,7 +490,7 @@ def evolveAndGetVelocities(times, vs, size, dist, params, save_file):
 		)
 
 		if t in times:
-			writer.writerow([t + 1, xval, prob, delta])
+			writer.writerow([t + 1, xval, np.log(1-prob).astype(float), delta.astype(float)])
 			f.flush()
 
 	f.close()
