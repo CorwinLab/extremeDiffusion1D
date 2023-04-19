@@ -104,6 +104,7 @@ std::vector<long int> DiffusionTimeCDF::getxvals()
   return xvals;
 }
 
+
 RealType DiffusionTimeCDF::getGumbelVariance(RealType nParticles)
 {
   nParticles+=1;
@@ -175,4 +176,8 @@ RealType DiffusionTimeCDF::getProbOutsidePositions(unsigned int x){
     }
   }
   return probOutside;
+}
+
+RealType DiffusionTimeCDF::getProbAtIdx(unsigned int x){
+  return CDF.at(idx);
 }

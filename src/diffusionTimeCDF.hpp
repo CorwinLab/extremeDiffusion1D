@@ -47,6 +47,7 @@ public:
   std::vector<long int> getxvals();
   std::vector<RealType> getSaveCDF();
   std::pair<RealType, float> getProbandV(RealType quantile);
+  RealType getProbAtX(unsigned int x);
 };
 
 #endif /* DIFFUSIONTIMECDF_HPP_ */
