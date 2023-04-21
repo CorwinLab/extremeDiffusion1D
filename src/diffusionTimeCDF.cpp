@@ -178,6 +178,6 @@ RealType DiffusionTimeCDF::getProbOutsidePositions(unsigned int x){
   return probOutside;
 }
 
-RealType DiffusionTimeCDF::getProbAtIdx(unsigned int x){
-  return CDF.at(idx);
+RealType DiffusionTimeCDF::getProbAtX(unsigned int x){
+  return CDF.at(x);
 }

@@ -258,5 +258,6 @@ PYBIND11_MODULE(libDiffusion, m)
       .def("getMinIdx", &Scattering::getMinIdx)
       .def("iterateTimestep", &Scattering::iterateTimestep)
       .def("getProbAbove", &Scattering::getProbAbove)
-      .def("getDeltaAt", &Scattering::getDeltaAt);
+      .def("getDeltaAt", &Scattering::getDeltaAt)
+      .def("getProbAt", &Scattering::getProbAt);
 }

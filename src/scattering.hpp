@@ -56,6 +56,7 @@ public:
   void iterateTimestep();
   RealType getProbAbove(unsigned int idx);
   RealType getDeltaAt(unsigned int idx);
+  RealType getProbAt(unsigned int idx) {return pright.at(idx) + pleft.at(idx); }
 };
 
 #endif /* SCATTERING_HPP_ */

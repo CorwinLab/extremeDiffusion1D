@@ -25,7 +25,7 @@ class ScatteringModel(libDiffusion.Scattering):
         writers = [csv.writer(f) for f in files]
 
         for i in range(len(writers)):
-            writers[i].writerow(["Time", "Position", "logP", "Delta"])
+            writers[i].writerow(["Time", "Position", "logP", "Delta", "P"])
             files[i].flush()
 
         for t in times:
@@ -36,7 +36,9 @@ class ScatteringModel(libDiffusion.Scattering):
             for i in range(len(xvals)): 
                 prob = self.getProbAbove(idx[i])
                 delta = self.getDeltaAt(idx[i])
-                writers[i].writerow([self.getTime(), xvals[i], np.log(1-prob).astype(float), delta.astype(float)])
+                probAt = self.getProbAt(idx[i])
+
+                writers[i].writerow([self.getTime(), xvals[i], np.log(prob).astype(float), delta.astype(float), probAt.astype(float)])
                 files[i].flush()
 
         for f in files:
