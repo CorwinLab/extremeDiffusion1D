@@ -5,11 +5,23 @@ import sys
 import os
 
 @njit
-def iteratePDF(pdf, t, gamma=1/2):
+def iteratePDFTimeDamped(pdf, t, gamma=1/2):
 	pdf_new = np.zeros(pdf.shape)
 	damping = (t+1)**(gamma)
 	biases = np.random.uniform(-1/2, 1/2, pdf.size) / damping
+
+	pdf_new[0] = pdf[0] * (1/2 + biases[0])
+	for i in range(1, t+2):
+		pdf_new[i] = pdf[i] * (1/2 + biases[i]) + pdf[i-1] * (1/2 - biases[i-1])
 	
+	return pdf_new
+
+@njit 
+def iteratePDFSpaceTimeDamped(pdf, t, gamma=1/2):
+	pdf_new = np.zeros(pdf.shape)
+	xvals = 2 * np.array(range(len(pdf_new.size))) - t
+	damping = (t+1)**(gamma)
+	biases = np.random.uniform(-1/2, 1/2, pdf.size) * (xvals / damping)
 
 	pdf_new[0] = pdf[0] * (1/2 + biases[0])
 	for i in range(1, t+2):
@@ -33,7 +45,7 @@ def getVelocities(times, vs, save_files, gamma):
 	t = 0
 
 	for _ in range(max(times)): 
-		pdf = iteratePDF(pdf, t, gamma=gamma)
+		pdf = iteratePDFSpaceTimeDamped(pdf, t, gamma=gamma)
 		t += 1
 
 		if t in times: 
