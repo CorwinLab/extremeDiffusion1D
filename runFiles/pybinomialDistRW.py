@@ -18,7 +18,9 @@ def iteratePDF(pdf, min_idx, max_idx, max_step_size=3):
 
 	for idx in range(min_idx, max_idx+1):
 		# Step up transition kernel
-		step_size = np.random.binomial(max_step_size, 0.5) + 1
+		# step_size = np.random.binomial(max_step_size, 0.5) + 1
+		step_size = np.random.choice(np.array([max_step_size/2 - 1, max_step_size/2, max_step_size/2+1]))
+		
 		xvals = np.arange(0, 2 * step_size + 1)
 		
 		transition_prob = binomialDist(xvals, 2*step_size, 0.5)
@@ -88,7 +90,6 @@ def evolveAndMeasureQuantileVelocity(tMax, max_step_size, N, v, save_file):
 			writer.writerow([t, quantile, prob])
 			f.flush()
 
-'''Testing code for functions
 if __name__ == '__main__':
 	from matplotlib import pyplot as plt 
 
@@ -96,11 +97,16 @@ if __name__ == '__main__':
 	xvals = np.arange(-tMax, tMax+1)
 	pdf = np.zeros(xvals.size)
 	pdf[pdf.size//2] = 1
-	max_step_size = 9
+	max_step_size = 100
 
 	tEvolve = tMax // (max_step_size+1)
 	min_idx = pdf.size // 2
 	max_idx = pdf.size // 2 + 1
+	
+	step_size = np.random.binomial(max_step_size, 0.5, size=10000000) + 1
+	fig, ax = plt.subplots()
+	ax.hist(step_size,bins=100)
+	fig.savefig("StepSize.png")
 
 	for t in range(tEvolve):
 		pdf, min_idx, max_idx = iteratePDF(pdf, min_idx, max_idx, max_step_size=max_step_size)
@@ -128,4 +134,3 @@ if __name__ == '__main__':
 	ax.set_ylabel("p(x,t)")
 	ax.legend()
 	fig.savefig("Dist.png")
-'''
