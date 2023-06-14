@@ -2,9 +2,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 from numba import njit 
 import csv
+import mpmath
 
 @njit 
-def forwardEuler(f, dx, dt, D0, sigma, minIdx, maxIdx):
+def forwardEuler(f, dx, dt, D0, sigma):
 	'''
 	Example:
 	
@@ -44,18 +45,15 @@ def forwardEuler(f, dx, dt, D0, sigma, minIdx, maxIdx):
 	'''
 	
 	f_new = np.zeros(f.shape)
-	Ds = np.zeros(f_new.shape)
-	Ds[minIdx-1:maxIdx +1] = np.random.normal(loc = D0, scale=sigma, size=maxIdx - minIdx + 2)
-	assert np.all(Ds[minIdx:maxIdx+1] >= 0)
+	Ds = np.random.normal(loc = D0, scale=sigma, size=f_new.size)
+	# Ds = np.random.lognormal(mean = D0, sigma = sigma, size=f_new.size)
+	assert np.all(Ds >= 0)
 
 	field_times_d = Ds * f
-	for i in range(minIdx-1, maxIdx+2):
+	for i in range(1, len(f_new)-1):
 		f_new[i] = dt / dx**2 * (field_times_d[i+1] - 2 * field_times_d[i] + field_times_d[i-1]) + f[i]
 
-	nonzeros = np.nonzero(f_new)[0]
-	min_idx, max_idx = nonzeros[0], nonzeros[-1]
-
-	return f_new, min_idx, max_idx
+	return f_new
 
 def getProbAtX(prob, xvals, x):
 	idx = np.where(xvals == x)[0][0]
@@ -72,13 +70,7 @@ def getQuantile(prob, N):
 def evolveAndGetProbs(tMax, v, D0, sigma, dx, save_file):
 	'''
 	Examples
-	tMax = 5000
-	v = 1/5
-	D0 = 1
-	sigma = 0.1
-	dx = 1
-	save_file = './Probability.txt'
-	evolveAndGetProbs(tMax, v, D0, sigma, dx, save_file)
+
 	'''
 
 	# Specify what times to go to
@@ -86,7 +78,7 @@ def evolveAndGetProbs(tMax, v, D0, sigma, dx, save_file):
 	maxTime = np.max(times)
 
 	# Set time-scale
-	dt = dx**2 / 2 / D0 / 2
+	dt = dx**2 / 2 / D0 / 4
 	t = dt
 	L = maxTime * 2
 
@@ -109,13 +101,86 @@ def evolveAndGetProbs(tMax, v, D0, sigma, dx, save_file):
 	f.flush()
 	
 	while t < maxTime:
-		# This could be incredibly faster if we only pass the nonzero part of the array
-		# I'm just going to continu for now though.
-		p, min_idx, max_idx = forwardEuler(p, dx, dt, D0, sigma, min_idx, max_idx)
-		assert (min_idx > 0) and (max_idx < (len(p)-1))
+		# Get indeces of array that are nonzero
+		nonzeros = np.nonzero(p)[0]
+		min_idx, max_idx = nonzeros[0], nonzeros[-1]
+		
+		# Get section of array that is nonzero and padded with 
+		# two zeros on each side
+		p_pass = p[min_idx-2:max_idx+3]
+		p_new = forwardEuler(p_pass, dx, dt, D0, sigma)
+		
+		# Assign slice of array back in
+		p[min_idx-2:max_idx+3] = p_new
+
 		t += dt 
-		if t in times:
+		if round(t, 10) in times:
 			xmeasured  = int(v * t)
 			probability = getProbAtX(p, xvals, xmeasured)
 			writer.writerow([t, xmeasured, probability])
 			f.flush()
+
+def getMeanVarN(p, xvals, N):
+	cdfN = (np.cumsum(p))**N
+	pdfN = np.diff(cdfN)
+
+	mean = np.sum(xvals[1:] * pdfN) 
+	var = np.sum(xvals[1:] ** 2 * pdfN)- mean**2
+	return mean, var
+
+def evolveAndGetQuantiles(tMax, N, D0, sigma, dx, save_file):
+
+	# Specify what times to go to
+	times = np.unique(np.geomspace(1, tMax, 500).astype(int))
+	maxTime = np.max(times)
+
+	# Set time-scalep_pass = p[min_idx-2:max_idx+3]
+	dt = dx**2 / 2 / D0 / 2
+	t = dt
+	L = maxTime * 2
+
+	# Set x-scale to precision within one decimal place
+	xvals = np.round(np.arange(-L, L+dx, step=dx), 1)
+	
+	# Initialize probability distribution
+	# Initialized to Gaussian at time t=dt
+	p = np.zeros(xvals.shape)
+	p = 1 / np.sqrt(2 * np.pi * (4 * D0 * dt)) * np.exp(-1/2 * (xvals)**2 / (4 * D0 * dt))
+	p /= np.sum(p)
+	# grab min and max indeces
+	nonzeros = np.nonzero(p)[0]
+	min_idx, max_idx = nonzeros[0], nonzeros[-1]
+
+	# Initialize save_file writer
+	f = open(save_file, "a")
+	writer = csv.writer(f)
+	writer.writerow(["Time", "Mean", "Variance"])
+	f.flush()
+	
+	while t < maxTime:
+		# Get indeces of array that are nonzero
+		nonzeros = np.nonzero(p)[0]
+		min_idx, max_idx = nonzeros[0], nonzeros[-1]
+		
+		# Get section of array that is nonzero and padded with 
+		# two zeros on each side
+		p_pass = p[min_idx-2:max_idx+3]
+		p_new = forwardEuler(p_pass, dx, dt, D0, sigma)
+		
+		# Assign slice of array back in
+		p[min_idx-2:max_idx+3] = p_new
+
+		t += dt 
+		if round(t, 10) in times:
+			mean, var = getMeanVarN(p, xvals, N)
+			writer.writerow([t, mean, var])
+			f.flush()
+
+if __name__ == '__main__':
+	tMax = 50000
+	N = 1e10
+	D0 = 0.1
+	sigma = 0.01
+	dx = 0.05
+	save_file = './Probability0.txt'
+	evolveAndGetQuantiles(tMax, N, D0, sigma, dx, save_file)
