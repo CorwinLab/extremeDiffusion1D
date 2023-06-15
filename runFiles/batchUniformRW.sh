@@ -13,10 +13,9 @@
 TMAX=100000
 STEPSIZE=10
 NEXP=10
-V=0.5
 TOPDIR=/home/jhass2/jamming/JacobData/UniformRW/
 
 mkdir -p $TOPDIR
 
-#(tMax, max_step_size, v, Nexp, topDir, sysID) = sys.argv[1:]
-python3 UniformRW.py $TMAX $STEPSIZE $V $NEXP $TOPDIR $SLURM_ARRAY_TASK_ID
+#(tMax, max_step_size, Nexp, topDir, sysID) = sys.argv[1:]
+python3 UniformRW.py $TMAX $STEPSIZE $NEXP $TOPDIR $SLURM_ARRAY_TASK_ID

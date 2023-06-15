@@ -25,9 +25,10 @@ def getQuantile(N, pdf, max_idx):
 			# Need to account for center of pdf
 			return idx - pdf.size // 2
 		
-def getProbAtPos(pdf, x):
-	idx = x + pdf.size // 2
-	return pdf[idx]
+def getProbAtPos(pdf, xs):
+	indeces = xs + pdf.size // 2
+	probs = [pdf[idx] for idx in indeces]
+	return probs
 
 def evolveAndMeasureQuantileVelocity(tMax, max_step_size, N, v, save_file):
 	# Get save times 
@@ -48,7 +49,7 @@ def evolveAndMeasureQuantileVelocity(tMax, max_step_size, N, v, save_file):
 	# Initialize save file writer
 	f = open(save_file, "a")
 	writer = csv.writer(f)
-	writer.writerow(["Time", "Quantile", "Probability"])
+	writer.writerow(["Time", "Quantile"] + v)
 	f.flush()
 
 	while t <= maxTime:
@@ -67,9 +68,13 @@ def evolveAndMeasureQuantileVelocity(tMax, max_step_size, N, v, save_file):
 
 		if t in times: 
 			quantile = getQuantile(N, pdf, max_idx)
-			x = int(v * t**(3/4))
+			x = (np.array(v) * t**(3/4)).astype(int)
 			prob = getProbAtPos(pdf, x)
-			writer.writerow([t, quantile, prob])
+			
+			# Need to get probabilities for all x values 
+			row = [t, quantile] + prob 
+			writer.writerow(row)
+			
 			f.flush()
 
 if __name__ == '__main__':
@@ -91,7 +96,6 @@ if __name__ == '__main__':
 		pdf_pass = pdf[min_idx - max_step_size: max_idx + max_step_size + 1]
 		pdf_pass = iteratePDF(pdf_pass, max_step_size=max_step_size)
 		pdf[min_idx - max_step_size: max_idx + max_step_size + 1] = pdf_pass 
-		print(np.sum(pdf))
 
 	n = tEvolve * (max_step_size+1)
 	p = 0.5

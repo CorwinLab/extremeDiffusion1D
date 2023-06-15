@@ -6,8 +6,8 @@ from datetime import date
 
 if __name__ == '__main__':
 	# Testing line of code
-	# (tMax, max_step_size, v, Nexp, topDir, sysID) = '1000', '10', '0.5', '5', '.', '0'
-	(tMax, max_step_size, v, Nexp, topDir, sysID) = sys.argv[1:]
+	# (tMax, max_step_size, Nexp, topDir, sysID) = '1000', '10', '5', '.', '0'
+	(tMax, max_step_size, Nexp, topDir, sysID) = sys.argv[1:]
 
 	save_file = os.path.join(topDir, f"Quantiles{sysID}.txt")
 	N = float(f"1e{Nexp}")
@@ -15,7 +15,7 @@ if __name__ == '__main__':
 	vars = {'tMax': int(tMax),
 	 		'max_step_size': int(max_step_size),
 			'N': N,
-			'v': float(v),
+			'v': [0.0001, 0.001, 0.01, 0.1, 1],
 			'save_file': save_file}
 	
 	vars_file = os.path.join(topDir, "variables.json")
