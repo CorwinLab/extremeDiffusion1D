@@ -3,10 +3,10 @@ from matplotlib import pyplot as plt
 from numba import njit
 import csv 
 
-@njit 
+@njit
 def randomDirichlet(size):
-	rand_vals = np.random.uniform(0, 1, size)
-	return rand_vals / np.sum(rand_vals)
+	randomGamma = np.random.exponential(1, size=size)
+	return randomGamma / np.sum(randomGamma)
 
 @njit
 def iterateTimeStep(pdf, t, step_size=3):
@@ -23,7 +23,7 @@ def iterateTimeStep(pdf, t, step_size=3):
 def measureProbAtPosition(pdf, x, t, step_size):
 	center = t * (step_size // 2)
 	idx = x + center 
-	return pdf[idx]
+	return np.sum(pdf[idx:])
 
 @njit	
 def measureQuantile(pdf, N, t, step_size):

@@ -1,7 +1,7 @@
 import numpy as np
 import os 
 import sys 
-from pyDiffusion.pymultijumpRW import evolveAndMeasureQuantileVelocity
+from pymultijumpRW import evolveAndMeasureQuantileVelocity
 from datetime import date
 from experimentUtils import saveVars
 
