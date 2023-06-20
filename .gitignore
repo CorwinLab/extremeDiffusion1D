@@ -10,9 +10,6 @@ pybind11/
 numpy_quad/
 
 #miscellanious stuff
-/Data/
-/Data2/
-testFirstPass.py
 
 #Latex stuff
 *.aux
@@ -28,6 +25,7 @@ testFirstPass.py
 *.csv
 *.zip
 *.pdf
+*.svg
 
 # Keep example files
 !/examples/*
