@@ -1,13 +1,55 @@
 """
 Make plot showing the recovery of environmental data
 """
+from matplotlib import pyplot as plt 
+import numpy as np 
+import sys 
+import os
+import json
+sys.path.append("../../dataAnalysis")
+import theory
+from overalldatabase import Database
+
+# Set up database
+db = Database()
+''' I moved these to /corwinLabMount/MaxParticlePaperData/ '''
+
+einstein_dir = "/home/jacob/Desktop/corwinLabMount/MaxParticlePaperData/JacobData/EinsteinPaper/"
+directory = "/home/jacob/Desktop/corwinLabMount/MaxParticlePaperData/Paper/Max/"
+cdf_path = "/home/jacob/Desktop/corwinLabMount/MaxParticlePaperData/Paper/CDF/"
+cdf_path_talapas = "/home/jacob/Desktop/corwinLabMount/MaxParticlePaperData/JacobData/Paper/"
+
+dirs = os.listdir(directory)
+for dir in dirs:
+    path = os.path.join(directory, dir)
+    db.add_directory(path, dir_type="Max")
+
+e_dirs = os.listdir(einstein_dir)
+for dir in e_dirs:
+    path = os.path.join(einstein_dir, dir)
+    N = int(path.split("/")[-1])
+    if N == 300:
+        continue
+    db.add_directory(path, dir_type="Max")
+
+db.add_directory(cdf_path, dir_type="Gumbel")
+db.add_directory(cdf_path_talapas, dir_type="Gumbel")
+
+db1 = db.getBetas(1)
+for dir in db1.dirs.keys():
+    f = open(os.path.join(dir, "analysis.json"), "r")
+    x = json.load(f)
+    print(dir, " Systems:", x["number_of_systems"])
+
+dbe = db.getBetas(np.inf)
+
 fontsize = 12
 alpha = 0.6
 fig, ax = plt.subplots()
 ax.set_xscale("log")
 ax.set_yscale("log")
 ax.set_xlabel(r"$t / \log(N)$", labelpad=0, fontsize=fontsize)
-ax.set_ylabel(r"$\mathrm{Var}$", fontsize=fontsize)
+ax.set_ylabel(r"$\mathrm{Variance}$", fontsize=fontsize)
 ax.tick_params(axis="both", labelsize=fontsize)
 
 N = 7
@@ -111,10 +153,10 @@ leg = ax.legend(
 for item in leg.legendHandles:
     item.set_visible(False)
 
-ax.vlines(x=logN ** 2 / logN, ymin=10 ** -1, ymax=10 ** 4, color="k", ls=":", alpha=0.4)
-ax.annotate(
-    r"$t=(\log(N))^2$", xy=(logN ** 2 / logN, 10 ** 3), color="k", fontsize=fontsize
-)
+#ax.vlines(x=logN ** 2 / logN, ymin=10 ** -1, ymax=10 ** 4, color="k", ls=":", alpha=0.4)
+#ax.annotate(
+#    r"$t=(\log(N))^2$", xy=(logN ** 2 / logN, 10 ** 3), color="k", fontsize=fontsize
+#)
 ax.set_xlim([0.3, 5 * 10 ** 3])
 ax.set_ylim([10 ** -1, 10 ** 4])
 fig.savefig("MaxQuantComp.pdf", bbox_inches="tight")

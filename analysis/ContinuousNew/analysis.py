@@ -37,7 +37,7 @@ def calculateMeanVar(files):
     print("# of files:", num_of_files)
     return avg, var, time
 
-dir = "/home/jacob/Desktop/talapasMount/JacobData/ContinuousNew/"
+dir = "/home/jacob/Desktop/corwinLabMount/CleanData/ContinuousNew/"
 dirs = os.listdir(dir)
 dirs.sort()
 maxTime = 10000
@@ -60,7 +60,7 @@ ax.set_ylabel(r'$\mathrm{Mean}(\mathrm{Max}_t^N)$')
 for i, d in enumerate(dirs): 
     vars_file = os.path.join(dir, d, "variables.json") 
     if d == '0.1':
-        raise ValueError # I fucked up the variables in 0.1/variables.json
+        continue
     with open(vars_file) as f:
         vars = json.load(f)
     
@@ -99,6 +99,8 @@ ax.set_ylabel(r'$\mathrm{Var}(\mathrm{Max}_t^N)$')
 
 for i, d in enumerate(dirs): 
     vars_file = os.path.join(dir, d, "variables.json")
+    if d == '0.1':
+        continue
     with open(vars_file) as f:
         vars = json.load(f)
     
