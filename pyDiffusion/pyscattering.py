@@ -56,7 +56,7 @@ def iteratePDF(right, left, quantile, dist="beta", params=1):
 
 	return right_new, left_new, pos
 
-@jit
+@njit
 def iteratePDFGetVelocities(right, left, xval, dist="beta", params=1):
 	''' Note: xvals should be in decending order '''
 	if dist == "beta":

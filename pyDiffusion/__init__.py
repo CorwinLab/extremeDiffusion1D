@@ -35,4 +35,3 @@ from . import pyfirstPassageNumba
 from . import pydiffusion2D
 from . import pydiffusionND
 from . import pyscattering
-from . import pymultijumpRW
