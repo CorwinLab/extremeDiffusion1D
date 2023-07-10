@@ -8,11 +8,12 @@ from datetime import date
 def runExperiment(nParticles, minTime, maxTime, num_save_times, xi, D, tol, dt, save_file, save_positions):
     save_times = np.geomspace(minTime, maxTime, num_save_times).astype(int)
     save_times = np.unique(save_times)
+    save_times = np.round(save_times, 2)
     pydiffusion2D.evolveAndSaveMaxDistance1D(nParticles, save_times, xi, D, tol, dt, save_file, save_positions)
 
 if __name__ == '__main__':
     # testing code  
-    # topDir, sysID, minTime, maxTime, nParticles, num_save_times, xi, D = '.', 0, 1, 1500, int(1e6), 2500, 2, 1
+    # topDir, sysID, minTime, maxTime, nParticles, num_save_times, xi, D = '.', 0, 1, 100, int(1e6), 2500, 2, 1
     (
         topDir,
         sysID,
@@ -37,7 +38,7 @@ if __name__ == '__main__':
     xi = float(xi)
     D = float(D)
     tol = 0.0001
-    dt = 0.1
+    dt = 1
     vars = {
         "nParticles": nParticles,
         "minTime": minTime,

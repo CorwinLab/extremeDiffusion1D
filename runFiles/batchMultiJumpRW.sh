@@ -11,7 +11,7 @@
 #SBATCH --requeue
 
 TMAX=100000
-STEPSIZE=10
+STEPSIZE=11
 NEXP=12
 V=0.5
 TOPDIR=/home/jhass2/jamming/JacobData/MultiJumpRW/

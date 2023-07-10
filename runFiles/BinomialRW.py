@@ -7,7 +7,7 @@ from datetime import date
 
 if __name__ == '__main__':
 	# Testing line of code
-	#(tMax, max_step_size, v, Nexp, topDir, sysID) = '1000', '11', '0.5', '5', '.', '0'
+	#(tMax, max_step_size, v, Nexp, topDir, sysID) = '1000', '10', '0.5', '5', '.', '0'
 	(tMax, max_step_size, v, Nexp, topDir, sysID) = sys.argv[1:]
 
 	save_file = os.path.join(topDir, f"Quantiles{sysID}.txt")

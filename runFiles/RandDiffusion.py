@@ -6,8 +6,8 @@ from experimentUtils import saveVars
 
 if __name__ == '__main__':
 	# Testing code
-	# (topDir, sysID, tMax, v, D0, sigma, dx) = '.', '0', '50000', '0.1', '1', '0.1', '1'
-	(topDir, sysID, tMax, v, D0, sigma, dx) = sys.argv[1:]
+	(topDir, sysID, tMax, v, D0, sigma, dx) = '.', '0', '50000', '0.2', '0.01', '0.001', '0.05'
+	#(topDir, sysID, tMax, v, D0, sigma, dx) = sys.argv[1:]
 	save_file = os.path.join(topDir, f'ProbDist{sysID}.txt')
 
 	vars = {'tMax': int(tMax),
@@ -23,5 +23,6 @@ if __name__ == '__main__':
 	if int(sysID) == 0:
 		vars.update({"Date": text_date})
 		saveVars(vars, vars_file)
+		vars.pop("Date")
 
 	evolveAndGetProbs(**vars)

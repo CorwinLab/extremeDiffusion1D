@@ -29,7 +29,7 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
     f = open(save_file, "a")
     writer = csv.writer(f)
     if write_header:
-        writer.writerow(["Position", "Quantile", "Variance"])
+        writer.writerow(["Position", "Quantile", "Mean", "Variance"])
         f.flush()
 
     time_interval = 3600 * 12
@@ -70,7 +70,7 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
                 last_save_time = time.time()
 
         variance = running_sum_squared - running_sum ** 2
-        writer.writerow([d, quantile, variance])
+        writer.writerow([d, quantile, running_sum, variance])
         f.flush()
         
     f.close()

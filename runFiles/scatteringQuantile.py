@@ -8,7 +8,7 @@ from experimentUtils import saveVars
 
 if __name__ == '__main__':
     # For testing purposes 
-    # save_dir, sysID, beta = '.', '1', '1'
+    #save_dir, sysID, beta = '.', '0', '1'
     (save_dir, sysID, beta) = sys.argv[1:]
     beta = float(beta)
     save_file = os.path.join(save_dir, f'Quantile{sysID}.txt')
@@ -34,8 +34,8 @@ if __name__ == '__main__':
         vars.update({"Date": text_date})
 
         # numpy arrays aren't serializable 
-        vars.update({'times': list(vars['times'])})
-        
+        vars.update({'times': [int(i) for i in vars['times']]})
+        vars.update({'size': int(vars['size'])})
         saveVars(vars, vars_file)
         vars.pop("Date")
         
