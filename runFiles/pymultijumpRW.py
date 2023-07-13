@@ -9,21 +9,29 @@ def randomDirichlet(size):
 	return randomGamma / np.sum(randomGamma)
 
 @njit
-def iterateTimeStep(pdf, t, step_size=3):
+def symmetricRandomDirichlet(size):
+	rand_vals = randomDirichlet(size // 2) / 2
+	return np.hstack((rand_vals, np.array([0]), rand_vals))
+
+@njit
+def iterateTimeStep(pdf, t, step_size=3, symmetric=False):
 	pdf_new = np.zeros(pdf.size)
 	
 	# I'm not entirely sure how/why but using this end point means
 	# that we iterate over the entire array but no further
 	for i in range(0, t * (step_size-1) - step_size + 2):
-		rand_vals = randomDirichlet(step_size)
+		if symmetric: 
+			rand_vals = symmetricRandomDirichlet(step_size)
+		else:
+			rand_vals = randomDirichlet(step_size)
 		pdf_new[i: i + step_size] += rand_vals * pdf[i]
 
 	return pdf_new
 
-def measureProbAtPosition(pdf, x, t, step_size):
+def measurePDFandCDF(pdf, x, t, step_size):
 	center = t * (step_size // 2)
 	idx = x + center 
-	return np.sum(pdf[idx:])
+	return pdf[idx], np.sum(pdf[idx:])
 
 @njit	
 def measureQuantile(pdf, N, t, step_size):
@@ -34,9 +42,9 @@ def measureQuantile(pdf, N, t, step_size):
 			center = t * (step_size // 2)
 			return i - center  
 
-def evolveAndMeasureQuantileVelocity(tMax, step_size, N, v, save_file):
+def evolveAndMeasureQuantileVelocity(tMax, step_size, N, v, save_file, symmetric):
 	# Ensure the step_size is odd 
-	assert (step_size % 2) != 0, f"Step size is not and odd number but {step_size}"
+	assert (step_size % 2) != 0, f"Step size is not an odd number but {step_size}"
 
 	# Get save times
 	times = np.unique(np.geomspace(1, tMax, 2500).astype(int))
@@ -50,20 +58,20 @@ def evolveAndMeasureQuantileVelocity(tMax, step_size, N, v, save_file):
 	# Initialize save file writer
 	f = open(save_file, "a")
 	writer = csv.writer(f)
-	writer.writerow(["Time", "Quantile", "Probability"])
+	writer.writerow(["Time", "Quantile", "PDF", "CDF"])
 	f.flush()
 	
 	maxTime = np.max(times)
 	while t < maxTime: 
-		pdf = iterateTimeStep(pdf, t+1, step_size)
+		pdf = iterateTimeStep(pdf, t+1, step_size, symmetric)
 		
 		t+=1
 
 		if t in times: 
 			quantile = measureQuantile(pdf, N, t, step_size)
 			x = int(v * t**(3/4))
-			prob = measureProbAtPosition(pdf, x, t, step_size)
-			writer.writerow([t, np.abs(quantile), prob])
+			pdf_val, cdf_val = measurePDFandCDF(pdf, x, t, step_size)
+			writer.writerow([t, np.abs(quantile), pdf_val, cdf_val])
 
 if __name__ == '__main__':
 	L = 10000
@@ -79,7 +87,7 @@ if __name__ == '__main__':
 
 	while t < tMax:
 		#print(f"t={t}, {np.sum(pdf)}")
-		pdf = iterateTimeStep(pdf, t+1, step_size)
+		pdf = iterateTimeStep(pdf, t+1, step_size, symmetric=True)
 		t += 1
 
 	# This gives the correct xvalues for the array
@@ -90,7 +98,7 @@ if __name__ == '__main__':
 	
 	# Make sure the measurements are correct
 	xMeasurement = 500
-	pMeasurement = measureProbAtPosition(pdf, xMeasurement, t, step_size)
+	pMeasurement, cdfMeasurement = measurePDFandCDF(pdf, xMeasurement, t, step_size)
 
 	N = 1e12
 	quantile = measureQuantile(pdf, N, t, step_size)
