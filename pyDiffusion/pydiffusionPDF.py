@@ -11,6 +11,7 @@ from typing import Tuple, List, Sequence
 from .lDiffusionLink import libDiffusion
 from . import fileIO
 
+
 class DiffusionPDF(libDiffusion.DiffusionPDF):
     """
     Helper class for C++ Diffusion object. Allows simulating random walks with
@@ -22,42 +23,56 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
     numberOfParticles : int or float
         Number of particles to include in the simulation.
 
-    beta : int or float
-        Value of the beta distribution to use. Must satisfy 0 <= beta <= 1.
+    distributionName : str
+        Name of distribution to draw random biases from. So far the implemented
+        distributions are ['beta', 'delta', 'bates', 'triangular', 'uniform',
+        'quadratic', 'inv triangular']
+
+    parameters : list
+        List of parameters to feed into the desired distribution. The number of
+        parameters for each distribution are
+            {'beta': 2,
+             'triangular': 3,
+             'uniform': 2,
+             'quadratic': 2,
+             'delta': >1,
+             'bates': 3}
 
     occupancySize : int
         Size of the edges and occupancy arrays to initialize to. This needs to
         be at least the size of the number of timesteps that are planned to run.
+        However, that's probably overkill. Usually, ~3,000,000 is okay to run
 
-    ProbDistFlag : bool (true)
+    ProbDistFlag : bool (false)
         Whether or not to include fractional particles or not. If True doesn't
         round the particles shifting and if False then rounds the particles so
-        there is always a whole number of particles.
+        there is always a whole number of particles. This should probably be
+        taken out as Diffusion CDF is easier to work with for the probability
+        distribution.
 
     staticEnvironment : bool (false)
-        Whether or not to keep the environment, or transition probabilities, 
-        constant in time.
+        Whether or not to keep the environment, or transition probabilities,
+        constant in time. Again, this works but isn't very interesting.
 
     Attributes
     ----------
+    distributionName : str
+        Name of the distribution to draw random values from
+
     time : numpy array
-        Time of the system
+        Time of the system. Returns array from 0 to currentTime
 
     currentTime : int
-        Current time of the system. This is the maximum of the time array.
-
-    center : numpy array
-        Center of the occupancy over time. This is time / 2.
+        Current time of the system.
 
     occupancy : numpy array (dtype = np.quad)
-        Number of particles at each position in the system. More formally, this
-        is referred to as the partition function.
+        Number of particles at each position in the system.
 
     nParticles : float
         Number of particles in the system
 
-    beta : float
-        Beta value of the beta distribution
+    parameters : list
+        Parameters given to distribution.
 
     probDistFlag : bool
         Whether or not to include fractional particles or not. If True doesn't
@@ -70,7 +85,13 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
 
     largeCutoff : int
         Used in the discrete simulations to determine when to approximate the
-        number of particles moving to the right as (beta * number of particles at position)
+        number of particles moving to the right as (bias * number of particles at position)
+
+    edges : tuple
+        Minimum and maximum non-zero index of the current occupancy array
+
+    staticEnvironment : bool
+        Whether or not the environment is constant in time.
 
     save_dir : str
         Directory to save the Occupancy and Scalars file that will save periodically
@@ -83,28 +104,43 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         again.
     """
 
-    def __init__(self, nParticles: np.quad, distributionName: str, parameters: List[float], occupancySize: int, ProbDistFlag: bool=True, staticEnvironment: bool=False):
-        super().__init__(nParticles, distributionName, parameters, occupancySize, ProbDistFlag, staticEnvironment)
+    def __init__(
+        self,
+        nParticles: np.quad,
+        distributionName: str,
+        parameters: List[float],
+        occupancySize: int,
+        ProbDistFlag: bool = False,
+        staticEnvironment: bool = False,
+    ):
+        super().__init__(
+            nParticles,
+            distributionName,
+            parameters,
+            occupancySize,
+            ProbDistFlag,
+            staticEnvironment,
+        )
         self._last_saved_time = time.process_time()  # seconds
         self._save_interval = 3600 * 6  # Set to save occupancy every 2 hours.
         self.id = None  # Need to also get SLURM ID
         self.save_dir = "."
 
     def __str__(self):
-        return f"DiffusionPDF(N={self.getNParticles()}, beta={self.getBeta()}, size={len(self.getEdges()[0])}, time={self.getTime()})"
+        return f"DiffusionPDF(N={self.getNParticles()}, beta={self.getBeta()}, size={len(self.getEdges()[1])}, time={self.currentTime()})"
 
     def __repr__(self):
         return self.__str__()
 
     def __eq__(self, other):
-
+        """Checks if two  DiffusionPDF objects are the same by comparing attributes"""
         if not isinstance(other, DiffusionPDF):
             raise TypeError(
                 f"Comparison must be between same object types, but other of type {type(other)}"
             )
 
         if (
-            np.all(self.occupancy == other.occupancy)  # occupancy same
+            np.all(self.occupancy == other.occupancy)
             and self.currentTime == other.currentTime
             and self.nParticles == other.nParticles
             and self.distributionName == other.distributionName
@@ -123,7 +159,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
     def distributionName(self):
         return self.getDistributionName()
 
-    @distributionName.setter 
+    @distributionName.setter
     def distributionName(self, distributionName):
         self.setDistributionName(distributionName)
 
@@ -138,10 +174,6 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
     @currentTime.setter
     def currentTime(self, time):
         self.setTime(time)
-
-    @property
-    def center(self):
-        return self.time * 0.5
 
     @property
     def occupancy(self):
@@ -195,7 +227,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
     def edges(self, edges):
         self.setEdges(edges)
 
-    @property 
+    @property
     def staticEnvironment(self):
         self.getStaticEnvironment()
 
@@ -206,7 +238,8 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
     def setup(self):
         """
         Used to catch errors that are thrown to terimnate the object. This will
-        ensure that self.catch is run before terminating.
+        ensure that self.catch is run before terminating. This doesn't actually
+        currently work due to issues with SLURM
         """
 
         signal.signal(signal.SIGTERM, self.catch)  # SLURM cancel
@@ -215,7 +248,8 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
     def catch(self, sig, frame):
         """
         We just want to save all the relevant data so we can restart the simulation
-        and then exit.
+        and then exit. Saves the state of the object before exiting. This should
+        be run in conjunction with setup() but currently doesn't work as intended.
         """
 
         self.saveState()
@@ -273,10 +307,9 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             json.dump(vars, file)
 
     @classmethod
-    def fromFiles(cls, variables_file: str, occupancy_file: str) -> 'DiffusionPDF':
+    def fromFiles(cls, variables_file: str, occupancy_file: str) -> "DiffusionPDF":
         """
-        Create a DiffusionPDF class from variables saved with saveVariables()
-        and saveState().
+        Create a DiffusionPDF class from variables saved with saveState().
 
         Parameters
         ----------
@@ -302,7 +335,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             vars["parameters"],
             vars["occupancySize"],
             vars["probDistFlag"],
-            vars['staticEnvironment'],
+            vars["staticEnvironment"],
         )
 
         loadOccupancy = fileIO.loadArrayQuad(occupancy_file)
@@ -329,7 +362,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         Raises
         ------
         RuntimeError
-            If trying to iterate to a time greater than what was originally 
+            If trying to iterate to a time greater than what was originally
             allocated.
         """
         # Save the occupancy periodically so we can start it up later.
@@ -350,7 +383,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         Parameters
         ----------
         quantile : np.quad or float
-            Nth quantile to find. Must satisfy 1 < NQuart.
+            Nth quantile to find. Must be greater than 1.
 
         Returns
         -------
@@ -359,7 +392,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
 
         Examples
         --------
-        >>> d = Diffusion(1, beta=np.inf, occupancySize=5)
+        >>> d = DiffusionPDF(1, distributionName='beta', parameters=[np.inf, np.inf], occupancySize=5)
         >>> d.evolveToTime(5)
         >>> print(d.occupancy)
         [0.03125 0.15625 0.3125 0.3125 0.15625 0.03125]
@@ -397,7 +430,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
 
         Examples
         --------
-        >>> d = Diffusion(1, beta=np.inf, occupancySize=5)
+        >>> d = DiffusionPDF(1, distributionName='beta', parameters=[np.inf, np.inf], occupancySize=5)
         >>> d.evolveToTime(5)
         >>> print(d.occupancy)
         [0.03125 0.15625 0.3125 0.3125 0.15625 0.03125]
@@ -418,10 +451,10 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         idx : int
             Index to find the number of particles in the occupancy that are greater
             than the index position.
-        
+
         Returns
         -------
-        np.quad 
+        np.quad
             Probability of a particle being greater than index x.
         """
 
@@ -446,7 +479,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
 
         return super().calcVsAndPb(num)
 
-    def VsAndPv(self, minv: float=0.0) -> Tuple[List, List]:
+    def VsAndPv(self, minv: float = 0.0) -> Tuple[List, List]:
         """
         Calculate velocities and ln(Pb(vt, t)) until minimum velocity is reached.
 
@@ -487,10 +520,12 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             System time to evolve the system forward to
         """
 
-        while self.getTime() < time:
+        while self.currentTime() < time:
             self.iterateTimestep()
 
-    def evolveAndSaveQuantiles(self, time: Sequence[int], quantiles: Sequence[np.quad], file: str, append=False):
+    def evolveAndSaveQuantiles(
+        self, time: Sequence[int], quantiles: Sequence[np.quad], file: str, append=False
+    ):
         """
         Incrementally evolves the system forward to the specified times and saves
         the specified quantiles after each increment.
@@ -512,7 +547,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
 
         Examples
         --------
-        >>> diff = DiffusionPDF(10, beta=np.inf, occupancySize=5)
+        >>> diff = DiffusionPDF(1, distributionName='beta', parameters=[np.inf, np.inf], occupancySize=5)
         >>> diff.evolveAndSaveQuantiles(time=[1, 2, 3, 4, 5], quantiles=[100, 10], file="Data.txt")
         >>> with open("Data.txt", "r") as f:
                 print(f.read())
@@ -525,7 +560,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
 
         Notes
         -----
-        Looks like this is a bit faster than the evolveAndSave method which
+        This is a bit faster than the evolveAndSave method which
         stores everything to a numpy array and then saves it.
         """
 
@@ -538,6 +573,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         if not append:
             header = ["time", "MaxEdge"] + list(quantiles)
             writer.writerow(header)
+            f.flush()
 
         for t in time:
             self.evolveToTime(t)
@@ -558,6 +594,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         if not append:
             header = ["time", "MaxEdge"]
             writer.writerow(header)
+            f.flush()
 
         for t in time:
             self.evolveToTime(t)
@@ -594,7 +631,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         --------
         >>> N = 1e300
         >>> num_of_steps = 100_000
-        >>> d = Diffusion(N, beta=beta, occupancySize=num_of_steps, smallCutoff=0, largeCutoff=0, probDistFlag=True)
+        >>> d = DiffusionPDF(1, distributionName='beta', parameters=[beta, beta], occupancySize=num_of_steps, smallCutoff=0, largeCutoff=0, probDistFlag=True)
         >>> save_times = np.geomspace(1, num_of_steps, 1000, dtype=np.int64)
         >>> save_times = np.unique(save_times)
         >>> vs = np.geomspace(1e-7, 1, 50)
@@ -617,14 +654,17 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         writer.writerow(header)
         for t in time:
             self.evolveToTime(t)
-            idx = (self.getTime() * vs + self.getTime()) / 2
+            idx = (self.currentTime() * vs + self.currentTime()) / 2
             idx = np.round(idx).astype(np.int64)
             pos = [self.pGreaterThanX(i) for i in idx]
-            row = [self.getTime()] + pos
+            row = [self.currentTime()] + pos
             writer.writerow(row)
+
         f.close()
 
-    def evolveAndSave(self, time: Sequence[int], quantiles: Sequence[np.quad], file: str):
+    def evolveAndSave(
+        self, time: Sequence[int], quantiles: Sequence[np.quad], file: str
+    ):
         """
         Incrementally evolves the system forward to the specified times and saves
         the specified quantiles after each increment. The data is stored as a
@@ -662,7 +702,9 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             save_array[row_num, :] = row
         np.savetxt(file, save_array)
 
-    def evolveAndSaveFirstPassage(self, positions: Sequence[int], file: str, append: bool=False):
+    def evolveAndSaveFirstPassage(
+        self, positions: Sequence[int], file: str, append: bool = False
+    ):
         """
         Evolve the system forward and save the time when the maximum particle has
         reached a specified distance. Really only useful for when doing discrete
@@ -678,10 +720,11 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
 
         append : bool (False)
             Whether or not to append distances to the file or not. Essentially,
-            just a flag to see whether to write the header or not. 
+            just a flag to see whether to write the header or not.
 
         Examples
         --------
+        >>> d = DiffusionPDF(1, distributionName='beta', parameters=[np.inf, np.inf], occupancySize=6, probDistFlag=True)
         >>> d = DiffusionPDF(1, np.inf, 6, ProbDistFlag=True)
         >>> d.evolveAndSaveFirstPassage([1, 2, 3], 'Times.txt')
         >>> print(np.loadtxt("Times.txt"))
@@ -691,7 +734,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         idx = 0
         f = open(file, "a")
         writer = csv.writer(f)
-        if not append: 
+        if not append:
             header = ["Distance", "Time"]
             writer.writerow(header)
             f.flush()
@@ -731,7 +774,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         --------
         # Note the output will change each time this is run since the biases are random
         >>> N = 1e300
-        >>> d = Diffusion(N, beta=1, occupancySize=10, smallCutoff=0, largeCutoff=0, probDistFlag=True)
+        >>> d = Diffusion(N, distributionName='beta', parameters=[1, 1], occupancySize=10, smallCutoff=0, largeCutoff=0, probDistFlag=True)
         >>> d.ProbBiggerX(np.array([0.5, 1]), 1)
         Bigger than Index: [3.058954085425106e+299, 3.058954085425106e+299]
         Indices:  [1 1]
