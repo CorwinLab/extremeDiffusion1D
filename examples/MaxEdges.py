@@ -1,32 +1,27 @@
-import sys
-
-sys.path.append("../src")
-from pydiffusionPDF import DiffusionPDF
-import matplotlib
-
-matplotlib.use("Agg")
+from pyDiffusion import DiffusionPDF
 from matplotlib import pyplot as plt
+import numpy as np
 
 # Specify some constants like the number of particles, beta, and number of
-# timesteps to evolve the system
+# timesteps
 nParticles = 1e50
+distributionName = 'beta'
 beta = 1
-num_of_timesteps = 10_000
+num_of_timesteps = 1_000
 
 # Initialize the system with parameters and other key word arguments
 d = DiffusionPDF(
     nParticles,
-    beta=beta,
+    distributionName=distributionName,
+    parameters=[beta, beta],
     occupancySize=num_of_timesteps,
-    probDistFlag=False,
+    ProbDistFlag=False,
 )
 
-# Evolve the system to the specified number of timesteps
-d.evolveToTime(num_of_timesteps)
-
-# Get the rightmost edge and the time
-maxEdge = d.maxDistance
-time = d.time
+maxEdge = np.zeros(num_of_timesteps)
+for t in range(num_of_timesteps):
+    d.iterateTimestep()
+    maxEdge[t] = 2 * d.edges[1] - d.currentTime
 
 # Plot the edge over time and save
 fig, ax = plt.subplots()
@@ -34,5 +29,6 @@ ax.set_xlabel("Time")
 ax.set_ylabel("Distance to Center")
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.plot(time, maxEdge)
+ax.set_xlim([1, num_of_timesteps])
+ax.plot(d.time[1:], maxEdge)
 fig.savefig("MaxEdge.png")
