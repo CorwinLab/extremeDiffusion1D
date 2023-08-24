@@ -12,7 +12,6 @@ def symmetricRandomDirichlet(size):
 	rand_vals = randomDirichlet(size//2) / 2
 	return np.hstack((rand_vals, np.array([0]), np.flip(rand_vals)))
 
-
 @njit
 def iterateTimeStep(pdf, t, step_size=3, symmetric=False):
 	pdf_new = np.zeros(pdf.size)
