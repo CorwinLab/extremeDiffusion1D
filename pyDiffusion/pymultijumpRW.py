@@ -1,6 +1,7 @@
 import numpy as np
 from numba import njit
-import csv 
+import csv
+import mpmath
 
 @njit
 def randomDirichlet(size):
@@ -99,7 +100,8 @@ def iterateFPT(pdf, maxIdx, step_size, symmetric=False):
 	return pdf_new
 
 def evolveAndMeasureFPT(Lmax, step_size, symmetric, save_file, N):
-	"""_summary_
+	""" Given a maximum position calculate environmental location and 
+	sampling mean/variance for the environment.
 
 	Parameters
 	----------
@@ -129,20 +131,30 @@ def evolveAndMeasureFPT(Lmax, step_size, symmetric, save_file, N):
 	# Initialize save file writer
 	f = open(save_file, 'a')
 	writer = csv.writer(f)
-	writer.writerow(["Distance", "FPT Quantile", "PDF Sum"])
+	writer.writerow(["Distance", "Env", "Mean(Sam)", "Var(Sam)", "PDF Sum"])
 
 	pdf_size = int(1e6)
+	mpmath.mp.dps = 250
+	N = mpmath.mp.mpf(N)
 
 	for L in Ls:
 		# Initialize PDF
 		pdf = np.zeros(pdf_size)
 		pdf[L] = 1
 
-		# Initialize quantile and time
+		# Initialize exp variables
 		t = 0
-		quantile = None 
 
-		while quantile is None:
+		# Initialize quantile and sampling variables
+		quantile = None 
+		running_sum_squared = 0
+		running_sum = 0
+		
+		# Set up fpt cdf and N first passage CDF
+		firstPassageCDF = mpmath.mp.mpf(pdf[0])
+		nFirstPassageCDFPrev = 1 - (1-firstPassageCDF)**N
+
+		while (1-nFirstPassageCDFPrev > np.finfo(pdf[0].dtype).eps) or (firstPassageCDF < 1 / N):
 			# Set maximum index to 
 			maxIdx = L + (step_size//2) * (t+1)
 
@@ -150,12 +162,23 @@ def evolveAndMeasureFPT(Lmax, step_size, symmetric, save_file, N):
 			pdf = iterateFPT(pdf, maxIdx, step_size, symmetric)
 			t += 1
 
-			fpt_cdf = pdf[0]
+			firstPassageCDF = mpmath.mp.mpf(pdf[0])
+			nFirstPassageCDF = 1 - (1-firstPassageCDF)**N
+			nFirstPassagePDF = nFirstPassageCDF - nFirstPassageCDFPrev
+			nFirstPassagePDF = float(nFirstPassagePDF)
 
-			if fpt_cdf >= 1/N:
-				quantile = t 
+			running_sum_squared += t ** 2 * nFirstPassagePDF
+			running_sum += t * nFirstPassagePDF
+			
+			if (quantile is None) and (firstPassageCDF > 1 / N):
+				quantile = t
+			
+			nFirstPassageCDFPrev = nFirstPassageCDF
 
-		writer.writerow([L, t, np.sum(pdf)])
+		variance = running_sum_squared - running_sum ** 2
+		writer.writerow([L, quantile, running_sum, variance, np.sum(pdf)])
+		f.flush()
+
 	f.close()
 
 def measurePDFandCDF(pdf, x, t, step_size):
