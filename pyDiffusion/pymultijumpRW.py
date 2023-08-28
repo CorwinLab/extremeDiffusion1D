@@ -5,13 +5,35 @@ import mpmath
 
 @njit
 def randomDirichlet(size):
+	'''
+	Examples
+	--------
+	num_samples = 10000
+	running_sum_squared = 0
+	running_sum = 0
+	step_size = 11
+
+	for _ in range(num_samples):
+		rand_vals = randomDirichlet(step_size)
+		running_sum_squared += rand_vals[0] ** 2 
+		running_sum += rand_vals[0]
+
+	running_sum_squared /= num_samples 
+	running_sum /= num_samples
+	print(running_sum, 1/step_size)
+	print(running_sum_squared - running_sum**2, 1/step_size*(1-1/step_size) / (step_size + 1))
+	'''
 	randomGamma = np.random.exponential(1, size=size)
 	return randomGamma / np.sum(randomGamma)
 
 @njit
 def symmetricRandomDirichlet(size):
-	rand_vals = randomDirichlet(size//2) / 2
-	return np.hstack((rand_vals, np.array([0]), np.flip(rand_vals)))
+	rand_vals = randomDirichlet(size)
+	return (rand_vals + np.flip(rand_vals)) / 2
+
+@njit
+def ssrw(size):
+	return np.ones(size) / size
 
 @njit
 def iterateTimeStep(pdf, t, step_size=3, symmetric=False):
@@ -29,7 +51,7 @@ def iterateTimeStep(pdf, t, step_size=3, symmetric=False):
 	return pdf_new
 
 @njit
-def iterateFPT(pdf, maxIdx, step_size, symmetric=False):
+def iterateFPT(pdf, maxIdx, step_size, distribution='symmetric'):
 	""" Iterate pdf for first passage time
 
 	Parameters
@@ -77,11 +99,13 @@ def iterateFPT(pdf, maxIdx, step_size, symmetric=False):
 
 	# Need to handle cases when in distance of boundary carefully
 	for i in range(1, width):
-		if symmetric:
+		if distribution == 'symmetric':
 			rand_vals = symmetricRandomDirichlet(step_size)
-		else:
+		elif distribution == 'notsymmetric':
 			rand_vals = randomDirichlet(step_size)
-		
+		elif distribution == 'ssrw':
+			rand_vals=ssrw(step_size)
+
 		# Iterate through rand_vals and appropriately add to pdf_new
 		for j in range(len(rand_vals)):
 			if j-i < 0:
@@ -91,15 +115,18 @@ def iterateFPT(pdf, maxIdx, step_size, symmetric=False):
 		
 	for i in range(width, maxIdx):
 		# Generate randomt transition biases
-		if symmetric:
+		if distribution == 'symmetric':
 			rand_vals = symmetricRandomDirichlet(step_size)
-		else: 
+		elif distribution == 'notsymmetric':
 			rand_vals = randomDirichlet(step_size)
+		elif distribution == 'ssrw':
+			rand_vals = ssrw(step_size)
+			
 		pdf_new[i - width : i + width + 1] += rand_vals * pdf[i]
 	
 	return pdf_new
 
-def evolveAndMeasureFPT(Lmax, step_size, symmetric, save_file, N):
+def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N):
 	""" Given a maximum position calculate environmental location and 
 	sampling mean/variance for the environment.
 
@@ -109,8 +136,8 @@ def evolveAndMeasureFPT(Lmax, step_size, symmetric, save_file, N):
 		_description_
 	step_size : _type_
 		_description_
-	symmetric : _type_
-		_description_
+	distribution : str
+		Should be one of ['symmetric', 'notsymmetric', 'ssrw']
 	save_file : _type_
 		_description_
 	N : _type_
@@ -120,10 +147,10 @@ def evolveAndMeasureFPT(Lmax, step_size, symmetric, save_file, N):
 	--------
 	Lmax = 50
 	step_size = 11
-	symmetric=False 
+	distribution='notsymmetric'
 	save_file = 'Quantile.txt'
 	N = 100
-	evolveAndMeasureFPT(Lmax, step_size, symmetric, save_file, N)
+	evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N)
 	"""
 	# Get save distances
 	Ls = np.unique(np.geomspace(1, Lmax, 1000).astype(int))
@@ -159,7 +186,7 @@ def evolveAndMeasureFPT(Lmax, step_size, symmetric, save_file, N):
 			maxIdx = L + (step_size//2) * (t+1)
 
 			# Iterate PDF and then step the time forward
-			pdf = iterateFPT(pdf, maxIdx, step_size, symmetric)
+			pdf = iterateFPT(pdf, maxIdx, step_size, distribution)
 			t += 1
 
 			firstPassageCDF = mpmath.mp.mpf(pdf[0])
@@ -227,3 +254,12 @@ def evolveAndMeasureQuantileVelocity(tMax, step_size, N, v, save_file, symmetric
 			pdf_val, cdf_val = measurePDFandCDF(pdf, x, t, step_size)
 			writer.writerow([t, np.abs(quantile), x, pdf_val, cdf_val, np.sum(pdf)])
 			f.flush()
+
+if __name__ == '__main__':
+	num_samples = 100000
+
+	running_sum = 0
+	for _ in range(num_samples):
+		rand_vals = symmetricRandomDirichlet(11)
+		running_sum += rand_vals[0]
+	print(running_sum / num_samples, 1/11)

@@ -6,18 +6,27 @@ from experimentUtils import saveVars
 
 if __name__ == '__main__':
 	# Testing code
-	# (topDir, sysID, Lmax, step_size, symmetric, Nexp) = '.', '0', '50', '5', '0', '5'
-	(topDir, sysID, Lmax, step_size, symmetric, Nexp) = sys.argv[1:]
+	# (topDir, sysID, Lmax, step_size, distribution, Nexp) = '.', '0', '50', '5', 'symmetric', '5'
+	
+	# SSRW Code 
+	# topDir = '/home/jacob/Desktop/SSRWData/'
+	# sysID = '0'
+	# Lmax = '2500'
+	# step_size = '5'
+	# distribution = 'ssrw'
+	# Nexp = '12'
+
+	(topDir, sysID, Lmax, step_size, distribution, Nexp) = sys.argv[1:]
 	
 	save_file = os.path.join(topDir, f"Quantiles{sysID}.txt")
 	Lmax = int(Lmax)
 	step_size = int(step_size)
-	symmetric = bool(int(symmetric))
+	distribution = str(distribution)
 	N = float(f"1e{Nexp}")
 
 	vars = {"Lmax": Lmax, 
 	 		"step_size": step_size,
-			"symmetric": symmetric,
+			"distribution": distribution,
 			"save_file": save_file,
 			"N": N}
 
