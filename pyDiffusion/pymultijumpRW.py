@@ -2,6 +2,9 @@ import numpy as np
 from numba import njit
 import csv
 import mpmath
+import os
+import pandas as pd
+import sys
 
 @njit
 def randomDirichlet(size):
@@ -155,10 +158,23 @@ def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N):
 	# Get save distances
 	Ls = np.unique(np.geomspace(1, Lmax, 1000).astype(int))
 
-	# Initialize save file writer
+	# Check if save file has already been written to
+	write_header = True
+	if os.path.exists(save_file):
+		data = pd.read_csv(save_file)
+		max_position = max(data['Distance'].values)
+		if max_position == max(Ls):
+			print("File already completed", flush=True)
+			sys.exit()
+		Ls = Ls[Ls > max_position]
+		print(f"Starting at {Ls[0]}", flush=True)
+		write_header = False
+
+	# Set up writer and write header if save file doesn't exist
 	f = open(save_file, 'a')
 	writer = csv.writer(f)
-	writer.writerow(["Distance", "Env", "Mean(Sam)", "Var(Sam)", "PDF Sum"])
+	if write_header:
+		writer.writerow(["Distance", "Env", "Mean(Sam)", "Var(Sam)", "PDF Sum"])
 
 	pdf_size = int(1e6)
 	mpmath.mp.dps = 250
