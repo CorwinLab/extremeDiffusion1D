@@ -3,10 +3,11 @@ import sys
 import os 
 from datetime import date
 from experimentUtils import saveVars
+import numpy as np
 
 if __name__ == '__main__':
 	# Testing code
-	# (topDir, sysID, Lmax, step_size, distribution, Nexp) = '.', '0', '50', '5', 'symmetric', '5'
+	# (topDir, sysID, prefactor, step_size, distribution, Nexp) = '.', '0', '1e3', '5', 'notsymmetric', '5'
 	
 	# SSRW Code 
 	# topDir = '/home/jacob/Desktop/SSRWData/'
@@ -16,13 +17,20 @@ if __name__ == '__main__':
 	# distribution = 'ssrw'
 	# Nexp = '12'
 
-	(topDir, sysID, Lmax, step_size, distribution, Nexp) = sys.argv[1:]
+	(topDir, sysID, prefactor, step_size, distribution, Nexp) = sys.argv[1:]
 	
 	save_file = os.path.join(topDir, f"Quantiles{sysID}.txt")
-	Lmax = int(Lmax)
 	step_size = int(step_size)
 	distribution = str(distribution)
 	N = float(f"1e{Nexp}")
+	prefactor = float(prefactor)
+	
+	# Calculate maximum position to go to
+	width = step_size // 2
+	sigma2 = 1/3 * width * (width + 1)
+
+	Lmax = (prefactor * sigma2 * np.log(N)**(5/2)) ** (1/3)
+	Lmax = int(Lmax)
 
 	vars = {"Lmax": Lmax, 
 	 		"step_size": step_size,
