@@ -30,6 +30,14 @@ def randomDirichlet(size):
 	return randomGamma / np.sum(randomGamma)
 
 @njit
+def randomDelta(size):
+	xvals = np.arange(0, size, 1)
+	rand_vals = np.random.choice(xvals, size=2, replace=False)
+	biases = np.zeros(xvals.size)
+	biases[rand_vals] = 1/2
+	return biases
+
+@njit
 def symmetricRandomDirichlet(size):
 	rand_vals = randomDirichlet(size)
 	return (rand_vals + np.flip(rand_vals)) / 2
@@ -108,6 +116,8 @@ def iterateFPT(pdf, maxIdx, step_size, distribution='symmetric'):
 			rand_vals = randomDirichlet(step_size)
 		elif distribution == 'ssrw':
 			rand_vals=ssrw(step_size)
+		elif distribution == 'delta':
+			rand_vals = randomDelta(step_size)
 
 		# Iterate through rand_vals and appropriately add to pdf_new
 		for j in range(len(rand_vals)):
@@ -271,11 +281,13 @@ def evolveAndMeasureQuantileVelocity(tMax, step_size, N, v, save_file, symmetric
 			writer.writerow([t, np.abs(quantile), x, pdf_val, cdf_val, np.sum(pdf)])
 			f.flush()
 
-if __name__ == '__main__':
+def getBeta(step_size):
 	num_samples = 100000
+	xvals = np.arange(- (step_size//2), step_size//2 + 1)
 
 	running_sum = 0
 	for _ in range(num_samples):
-		rand_vals = symmetricRandomDirichlet(11)
-		running_sum += rand_vals[0]
-	print(running_sum / num_samples, 1/11)
+		rand_vals = randomDirichlet(step_size)
+		running_sum += np.sum(rand_vals * xvals)**2
+
+	return running_sum / num_samples
