@@ -1,25 +1,23 @@
 #!/bin/bash
-#SBATCH --job-name=Cont1D
-#SBATCH --time=7-00:00:00
-#SBATCH --error=/home/jhass2/CleanData/logs/ContPeter/%A-%a.err
+#SBATCH --job-name=Contin
+#SBATCH --time=1-00:00:00
+#SBATCH --error=/home/jhass2/jamming/JacobData/logs/Continuous1D/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --array=0-499
-#SBATCH --output=/home/jhass2/CleanData/logs/ContPeter/%A-%a.out
+#SBATCH --array=0-2
+#SBATCH --output=/home/jhass2/jamming/JacobData/logs/Continuous1D/%A-%a.out
 #SBATCH --account=jamming
 #SBATCH --partition=preempt
 
-MINTIME=1
-MAXTIME=100
-NPARTICLES=1000000
-NUMSAVETIMES=2500
+NEXP=6
+TMAX=100000
 XI=1
+SIGMA=1
+TOL=0.0001
+D=10
 
-for D in 1
-do
-	TOPDIR=/home/jhass2/CleanData/ContPeter/$D
 
-	mkdir -p $TOPDIR
+TOPDIR=/home/jhass2/jamming/JacobData/Continuous1D/$D/$SIGMA/$XI
 
-	python3 Continuous1D.py $TOPDIR 0 $MINTIME $MAXTIME $NPARTICLES $NUMSAVETIMES $XI $D
-done
+# (topDir, sysID, Nexp, tMax, xi, sigma, tol, D)
+python3 multiJumpFPT.py $TOPDIR $SLURM_ARRAY_TASK_ID $NEXP $TMAX $XI $SIGMA $TOL $D

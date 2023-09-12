@@ -21,7 +21,8 @@ __all__ = [
     "FirstPassageDriver", 
     "FirstPassageEvolve",
     "pydiffusion2D",
-    "pyDiffusionND"]
+    "pyDiffusionND", 
+    "pycontinuous1D"]
 
 from .pydiffusionCDF import DiffusionPositionCDF, DiffusionTimeCDF
 from .pydiffusionPDF import DiffusionPDF
@@ -36,3 +37,4 @@ from . import pydiffusion2D
 from . import pydiffusionND
 from . import pyscattering
 from . import pymultijumpRW
+from . import pycontinuous1D
