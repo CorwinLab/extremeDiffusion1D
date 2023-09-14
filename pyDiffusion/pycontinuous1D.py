@@ -49,16 +49,15 @@ def generateGCF1D(pos, xi, sigma, tol=0.01):
 	#theta = np.random.uniform(0, 2*np.pi)
 
 	field = np.zeros(_pos.shape)
-	A = np.random.normal(0, 1/np.sqrt(2*np.pi), size=(2*fourierCutoff))
-	B = np.random.uniform(0, 2 * np.pi, size=(2*fourierCutoff))
+
+	# Set up constants for field
+	A = np.random.normal(0, 1/np.sqrt(2*np.pi), size=2*fourierCutoff)
+	B = np.random.uniform(0, 2 * np.pi, size=2*fourierCutoff)
+	kn = 2 * np.pi * np.arange(-fourierCutoff, fourierCutoff)
+	prefactor = np.exp(-kn**2 * xi**2 / 8)
 
 	for pID in range(len(_pos)):
-		for n in np.arange(-fourierCutoff, fourierCutoff):
-			kn = 2 * np.pi * n
-			# This could shift the two point correlator to something we don't want 
-			#xrot = np.cos(theta) * pos[pID, 0] - np.sin(theta) * pos[pID, 1]
-			#yrot = np.sin(theta) * pos[pID, 0] + np.cos(theta) * pos[pID, 1]
-			field[pID] +=  A[n+fourierCutoff] * np.exp(-kn**2 * xi**2 / 8) * np.cos(B[n+fourierCutoff] + kn * _pos[pID])
+		field[pID] = np.sum(A * prefactor * np.cos(B + kn*_pos[pID]))
 
 	return field / np.sqrt(L) * 2 * np.sqrt(sigma * np.pi / (xi*L))
 
