@@ -1,5 +1,6 @@
 import numpy as np
 from numba import njit 
+import csv
 
 @njit
 def meshgrid(x, y):
@@ -42,3 +43,40 @@ def generateGCF2D(pos, xi, sigma, tol=0.01):
 			field[pID, d] = np.sum(d_prefactor * np.cos(B + kn * _pos[pID, 0] + km * _pos[pID, 1]))
 		
 	return field / L * np.sqrt(2 * sigma * np.pi / (xi * L))
+
+def iterateTimeStep(pos, xi, sigma, tol, D):
+	"""Iterate system forward one time step
+
+	Parameters
+	----------
+	pos : numpy array
+		Particle positions. Should have have shape (nParticles, 2)
+	xi : float
+		Correlation length of the field
+	sigma : float
+		Disorder parameter
+	tol : float
+		Tolerance of field generation. Smaller tol means more Fourier 
+		modes are included. Should probably be < 0.1
+	"""
+
+	field = generateGCF2D(pos, xi, sigma, tol)
+	pos += np.random.normal(field, np.sqrt(2 * D))
+	return pos
+
+def evolveAndSave(tMax, N, xi, sigma, tol, D, save_file):
+	f = open(save_file, "a")
+	writer = csv.writer(f)
+	writer.writerow(['Time', 'Position'])
+	
+	times = np.unique(np.geomspace(1, tMax, 500).astype(int))
+
+	positions = np.zeros((N, 2))
+	positions += np.random.normal(0, np.sqrt(2 * D), positions.shape)
+	for t in range(max(times)):
+		positions = iterateTimeStep(positions, xi, sigma, tol, D)
+		if t in times:
+			writer.writerow([t+1, max(np.sqrt(positions[:, 0]**2 + positions[:, 1]**2 ))])
+			f.flush()
+
+	f.close()
