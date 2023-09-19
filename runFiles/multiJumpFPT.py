@@ -27,9 +27,10 @@ if __name__ == '__main__':
 	
 	# Calculate maximum position to go to
 	width = step_size // 2
-	sigma2 = 1/3 * width * (width + 1)
+	sigma = np.sqrt(1/3 * width * (width + 1))
+	beta = width / 6
 
-	Lmax = (prefactor * sigma2 * np.log(N)**(5/2)) ** (1/3)
+	Lmax = (prefactor * sigma*4 * (sigma**2 - beta) * np.log(N)**(5/2) / beta) ** (1/3)
 	Lmax = int(Lmax)
 
 	vars = {"Lmax": Lmax, 
