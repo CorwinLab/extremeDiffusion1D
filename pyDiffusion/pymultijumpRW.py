@@ -58,16 +58,27 @@ def rwre():
 	return np.array([rand_val, 0, 1-rand_val])
 
 @njit
-def iterateTimeStep(pdf, t, step_size=3, symmetric=False):
+def getRandVals(step_size, distribution):
+	if distribution == 'symmetric':
+		rand_vals = symmetricRandomDirichlet(step_size)
+	elif distribution == 'notsymmetric':
+		rand_vals = randomDirichlet(step_size)
+	elif distribution == 'ssrw':
+		rand_vals=ssrw(step_size)
+	elif distribution == 'delta':
+		rand_vals = randomDelta(step_size)
+	elif distribution == 'rwre':
+		rand_vals = rwre()
+	return rand_vals
+
+@njit
+def iterateTimeStep(pdf, t, step_size=3, distribution='symmetric'):
 	pdf_new = np.zeros(pdf.size)
 	
 	# I'm not entirely sure how/why but using this end point means
 	# that we iterate over the entire array but no further
 	for i in range(0, t * (step_size-1) - step_size + 2):
-		if symmetric: 
-			rand_vals = symmetricRandomDirichlet(step_size)
-		else:
-			rand_vals = randomDirichlet(step_size)
+		rand_vals = getRandVals(step_size, distribution)
 		pdf_new[i: i + step_size] += rand_vals * pdf[i]
 
 	return pdf_new
@@ -131,7 +142,7 @@ def iterateFPT(pdf, maxIdx, step_size, distribution='symmetric'):
 			rand_vals = randomDelta(step_size)
 		elif distribution == 'rwre':
 			rand_vals = rwre()
-
+		
 		# Iterate through rand_vals and appropriately add to pdf_new
 		for j in range(len(rand_vals)):
 			if j-i < 0:
@@ -151,7 +162,7 @@ def iterateFPT(pdf, maxIdx, step_size, distribution='symmetric'):
 			rand_vals = randomDelta(step_size)
 		elif distribution == 'rwre':
 			rand_vals = rwre()
-			
+		
 		pdf_new[i - width : i + width + 1] += rand_vals * pdf[i]
 	
 	return pdf_new
@@ -183,7 +194,7 @@ def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N):
 	evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N)
 	"""
 	# Get save distances
-	Ls = np.unique(np.geomspace(1, Lmax, 1000).astype(int))
+	Ls = np.unique(np.geomspace(1, Lmax, 500).astype(int))
 
 	# Check if save file has already been written to
 	write_header = True
@@ -231,6 +242,7 @@ def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N):
 			# Iterate PDF and then step the time forward
 			pdf = iterateFPT(pdf, maxIdx, step_size, distribution)
 			t += 1
+			print(pdf, np.sum(pdf))
 
 			firstPassageCDF = mpmath.mp.mpf(pdf[0])
 			nFirstPassageCDF = 1 - (1-firstPassageCDF)**N
@@ -265,7 +277,7 @@ def measureQuantile(pdf, N, t, step_size):
 			center = t * (step_size // 2)
 			return i - center  
 
-def evolveAndMeasureQuantileVelocity(tMax, step_size, N, v, save_file, symmetric):
+def evolveAndMeasureQuantileVelocity(tMax, step_size, N, v, save_file, distribution='symmetric'):
 	# Ensure the step_size is odd 
 	assert (step_size % 2) != 0, f"Step size is not an odd number but {step_size}"
 
@@ -273,7 +285,7 @@ def evolveAndMeasureQuantileVelocity(tMax, step_size, N, v, save_file, symmetric
 	times = np.unique(np.geomspace(1, tMax, 2500).astype(int))
 
 	# Initialize the probability distribution
-	size = np.max(times) * step_size
+	size = np.max(times) * step_size * 5
 	pdf = np.zeros(size)
 	pdf[0] = 1
 	t = 0
@@ -281,12 +293,12 @@ def evolveAndMeasureQuantileVelocity(tMax, step_size, N, v, save_file, symmetric
 	# Initialize save file writer
 	f = open(save_file, "a")
 	writer = csv.writer(f)
-	writer.writerow(["Time", "Quantile", "PDF", "CDF"])
+	writer.writerow(["Time", "Quantile", "x", "PDF", "CDF", "Check Sum"])
 	f.flush()
 	
 	maxTime = np.max(times)
 	while t < maxTime: 
-		pdf = iterateTimeStep(pdf, t+1, step_size, symmetric)
+		pdf = iterateTimeStep(pdf, t+1, step_size, distribution)
 		assert np.all(pdf >= 0)
 
 		t+=1

@@ -1,25 +1,25 @@
 import numpy as np
 import os 
 import sys 
-from pymultijumpRW import evolveAndMeasureQuantileVelocity
+from pyDiffusion.pymultijumpRW import evolveAndMeasureQuantileVelocity
 from datetime import date
 from experimentUtils import saveVars
 
 if __name__ == '__main__':
 	# Testing code
-	# (tMax, step_size, Nexp, v, topDir, sysID, symmetric) = ('1000', '11', '12', '0.5', '.', '0', '0')
-	(tMax, step_size, Nexp, v, topDir, sysID, symmetric) = sys.argv[1:]
+	# (tMax, step_size, Nexp, v, topDir, sysID, distribution) = ('1000', '3', '12', '0.5', '.', '0', '1')
+	(tMax, step_size, Nexp, v, topDir, sysID, distribution) = sys.argv[1:]
 	
 	N = float(f"1e{Nexp}")
-	symmetric = bool(int(symmetric))
 	save_file = os.path.join(topDir, f"Quantiles{sysID}.txt")
 
+	# evolveAndMeasureQuantileVelocity(tMax, step_size, N, v, save_file, distribution='symmetric')
 	vars = {"tMax": float(tMax), 
 	 		"step_size": int(step_size),
 			"N": N,
 			"v": float(v),
 			"save_file": save_file,
-			"symmetric": symmetric}
+			"distribution": distribution}
 	
 	vars_file = os.path.join(topDir, "variables.json")
 	today = date.today()

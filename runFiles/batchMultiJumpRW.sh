@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=Multi
-#SBATCH --time=1-00:00:00
+#SBATCH --job-name=VStep5
+#SBATCH --time=0-06:00:00
 #SBATCH --error=/home/jhass2/jamming/JacobData/logs/MultiJumpRW/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -8,13 +8,13 @@
 #SBATCH --output=/home/jhass2/jamming/JacobData/logs/MultiJumpRW/%A-%a.out
 #SBATCH --account=jamming
 #SBATCH --partition=preempt
-#SBATCH --requeue
 
-TMAX=100000
-STEPSIZE=11
-NEXP=12
-V=0.5
-TOPDIR=/home/jhass2/jamming/JacobData/MultiJumpRW/
+TMAX=10000
+STEPSIZE=5
+NEXP=28
+V=0.01
+DISTRIBUTION="notsymmetric"
+TOPDIR=/home/jhass2/jamming/JacobData/MultiJumpRWVs/$DISTRIBUTION/$STEPSIZE/$V
 
-#(tMax, step_size, Nexp, v, topDir, sysID) = sys.argv[1:]
-python3 MultiJumpRW.py $TMAX $STEPSIZE $NEXP $V $TOPDIR $SLURM_ARRAY_TASK_ID
+# (tMax, step_size, Nexp, v, topDir, sysID, distribution) = sys.argv[1:]
+python3 MultiJumpRW.py $TMAX $STEPSIZE $NEXP $V $TOPDIR $SLURM_ARRAY_TASK_ID $DISTRIBUTION
