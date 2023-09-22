@@ -26,13 +26,18 @@ if __name__ == '__main__':
 	prefactor = float(prefactor)
 	
 	# Calculate maximum position to go to
-	width = step_size // 2
-	sigma = np.sqrt(1/3 * width * (width + 1))
-	beta = width / 6
+	if distribution == 'notsymmetric':
+		width = step_size // 2
+		sigma = np.sqrt(1/3 * width * (width + 1))
+		beta = width / 6
+
+	elif distribution == 'rwre':
+		sigma = 1
+		beta = 1/3
 
 	Lmax = (prefactor * sigma*4 * (sigma**2 - beta) * np.log(N)**(5/2) / beta) ** (1/3)
 	Lmax = int(Lmax)
-
+	
 	vars = {"Lmax": Lmax, 
 	 		"step_size": step_size,
 			"distribution": distribution,

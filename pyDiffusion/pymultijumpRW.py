@@ -42,9 +42,20 @@ def symmetricRandomDirichlet(size):
 	rand_vals = randomDirichlet(size)
 	return (rand_vals + np.flip(rand_vals)) / 2
 
+@njit 
+def randomGauss(size):
+	G = np.random.normal(0, 1, size=size)
+	rand_vars = np.exp(-G)
+	return rand_vars / np.sum(rand_vars)
+
 @njit
 def ssrw(size):
 	return np.ones(size) / size
+
+@njit 
+def rwre():
+	rand_val = np.random.uniform(0, 1)
+	return np.array([rand_val, 0, 1-rand_val])
 
 @njit
 def iterateTimeStep(pdf, t, step_size=3, symmetric=False):
@@ -118,6 +129,8 @@ def iterateFPT(pdf, maxIdx, step_size, distribution='symmetric'):
 			rand_vals=ssrw(step_size)
 		elif distribution == 'delta':
 			rand_vals = randomDelta(step_size)
+		elif distribution == 'rwre':
+			rand_vals = rwre()
 
 		# Iterate through rand_vals and appropriately add to pdf_new
 		for j in range(len(rand_vals)):
@@ -134,6 +147,10 @@ def iterateFPT(pdf, maxIdx, step_size, distribution='symmetric'):
 			rand_vals = randomDirichlet(step_size)
 		elif distribution == 'ssrw':
 			rand_vals = ssrw(step_size)
+		elif distribution == 'delta':
+			rand_vals = randomDelta(step_size)
+		elif distribution == 'rwre':
+			rand_vals = rwre()
 			
 		pdf_new[i - width : i + width + 1] += rand_vals * pdf[i]
 	
@@ -150,7 +167,7 @@ def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N):
 	step_size : _type_
 		_description_
 	distribution : str
-		Should be one of ['symmetric', 'notsymmetric', 'ssrw']
+		Should be one of ['symmetric', 'notsymmetric', 'ssrw', 'delta']
 	save_file : _type_
 		_description_
 	N : _type_
@@ -287,7 +304,7 @@ def getBeta(step_size):
 
 	running_sum = 0
 	for _ in range(num_samples):
-		rand_vals = randomDirichlet(step_size)
+		rand_vals = randomDelta(step_size)
 		running_sum += np.sum(rand_vals * xvals)**2
 
 	return running_sum / num_samples
