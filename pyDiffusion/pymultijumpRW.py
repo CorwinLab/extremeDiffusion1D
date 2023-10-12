@@ -53,9 +53,12 @@ def ssrw(size):
 	return np.ones(size) / size
 
 @njit 
-def rwre():
+def rwre(size):
 	rand_val = np.random.uniform(0, 1)
-	return np.array([rand_val, 0, 1-rand_val])
+	biases = np.zeros(size)
+	biases[0] = rand_val 
+	biases[-1] = 1-rand_val
+	return biases
 
 @njit
 def getRandVals(step_size, distribution):
@@ -68,11 +71,26 @@ def getRandVals(step_size, distribution):
 	elif distribution == 'delta':
 		rand_vals = randomDelta(step_size)
 	elif distribution == 'rwre':
-		rand_vals = rwre()
+		rand_vals = rwre(step_size)
 	return rand_vals
 
 @njit
 def iterateTimeStep(pdf, t, step_size=3, distribution='symmetric'):
+	'''
+	Examples
+	--------
+	L = 3
+	step_size = 5
+	pdf = np.zeros(L**2 + step_size * 2)
+	pdf[0] = 1
+	t = 1
+	for _ in range(5):
+		maxIdx = 10
+		pdf = iterateTimeStep(pdf, t, step_size, 'notsymmetric')
+		print(pdf)
+		getMeanVarMax(pdf, 100, t, step_size)
+		t += 1 
+	'''
 	pdf_new = np.zeros(pdf.size)
 	
 	# I'm not entirely sure how/why but using this end point means
@@ -141,7 +159,7 @@ def iterateFPT(pdf, maxIdx, step_size, distribution='symmetric'):
 		elif distribution == 'delta':
 			rand_vals = randomDelta(step_size)
 		elif distribution == 'rwre':
-			rand_vals = rwre()
+			rand_vals = rwre(step_size)
 		
 		# Iterate through rand_vals and appropriately add to pdf_new
 		for j in range(len(rand_vals)):
@@ -161,7 +179,7 @@ def iterateFPT(pdf, maxIdx, step_size, distribution='symmetric'):
 		elif distribution == 'delta':
 			rand_vals = randomDelta(step_size)
 		elif distribution == 'rwre':
-			rand_vals = rwre()
+			rand_vals = rwre(step_size)
 		
 		pdf_new[i - width : i + width + 1] += rand_vals * pdf[i]
 	
@@ -212,7 +230,8 @@ def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N):
 	f = open(save_file, 'a')
 	writer = csv.writer(f)
 	if write_header:
-		writer.writerow(["Distance", "Env", "Mean(Sam)", "Var(Sam)", "PDF Sum"])
+		# This was previously misnamed Mean(Sam) and Var(Sam)
+		writer.writerow(["Distance", "Env", "Mean(Min)", "Var(Min)", "PDF Sum"])
 
 	pdf_size = int(1e6)
 	mpmath.mp.dps = 250
@@ -268,6 +287,48 @@ def measurePDFandCDF(pdf, x, t, step_size):
 	idx = x + center 
 	return pdf[idx], np.sum(pdf[idx:])
 
+def getMeanVarMax(pdf, N, t, step_size):
+	'''
+	Examples
+	--------
+	L = 3
+	step_size = 5
+	pdf = np.zeros(L**2 + step_size * 2)
+	pdf[0] = 1
+	t = 1
+	for _ in range(5):
+		maxIdx = 50
+		pdf = iterateTimeStep(pdf, t, step_size, 'notsymmetric')
+		mean, var = getMeanVarMax(pdf, 100, t, step_size)
+		print(mean, var)
+		t += 1 
+	'''
+	mpmath.mp.dps = 250
+
+	# Convert N and cdf to mpmath precision
+	N = mpmath.mp.mpf(N)
+
+	# Need to parse only part of array that is nonzero
+	maxIdx = (t+1) * (step_size-1) - step_size + 2
+	cdf = np.cumsum(pdf[:maxIdx+1]* mpmath.mp.mpf(1)) 
+
+	N_cdf = cdf**N
+	N_cdf = np.insert(N_cdf, 0, 0)
+
+	# Pretty sure these are the correct x-vals
+	xvals = np.arange(0, cdf.size) - t * (step_size // 2)
+	Npdf = np.diff(N_cdf) 
+
+	# I think there are issues with the pdf not being within precision so normalizing
+	Npdf /= np.sum(Npdf)
+
+	# Calculate Mean and Variance 
+	mean = np.sum(xvals * Npdf)
+	var = np.sum(xvals**2 * Npdf) - mean**2
+
+	assert var >= 0, var
+	return float(mean), float(var), float(np.sum(Npdf))
+
 @njit	
 def measureQuantile(pdf, N, t, step_size):
 	cdf = 0 
@@ -275,9 +336,9 @@ def measureQuantile(pdf, N, t, step_size):
 		cdf += pdf[i]
 		if cdf >= 1/N:
 			center = t * (step_size // 2)
-			return i - center  
+			return i - center 
 
-def evolveAndMeasureQuantileVelocity(tMax, step_size, N, v, save_file, distribution='symmetric'):
+def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='notsymmetric'):
 	# Ensure the step_size is odd 
 	assert (step_size % 2) != 0, f"Step size is not an odd number but {step_size}"
 
@@ -285,29 +346,46 @@ def evolveAndMeasureQuantileVelocity(tMax, step_size, N, v, save_file, distribut
 	times = np.unique(np.geomspace(1, tMax, 2500).astype(int))
 
 	# Initialize the probability distribution
-	size = np.max(times) * step_size * 5
+	size = 2*int(1e6) # np.max(times) * step_size * 5
 	pdf = np.zeros(size)
 	pdf[0] = 1
 	t = 0
+	
+	# Check if save_file is already written to
+	write_header = True
+	if os.path.exists(save_file):
+		data = pd.read_csv(save_file)
+		max_time = max(data['Time'].values)
+		if max_time == max(times):
+			print("File already completed", flush=True)
+			sys.exit()
+		times = times[times > max_time]
+		print(f"Starting at t={times[0]}", flush=True)
+		write_header = False
 
-	# Initialize save file writer
-	f = open(save_file, "a")
+	# Set up writer and write header if save file doesn't exist
+	f = open(save_file, 'a')
 	writer = csv.writer(f)
-	writer.writerow(["Time", "Quantile", "x", "PDF", "CDF", "Check Sum"])
+	if write_header:
+		writer.writerow(["Time", "Env", "Mean(Max)", "Var(Max)", "PDF Sum", "Npdfsum"])
 	f.flush()
 	
 	maxTime = np.max(times)
+
 	while t < maxTime: 
+		# Iterate timestep and check all vals are > 0
 		pdf = iterateTimeStep(pdf, t+1, step_size, distribution)
 		assert np.all(pdf >= 0)
-
 		t+=1
-
+		
 		if t in times: 
+			# Measure the value of Env
 			quantile = measureQuantile(pdf, N, t, step_size)
-			x = int(v * t**(3/4))
-			pdf_val, cdf_val = measurePDFandCDF(pdf, x, t, step_size)
-			writer.writerow([t, np.abs(quantile), x, pdf_val, cdf_val, np.sum(pdf)])
+
+			# Get mean and var of Max
+			mean, var, NpdfSum = getMeanVarMax(pdf, N, t, step_size)
+
+			writer.writerow([t, np.abs(quantile), mean, var, np.sum(pdf), NpdfSum])
 			f.flush()
 
 def getBeta(step_size):
