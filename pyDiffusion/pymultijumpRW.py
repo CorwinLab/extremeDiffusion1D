@@ -303,36 +303,35 @@ def getMeanVarMax(pdf, N, t, step_size):
 		print(mean, var)
 		t += 1 
 	'''
-	mpmath.mp.dps = 250
-
 	# Convert N and cdf to mpmath precision
-	N = mpmath.mp.mpf(N)
+	#N = mpmath.mp.mpf(N)
 
 	# Need to parse only part of array that is nonzero
 	maxIdx = (t+1) * (step_size-1) - step_size + 2
-	cdf = np.cumsum(pdf[:maxIdx+1]* mpmath.mp.mpf(1)) 
-
+	cdf = np.cumsum(pdf[:maxIdx+1])
+	cdf = np.insert(cdf, 0, 0)
+	
 	N_cdf = cdf**N
 	N_cdf = np.insert(N_cdf, 0, 0)
 
 	# Pretty sure these are the correct x-vals
 	xvals = np.arange(0, cdf.size) - t * (step_size // 2)
 	Npdf = np.diff(N_cdf) 
-
+	
 	# I think there are issues with the pdf not being within precision so normalizing
 	Npdf /= np.sum(Npdf)
-
+	
 	# Calculate Mean and Variance 
 	mean = np.sum(xvals * Npdf)
 	var = np.sum(xvals**2 * Npdf) - mean**2
-
+	
 	assert var >= 0, var
 	return float(mean), float(var), float(np.sum(Npdf))
 
-@njit	
+@njit
 def measureQuantile(pdf, N, t, step_size):
 	cdf = 0 
-	for i in range(pdf.size):
+	for i in np.arange(pdf.size-1, 0, -1):
 		cdf += pdf[i]
 		if cdf >= 1/N:
 			center = t * (step_size // 2)
@@ -362,7 +361,7 @@ def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='notsy
 		times = times[times > max_time]
 		print(f"Starting at t={times[0]}", flush=True)
 		write_header = False
-
+		
 	# Set up writer and write header if save file doesn't exist
 	f = open(save_file, 'a')
 	writer = csv.writer(f)
@@ -384,8 +383,7 @@ def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='notsy
 
 			# Get mean and var of Max
 			mean, var, NpdfSum = getMeanVarMax(pdf, N, t, step_size)
-
-			writer.writerow([t, np.abs(quantile), mean, var, np.sum(pdf), NpdfSum])
+			writer.writerow([t, quantile, mean, var, np.sum(pdf), NpdfSum])
 			f.flush()
 
 def getBeta(step_size):
@@ -396,5 +394,15 @@ def getBeta(step_size):
 	for _ in range(num_samples):
 		rand_vals = randomDelta(step_size)
 		running_sum += np.sum(rand_vals * xvals)**2
-
+		
 	return running_sum / num_samples
+
+if __name__ == '__main__':
+	step_size = 11
+	beta_num = getBeta(step_size)
+
+	L = step_size // 2
+	beta = (2 * L -1)*L *(L+1) / 6 / (2* L)
+	beta_2 = (2*L-1)**2 * (L+1) / 3 / (1+2*L) / 4
+	print(beta_num)
+	print(beta)
