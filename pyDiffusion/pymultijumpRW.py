@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit
+from numba import njit, vectorize
 import csv
 import mpmath
 import os
@@ -7,7 +7,7 @@ import pandas as pd
 import sys
 
 @njit
-def randomDirichlet(size):
+def randomUniform(size):
 	'''
 	Examples
 	--------
@@ -39,8 +39,17 @@ def randomDelta(size):
 
 @njit
 def symmetricRandomDirichlet(size):
-	rand_vals = randomDirichlet(size)
+	rand_vals = randomUniform(size)
 	return (rand_vals + np.flip(rand_vals)) / 2
+
+@vectorize
+def gammaDist(alpha, scale):
+	return np.random.gamma(alpha, scale)
+
+@njit 
+def randomDirichlet(alphas):
+	gammas = gammaDist(alphas, np.ones(alphas.shape))
+	return gammas / np.sum(gammas)
 
 @njit 
 def randomGauss(size):
@@ -61,21 +70,23 @@ def rwre(size):
 	return biases
 
 @njit
-def getRandVals(step_size, distribution):
+def getRandVals(step_size, distribution, params=None):
 	if distribution == 'symmetric':
 		rand_vals = symmetricRandomDirichlet(step_size)
-	elif distribution == 'notsymmetric':
-		rand_vals = randomDirichlet(step_size)
+	elif distribution == 'uniform': # 'notsymmetric'
+		rand_vals = randomUniform(step_size)
 	elif distribution == 'ssrw':
 		rand_vals=ssrw(step_size)
 	elif distribution == 'delta':
 		rand_vals = randomDelta(step_size)
 	elif distribution == 'rwre':
 		rand_vals = rwre(step_size)
+	elif distribution == 'dirichlet':
+		rand_vals = randomDirichlet(params)
 	return rand_vals
 
 @njit
-def iterateTimeStep(pdf, t, step_size=3, distribution='symmetric'):
+def iterateTimeStep(pdf, t, step_size=3, distribution='uniform', params=None):
 	'''
 	Examples
 	--------
@@ -96,13 +107,14 @@ def iterateTimeStep(pdf, t, step_size=3, distribution='symmetric'):
 	# I'm not entirely sure how/why but using this end point means
 	# that we iterate over the entire array but no further
 	for i in range(0, t * (step_size-1) - step_size + 2):
-		rand_vals = getRandVals(step_size, distribution)
+		rand_vals = getRandVals(step_size, distribution, params)
+		print(rand_vals, step_size)
 		pdf_new[i: i + step_size] += rand_vals * pdf[i]
 
 	return pdf_new
 
 @njit
-def iterateFPT(pdf, maxIdx, step_size, distribution='symmetric'):
+def iterateFPT(pdf, maxIdx, step_size, distribution='uniform', params=None):
 	""" Iterate pdf for first passage time
 
 	Parameters
@@ -150,16 +162,7 @@ def iterateFPT(pdf, maxIdx, step_size, distribution='symmetric'):
 
 	# Need to handle cases when in distance of boundary carefully
 	for i in range(1, width):
-		if distribution == 'symmetric':
-			rand_vals = symmetricRandomDirichlet(step_size)
-		elif distribution == 'notsymmetric':
-			rand_vals = randomDirichlet(step_size)
-		elif distribution == 'ssrw':
-			rand_vals=ssrw(step_size)
-		elif distribution == 'delta':
-			rand_vals = randomDelta(step_size)
-		elif distribution == 'rwre':
-			rand_vals = rwre(step_size)
+		rand_vals = getRandVals(step_size, distribution, params)
 		
 		# Iterate through rand_vals and appropriately add to pdf_new
 		for j in range(len(rand_vals)):
@@ -170,22 +173,13 @@ def iterateFPT(pdf, maxIdx, step_size, distribution='symmetric'):
 		
 	for i in range(width, maxIdx):
 		# Generate randomt transition biases
-		if distribution == 'symmetric':
-			rand_vals = symmetricRandomDirichlet(step_size)
-		elif distribution == 'notsymmetric':
-			rand_vals = randomDirichlet(step_size)
-		elif distribution == 'ssrw':
-			rand_vals = ssrw(step_size)
-		elif distribution == 'delta':
-			rand_vals = randomDelta(step_size)
-		elif distribution == 'rwre':
-			rand_vals = rwre(step_size)
+		rand_vals = getRandVals(step_size, distribution, params)
 		
 		pdf_new[i - width : i + width + 1] += rand_vals * pdf[i]
 	
 	return pdf_new
 
-def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N):
+def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N, params=None):
 	""" Given a maximum position calculate environmental location and 
 	sampling mean/variance for the environment.
 
@@ -259,7 +253,7 @@ def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N):
 			maxIdx = L + (step_size//2) * (t+1)
 
 			# Iterate PDF and then step the time forward
-			pdf = iterateFPT(pdf, maxIdx, step_size, distribution)
+			pdf = iterateFPT(pdf, maxIdx, step_size, distribution, params)
 			t += 1
 			print(pdf, np.sum(pdf))
 
@@ -303,12 +297,13 @@ def getMeanVarMax(pdf, N, t, step_size):
 		print(mean, var)
 		t += 1 
 	'''
+	# mpmath.mp.dps = 50
 	# Convert N and cdf to mpmath precision
-	#N = mpmath.mp.mpf(N)
+	# N = mpmath.mp.mpf(N)
 
 	# Need to parse only part of array that is nonzero
 	maxIdx = (t+1) * (step_size-1) - step_size + 2
-	cdf = np.cumsum(pdf[:maxIdx+1])
+	cdf = np.cumsum(pdf[:maxIdx+1]) # * mpmath.mp.mpf(1)
 	cdf = np.insert(cdf, 0, 0)
 	
 	N_cdf = cdf**N
@@ -337,7 +332,7 @@ def measureQuantile(pdf, N, t, step_size):
 			center = t * (step_size // 2)
 			return i - center 
 
-def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='notsymmetric'):
+def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='uniform', params=None):
 	# Ensure the step_size is odd 
 	assert (step_size % 2) != 0, f"Step size is not an odd number but {step_size}"
 
@@ -373,7 +368,7 @@ def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='notsy
 
 	while t < maxTime: 
 		# Iterate timestep and check all vals are > 0
-		pdf = iterateTimeStep(pdf, t+1, step_size, distribution)
+		pdf = iterateTimeStep(pdf, t+1, step_size, distribution, params)
 		assert np.all(pdf >= 0)
 		t+=1
 		
@@ -396,13 +391,3 @@ def getBeta(step_size):
 		running_sum += np.sum(rand_vals * xvals)**2
 		
 	return running_sum / num_samples
-
-if __name__ == '__main__':
-	step_size = 11
-	beta_num = getBeta(step_size)
-
-	L = step_size // 2
-	beta = (2 * L -1)*L *(L+1) / 6 / (2* L)
-	beta_2 = (2*L-1)**2 * (L+1) / 3 / (1+2*L) / 4
-	print(beta_num)
-	print(beta)
