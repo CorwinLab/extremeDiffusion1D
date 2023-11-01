@@ -1,11 +1,16 @@
 import json
 import glob
-
+import numpy as np
+import os
 
 def saveVars(vars, save_file):
     """
     Save experiment variables to a file along with date it was ran and
     """
+    for key, item in vars.items():
+        if isinstance(item, np.ndarray):
+            vars[key] = list(item)
+
     with open(save_file, "w+") as file:
         json.dump(vars, file)
 
