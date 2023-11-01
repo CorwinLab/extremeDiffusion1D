@@ -108,7 +108,6 @@ def iterateTimeStep(pdf, t, step_size=3, distribution='uniform', params=None):
 	# that we iterate over the entire array but no further
 	for i in range(0, t * (step_size-1) - step_size + 2):
 		rand_vals = getRandVals(step_size, distribution, params)
-		print(rand_vals, step_size)
 		pdf_new[i: i + step_size] += rand_vals * pdf[i]
 
 	return pdf_new
@@ -361,7 +360,7 @@ def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='unifo
 	f = open(save_file, 'a')
 	writer = csv.writer(f)
 	if write_header:
-		writer.writerow(["Time", "Env", "Mean(Max)", "Var(Max)", "PDF Sum", "Npdfsum"])
+		writer.writerow(["Time", "Env", "Mean(Max)", "Var(Max)", "PDF", "CDF", "PDF Sum", "Npdfsum"])
 	f.flush()
 	
 	maxTime = np.max(times)
@@ -376,9 +375,12 @@ def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='unifo
 			# Measure the value of Env
 			quantile = measureQuantile(pdf, N, t, step_size)
 
+			# Get x=t^3/4 pdf and cdf value
+			pdf_val, cdf_val = measurePDFandCDF(pdf, t**(3/4), t, step_size)
+			
 			# Get mean and var of Max
 			mean, var, NpdfSum = getMeanVarMax(pdf, N, t, step_size)
-			writer.writerow([t, quantile, mean, var, np.sum(pdf), NpdfSum])
+			writer.writerow([t, quantile, mean, var, pdf_val, cdf_val, np.sum(pdf), NpdfSum])
 			f.flush()
 
 def getBeta(step_size):
