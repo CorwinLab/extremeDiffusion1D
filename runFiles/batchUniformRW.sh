@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=URW
-#SBATCH --time=1-00:00:00
+#SBATCH --job-name=URW50
+#SBATCH --time=2-00:00:00
 #SBATCH --error=/home/jhass2/jamming/JacobData/logs/Uniform/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -11,9 +11,9 @@
 #SBATCH --requeue
 
 TMAX=100000
-STEPSIZE=10
+STEPSIZE=50
 NEXP=10
-TOPDIR=/home/jhass2/jamming/JacobData/UniformRW/
+TOPDIR=/home/jhass2/jamming/JacobData/UniformRWMultSteps/$STEPSIZE
 
 mkdir -p $TOPDIR
 

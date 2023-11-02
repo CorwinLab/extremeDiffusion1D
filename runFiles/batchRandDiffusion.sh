@@ -10,12 +10,12 @@
 #SBATCH --partition=preempt
 #SBATCH --requeue
 
-TOPDIR=/home/jhass2/jamming/JacobData/RandomDiffusion/
+TOPDIR=/home/jhass2/jamming/JacobData/RandomDiffusionSmaller/
 TMAX=50000
-V=0.1
-D0=1
-SIGMA=0.1
-DX=1
+V=0.2
+D0=0.01
+SIGMA=0.001
+DX=0.05
 
 mkdir -p $TOPDIR 
 

@@ -8,13 +8,14 @@ from experimentUtils import saveVars
 
 if __name__ == '__main__':
     # For testing purposes 
-    #save_dir, sysID, beta = '.', '0', '1'
-    (save_dir, sysID, beta) = sys.argv[1:]
+    # save_dir, sysID, beta = '.', '1', '1'
+    (save_dir, sysID, beta, Nexp) = sys.argv[1:]
+
     beta = float(beta)
     save_file = os.path.join(save_dir, f'Quantile{sysID}.txt')
     times = np.geomspace(1, 1e5, 10000).astype(int)
     times = np.unique(times)
-    N = 1e5
+    N = float(f"1e{Nexp}")
     dist = 'beta'
 
     vars = {'times': times, 
@@ -35,7 +36,7 @@ if __name__ == '__main__':
 
         # numpy arrays aren't serializable 
         vars.update({'times': [int(i) for i in vars['times']]})
-        vars.update({'size': int(vars['size'])})
+        vars.update({"size": int(vars['size'])})
         saveVars(vars, vars_file)
         vars.pop("Date")
         

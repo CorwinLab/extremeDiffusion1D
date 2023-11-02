@@ -10,11 +10,13 @@
 #SBATCH --partition=preempt
 #SBATCH --requeue
 
-TMAX=100000
-STEPSIZE=11
+TMAX=10000
+STEPSIZE=100
 NEXP=12
 V=0.5
-TOPDIR=/home/jhass2/jamming/JacobData/Binom/
+TOPDIR=/home/jhass2/jamming/JacobData/BinomSmaller/
+
+mkdir -p $TOPDIR
 
 #(tMax, max_step_size, v, Nexp, topDir, sysID) = sys.argv[1:]
 python3 BinomialRW.py $TMAX $STEPSIZE $V $NEXP $TOPDIR $SLURM_ARRAY_TASK_ID

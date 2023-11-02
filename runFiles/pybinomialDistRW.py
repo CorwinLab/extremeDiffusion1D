@@ -56,7 +56,7 @@ def getProbAtPos(pdf, x):
 	idx = x + pdf.size // 2
 	return pdf[idx]
 
-def evolveAndMeasureQuantileVelocity(tMax, max_step_size, N, v, save_file):
+def evolveAndMeasureQuantileVelocity(tMax, max_step_size, N, v, save_file, save_pdf):
 	# Get save times 
 	times = np.unique(np.geomspace(1, tMax, 2500).astype(int))
 	maxTime = np.max(times)
@@ -89,6 +89,7 @@ def evolveAndMeasureQuantileVelocity(tMax, max_step_size, N, v, save_file):
 			prob = getProbAtPos(pdf, x)
 			writer.writerow([t, quantile, prob])
 			f.flush()
+	np.savetxt(save_pdf, pdf)
 
 if __name__ == '__main__':
 	from matplotlib import pyplot as plt 

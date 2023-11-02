@@ -1,8 +1,6 @@
 import numpy as np
-from matplotlib import pyplot as plt
 from numba import njit 
 import csv
-import mpmath
 
 @njit 
 def forwardEuler(f, dx, dt, D0, sigma):

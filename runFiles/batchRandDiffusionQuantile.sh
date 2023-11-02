@@ -1,17 +1,17 @@
 #!/bin/bash
 #SBATCH --job-name=RandD
-#SBATCH --time=1-00:00:00
+#SBATCH --time=0-12:00:00
 #SBATCH --error=/home/jhass2/jamming/JacobData/logs/RandomDiffusion/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --array=0-500
+#SBATCH --array=0-1000
 #SBATCH --output=/home/jhass2/jamming/JacobData/logs/RandomDiffusion/%A-%a.out
 #SBATCH --account=jamming
 #SBATCH --partition=preempt
 #SBATCH --requeue
 
 TOPDIR=/home/jhass2/jamming/JacobData/RandomDiffusionQuantile/
-TMAX=50000
+TMAX=5000
 NEXP=10
 D0=0.01
 SIGMA=0.001

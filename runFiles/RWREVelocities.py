@@ -35,10 +35,9 @@ if __name__ == '__main__':
 	vs = np.arange(0.2, 1, 0.1)
 	times = np.geomspace(1, tMax, 5000).astype(int)
 	times = np.unique(times)
-	
+	save_dirs = [os.path.join(topDir, str(v)[:3]) for v in vs]	
 	# Make save directories once if system id is 0
 	if int(sysID) == 0:
-		save_dirs = [os.path.join(topDir, str(v)[:3]) for v in vs]
 		for save_dir in save_dirs:
 			os.makedirs(save_dir, exist_ok=True)
 

@@ -1,4 +1,4 @@
-from pyDiffusion.pyscattering import evolveAndGetQuantileGeneralized
+from pyDiffusion.pyscattering import evolveAndGetQuantileCyclic
 import numpy as np
 import sys
 import os 
@@ -37,4 +37,4 @@ if __name__ == '__main__':
         # convert times back to numpy array
         vars.update({'times': np.array(vars['times'])})
 
-    quantiles = evolveAndGetQuantileGeneralized(**vars)
+    quantiles = evolveAndGetQuantileCyclic(**vars)

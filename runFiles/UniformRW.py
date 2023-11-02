@@ -2,7 +2,8 @@ import sys
 from experimentUtils import saveVars
 from pyuniformDistRW import evolveAndMeasureQuantileVelocity
 import os
-from datetime import date 
+from datetime import date
+import numpy as np
 
 if __name__ == '__main__':
 	# Testing line of code
@@ -15,7 +16,7 @@ if __name__ == '__main__':
 	vars = {'tMax': int(tMax),
 	 		'max_step_size': int(max_step_size),
 			'N': N,
-			'v': [0.0001, 0.001, 0.01, 0.1, 1],
+			'v': [1],
 			'save_file': save_file}
 	
 	vars_file = os.path.join(topDir, "variables.json")

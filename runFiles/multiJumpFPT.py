@@ -17,7 +17,7 @@ if __name__ == '__main__':
 	# distribution = 'ssrw'
 	# Nexp = '12'
 
-	(topDir, sysID, prefactor, step_size, distribution, Nexp) = sys.argv[1:]
+	(topDir, sysID, prefactor, step_size, distribution, Nexp, params) = sys.argv[1:]
 	
 	save_file = os.path.join(topDir, f"Quantiles{sysID}.txt")
 	step_size = int(step_size)
@@ -25,8 +25,14 @@ if __name__ == '__main__':
 	N = float(f"1e{Nexp}")
 	prefactor = float(prefactor)
 	
+	if distribution == 'dirichlet':
+		params = params.split(",")
+		params = np.array(params).astype(float)
+	else:
+		params = np.array([])
+
 	# Calculate maximum position to go to
-	if distribution == 'notsymmetric':
+	if distribution == 'uniform':
 		width = step_size // 2
 		sigma = np.sqrt(1/3 * width * (width + 1))
 		beta = width / 6
@@ -35,14 +41,15 @@ if __name__ == '__main__':
 		sigma = 1
 		beta = 1/3
 
-	Lmax = (prefactor * sigma*4 * (sigma**2 - beta) * np.log(N)**(5/2) / beta) ** (1/3)
+	Lmax = (prefactor * sigma**4 * (sigma**2 - beta) * np.log(N)**(5/2) / beta) ** (1/3)
 	Lmax = int(Lmax)
 	
 	vars = {"Lmax": Lmax, 
-	 		"step_size": step_size,
-			"distribution": distribution,
-			"save_file": save_file,
-			"N": N}
+	 	"step_size": step_size,
+		"distribution": distribution,
+		"save_file": save_file,
+		"N": N,
+		"params": params}
 
 	vars_file = os.path.join(topDir, "variables.json")
 	today = date.today()
@@ -52,5 +59,6 @@ if __name__ == '__main__':
 		vars.update({"Date": text_date})
 		saveVars(vars, vars_file)
 		vars.pop("Date")
+	vars["params"] = np.array(vars["params"])
 
 	evolveAndMeasureFPT(**vars)

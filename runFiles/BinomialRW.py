@@ -12,12 +12,13 @@ if __name__ == '__main__':
 
 	save_file = os.path.join(topDir, f"Quantiles{sysID}.txt")
 	N = float(f"1e{Nexp}")
-
+	save_pdf = os.path.join(topDir, f"PDF{sysID}.txt")
 	vars = {'tMax': int(tMax),
 	 		'max_step_size': int(max_step_size),
 			'N': N,
 			'v': float(v),
-			'save_file': save_file}
+			'save_file': save_file,
+			'save_pdf': save_pdf}
 	
 	vars_file = os.path.join(topDir, "variables.json")
 	today = date.today()

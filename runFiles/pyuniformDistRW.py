@@ -27,7 +27,7 @@ def getQuantile(N, pdf, max_idx):
 		
 def getProbAtPos(pdf, xs):
 	indeces = xs + pdf.size // 2
-	probs = [pdf[idx] for idx in indeces]
+	probs = [np.sum(pdf[idx:]) for idx in indeces]
 	return probs
 
 def evolveAndMeasureQuantileVelocity(tMax, max_step_size, N, v, save_file):
