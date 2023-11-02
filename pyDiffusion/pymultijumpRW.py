@@ -277,7 +277,7 @@ def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N, params=None
 
 def measurePDFandCDF(pdf, x, t, step_size):
 	center = t * (step_size // 2)
-	idx = x + center 
+	idx = int(x + center) 
 	return pdf[idx], np.sum(pdf[idx:])
 
 def getMeanVarMax(pdf, N, t, step_size):
@@ -319,7 +319,7 @@ def getMeanVarMax(pdf, N, t, step_size):
 	mean = np.sum(xvals * Npdf)
 	var = np.sum(xvals**2 * Npdf) - mean**2
 	
-	assert var >= 0, var
+	# assert var >= 0, var
 	return float(mean), float(var), float(np.sum(Npdf))
 
 @njit
@@ -380,6 +380,19 @@ def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='unifo
 			
 			# Get mean and var of Max
 			mean, var, NpdfSum = getMeanVarMax(pdf, N, t, step_size)
+
+			# Check the variance is positive and save pdf if not
+			if var < 0: 
+				maxIdx = (t+1) * (step_size-1) - step_size + 2
+
+				save_pdf = pdf[:maxIdx+1]
+				save_dir = os.path.dirname(save_file)
+
+				np.savetxt(os.path.join(save_dir, "CDF.txt"), save_pdf)
+				np.savetxt(os.path.join(save_dir, "NegVar.txt"), [t, var])
+
+				raise ValueError(f"Variance {var} < 0")
+			
 			writer.writerow([t, quantile, mean, var, pdf_val, cdf_val, np.sum(pdf), NpdfSum])
 			f.flush()
 
@@ -393,3 +406,30 @@ def getBeta(step_size):
 		running_sum += np.sum(rand_vals * xvals)**2
 		
 	return running_sum / num_samples
+
+def getSigmaBetaDirichlet(alpha):
+	alpha_0 = np.sum(alpha)
+	mean = alpha / alpha_0 
+	
+	xvals = np.arange(-(len(alpha) // 2), (len(alpha)//2) + 1, 1)
+	cov = np.zeros((len(alpha), len(alpha)))
+	mean_prod = np.zeros((len(alpha), len(alpha)))
+
+	for i in range(cov.shape[0]):
+		for j in range(cov.shape[1]):
+			# Get cov
+			cov[i, j] -= mean[i] * mean[j]
+			if i == j:
+				cov[i, j] += mean[i]
+			cov[i, j] /= (alpha_0 + 1)
+			
+			# Get mean cov
+			mean_prod[i, j] += mean[i] * mean[j]
+
+	exp_ij = cov + mean_prod
+
+	beta = (exp_ij * xvals).T * xvals 
+	beta = np.sum(beta)
+	sigma = np.sqrt(np.sum(mean * xvals**2))
+
+	return sigma, beta
