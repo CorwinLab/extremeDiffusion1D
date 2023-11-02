@@ -1,4 +1,4 @@
-from pyDiffusion.pymultijumpRW import evolveAndMeasureFPT
+from pyDiffusion.pymultijumpRW import evolveAndMeasureFPT, getSigmaBetaDirichlet
 import sys 
 import os 
 from datetime import date
@@ -36,10 +36,15 @@ if __name__ == '__main__':
 		width = step_size // 2
 		sigma = np.sqrt(1/3 * width * (width + 1))
 		beta = width / 6
-
 	elif distribution == 'rwre':
 		sigma = 1
 		beta = 1/3
+	elif distribution == 'delta':
+		width = step_size // 2
+		sigma = np.sqrt(1/3 * width * (width + 1))
+		beta = (2 * width -1)* width *(width + 1) / 12 / width
+	elif distribution == 'dirichlet':
+		sigma, beta = getSigmaBetaDirichlet(params)
 
 	Lmax = (prefactor * sigma**4 * (sigma**2 - beta) * np.log(N)**(5/2) / beta) ** (1/3)
 	Lmax = int(Lmax)
