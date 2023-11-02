@@ -273,6 +273,23 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
 
         return super().getGumbelVariance(nParticles)
 
+    def getGumbelMean(self, nParticles):
+        """
+        Get the gumbel variance from the CDF.
+
+        Parameters
+        ----------
+        nParticles : float, np.quad or list
+            Number of particles to get the gumbel variance for.
+
+        Returns
+        -------
+        variance : np.quad
+            Variance for the number of particles
+        """
+
+        return super().getGumbelMean(nParticles[0])
+
     def getProbandV(self, quantile: np.quad) -> Tuple[np.quad, float]:
         """
         Get the probability and velocity of a quantile.
@@ -387,9 +404,10 @@ class DiffusionTimeCDF(libDiffusion.DiffusionTimeCDF):
 
         for t in times:
             self.evolveToTime(t)
-            discrete = self.getGumbelVariance(nParticles)
+            var = self.getGumbelVariance(nParticles)
+            mean = self.getGumbelMean(nParticles)
             quantiles = self.findQuantiles(nParticles)
-            row = [self.time] + list(quantiles) + discrete
+            row = [self.time] + list(quantiles) + var + mean
             writer.writerow(row)
             f.flush()
         f.close()
