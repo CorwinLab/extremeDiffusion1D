@@ -296,13 +296,13 @@ def getMeanVarMax(pdf, N, t, step_size):
 		print(mean, var)
 		t += 1 
 	'''
-	# mpmath.mp.dps = 50
+	mpmath.mp.dps = 250
 	# Convert N and cdf to mpmath precision
-	# N = mpmath.mp.mpf(N)
+	N = mpmath.mp.mpf(N)
 
 	# Need to parse only part of array that is nonzero
 	maxIdx = (t+1) * (step_size-1) - step_size + 2
-	cdf = np.cumsum(pdf[:maxIdx+1]) # * mpmath.mp.mpf(1)
+	cdf = np.cumsum(pdf[:maxIdx+1]* mpmath.mp.mpf(1)) # Need to convert to mpmath object
 	cdf = np.insert(cdf, 0, 0)
 	
 	N_cdf = cdf**N
