@@ -70,7 +70,7 @@ def rwre(size):
 	return biases
 
 @njit
-def getRandVals(step_size, distribution, params=None):
+def getRandVals(step_size, distribution, params=np.array([])):
 	if distribution == 'symmetric':
 		rand_vals = symmetricRandomDirichlet(step_size)
 	elif distribution == 'uniform': # 'notsymmetric'
@@ -86,7 +86,7 @@ def getRandVals(step_size, distribution, params=None):
 	return rand_vals
 
 @njit
-def iterateTimeStep(pdf, t, step_size=3, distribution='uniform', params=None):
+def iterateTimeStep(pdf, t, step_size=3, distribution='uniform', params=np.array([])):
 	'''
 	Examples
 	--------
@@ -113,7 +113,7 @@ def iterateTimeStep(pdf, t, step_size=3, distribution='uniform', params=None):
 	return pdf_new
 
 @njit
-def iterateFPT(pdf, maxIdx, step_size, distribution='uniform', params=None):
+def iterateFPT(pdf, maxIdx, step_size, distribution='uniform', params=np.array([])):
 	""" Iterate pdf for first passage time
 
 	Parameters
@@ -178,7 +178,7 @@ def iterateFPT(pdf, maxIdx, step_size, distribution='uniform', params=None):
 	
 	return pdf_new
 
-def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N, params=None):
+def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N, params=np.array([])):
 	""" Given a maximum position calculate environmental location and 
 	sampling mean/variance for the environment.
 
@@ -331,7 +331,7 @@ def measureQuantile(pdf, N, t, step_size):
 			center = t * (step_size // 2)
 			return i - center 
 
-def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='uniform', params=None):
+def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='uniform', params=np.array([])):
 	# Ensure the step_size is odd 
 	assert (step_size % 2) != 0, f"Step size is not an odd number but {step_size}"
 
@@ -433,3 +433,21 @@ def getSigmaBetaDirichlet(alpha):
 	sigma = np.sqrt(np.sum(mean * xvals**2))
 
 	return sigma, beta
+
+if __name__ == '__main__':
+	import time
+	L = 3
+	step_size = 5
+	pdf = np.zeros(1000000)
+	pdf[0] = 1
+	t = 1
+	start = time.time()
+	for _ in range(500):
+		maxIdx = 50
+		pdf = iterateTimeStep(pdf, t, step_size, 'uniform')
+		mean, var, pdf_sum = getMeanVarMax(pdf, 1e28, t, step_size)
+		assert var >= 0, var
+		print(t)
+		t += 1 
+	end = time.time()
+	print(start - end)
