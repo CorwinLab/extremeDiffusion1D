@@ -69,6 +69,24 @@ def rwre(size):
 	biases[-1] = 1-rand_val
 	return biases
 
+@njit 
+def rwreBiased():
+	""" 
+	num_samples = 1000000
+	mean = 0
+	xvals = np.arange(-2, 3, 1)
+	
+	for _ in range(num_samples): 
+		rand_vals = rwreBiased()
+		mean += np.sum(xvals * rand_vals)
+	print(mean / num_samples)
+	"""
+	rand_val = np.random.uniform(1/3, 1)
+	biases = np.zeros(5)
+	biases[1] = rand_val 
+	biases[-1] = 1 - rand_val
+	return biases
+
 @njit
 def getRandVals(step_size, distribution, params=np.array([])):
 	if distribution == 'symmetric':
@@ -83,6 +101,8 @@ def getRandVals(step_size, distribution, params=np.array([])):
 		rand_vals = rwre(step_size)
 	elif distribution == 'dirichlet':
 		rand_vals = randomDirichlet(params)
+	elif distribution == 'rwreBiases':
+		rand_vals = rwreBiased()
 	return rand_vals
 
 @njit
@@ -104,9 +124,18 @@ def iterateTimeStep(pdf, t, step_size=3, distribution='uniform', params=np.array
 	'''
 	pdf_new = np.zeros(pdf.size)
 	
+	# If we're using the rwre we can avoid the holes by 
+	# incrementing the walk
+	if distribution == 'rwre':
+		increment = step_size // 2
+	else:
+		increment == 1
+	
 	# I'm not entirely sure how/why but using this end point means
 	# that we iterate over the entire array but no further
-	for i in range(0, t * (step_size-1) - step_size + 2):
+	for i in range(0, t * (step_size-1) - step_size + 2, increment):
+		if pdf[i] == 0:
+			continue
 		rand_vals = getRandVals(step_size, distribution, params)
 		pdf_new[i: i + step_size] += rand_vals * pdf[i]
 
@@ -433,21 +462,3 @@ def getSigmaBetaDirichlet(alpha):
 	sigma = np.sqrt(np.sum(mean * xvals**2))
 
 	return sigma, beta
-
-if __name__ == '__main__':
-	import time
-	L = 3
-	step_size = 5
-	pdf = np.zeros(1000000)
-	pdf[0] = 1
-	t = 1
-	start = time.time()
-	for _ in range(500):
-		maxIdx = 50
-		pdf = iterateTimeStep(pdf, t, step_size, 'uniform')
-		mean, var, pdf_sum = getMeanVarMax(pdf, 1e28, t, step_size)
-		assert var >= 0, var
-		print(t)
-		t += 1 
-	end = time.time()
-	print(start - end)
