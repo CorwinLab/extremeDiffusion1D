@@ -88,6 +88,30 @@ def rwreBiased():
 	return biases
 
 @njit
+def threeStepUniform():
+	"""	
+	Examples
+	--------
+	num_samples = 1000000
+	mean = np.zeros(3)
+
+	for _ in range(num_samples):
+		rand_val = threeStepUniform()
+		mean += rand_val
+		assert np.all(rand_val >= 0)
+
+	mean /= num_samples
+	print(mean)
+	"""
+
+	biases = np.zeros(3)
+	biases[0] = 1/4
+	rand_val = np.random.uniform(0, 1/2)
+	biases[2] = rand_val 
+	biases[1] = 3/4 - rand_val 
+	return biases
+
+@njit
 def getRandVals(step_size, distribution, params=np.array([])):
 	if distribution == 'symmetric':
 		rand_vals = symmetricRandomDirichlet(step_size)
@@ -101,8 +125,10 @@ def getRandVals(step_size, distribution, params=np.array([])):
 		rand_vals = rwre(step_size)
 	elif distribution == 'dirichlet':
 		rand_vals = randomDirichlet(params)
-	elif distribution == 'rwreBiases':
+	elif distribution == 'rwreBiased':
 		rand_vals = rwreBiased()
+	elif distribution == 'threeStepUniform':
+		rand_vals = threeStepUniform()
 	return rand_vals
 
 @njit
@@ -129,7 +155,7 @@ def iterateTimeStep(pdf, t, step_size=3, distribution='uniform', params=np.array
 	if distribution == 'rwre':
 		increment = step_size // 2
 	else:
-		increment == 1
+		increment = 1
 	
 	# I'm not entirely sure how/why but using this end point means
 	# that we iterate over the entire array but no further
@@ -140,6 +166,27 @@ def iterateTimeStep(pdf, t, step_size=3, distribution='uniform', params=np.array
 		pdf_new[i: i + step_size] += rand_vals * pdf[i]
 
 	return pdf_new
+
+def iterateNParticles(occ, t, step_size, distribution='uniform', params=np.array([])):
+	occ_new = np.zeros(occ.size)
+	
+	# If we're using the rwre we can avoid the holes by 
+	# incrementing the walk
+	if distribution == 'rwre':
+		increment = step_size // 2
+	else:
+		increment = 1
+	
+	# I'm not entirely sure how/why but using this end point means
+	# that we iterate over the entire array but no further
+	
+	for i in range(0, t * (step_size-1) - step_size + 2, increment):
+		if occ[i] == 0:
+			continue
+		rand_vals = getRandVals(step_size, distribution, params)
+		occ_new[i: i + step_size] += np.random.multinomial(int(occ[i]), rand_vals)
+
+	return occ_new
 
 @njit
 def iterateFPT(pdf, maxIdx, step_size, distribution='uniform', params=np.array([])):
@@ -393,10 +440,11 @@ def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='unifo
 	f.flush()
 	
 	maxTime = np.max(times)
-
+	
 	while t < maxTime: 
 		# Iterate timestep and check all vals are > 0
 		pdf = iterateTimeStep(pdf, t+1, step_size, distribution, params)
+		print(np.sum(pdf))
 		assert np.all(pdf >= 0)
 		t+=1
 		
@@ -430,11 +478,18 @@ def getBeta(step_size):
 	xvals = np.arange(- (step_size//2), step_size//2 + 1)
 
 	running_sum = 0
+	sigma = 0
+	mean = 0
+	omega_ij = 0
+
 	for _ in range(num_samples):
 		rand_vals = randomDelta(step_size)
 		running_sum += np.sum(rand_vals * xvals)**2
-		
-	return running_sum / num_samples
+		sigma += np.sum(rand_vals * xvals**2)
+		mean += np.sum(rand_vals * xvals)
+		omega_ij += rand_vals[0] * rand_vals[1]
+	print("Mean:", mean / num_samples)
+	return running_sum / num_samples, sigma / num_samples, omega_ij / num_samples
 
 def getSigmaBetaDirichlet(alpha):
 	alpha_0 = np.sum(alpha)
