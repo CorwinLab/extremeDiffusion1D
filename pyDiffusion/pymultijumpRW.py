@@ -101,7 +101,7 @@ def getRandVals(step_size, distribution, params=np.array([])):
 		rand_vals = rwre(step_size)
 	elif distribution == 'dirichlet':
 		rand_vals = randomDirichlet(params)
-	elif distribution == 'rwreBiases':
+	elif distribution == 'rwreBiased':
 		rand_vals = rwreBiased()
 	return rand_vals
 
@@ -129,7 +129,7 @@ def iterateTimeStep(pdf, t, step_size=3, distribution='uniform', params=np.array
 	if distribution == 'rwre':
 		increment = step_size // 2
 	else:
-		increment == 1
+		increment = 1
 	
 	# I'm not entirely sure how/why but using this end point means
 	# that we iterate over the entire array but no further
