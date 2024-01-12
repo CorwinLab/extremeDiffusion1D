@@ -520,7 +520,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             System time to evolve the system forward to
         """
 
-        while self.currentTime() < time:
+        while self.currentTime < time:
             self.iterateTimestep()
 
     def evolveAndSaveQuantiles(
@@ -579,7 +579,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             self.evolveToTime(t)
 
             NthQuantiles = self.findQuantiles(quantiles)
-            maxEdge = self.getMaxIdx() - self.currentTime / 2
+            maxEdge = 2*self.getMaxIdx() - self.currentTime
             # need to unpack NthQuantiles since it's returned as a np array
             row = [self.getTime(), maxEdge, *NthQuantiles]
             writer.writerow(row)
@@ -599,7 +599,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
         for t in time:
             self.evolveToTime(t)
 
-            maxEdge = self.getMaxIdx() - self.currentTime / 2
+            maxEdge = 2*self.getMaxIdx() - self.currentTime
             row = [self.getTime(), maxEdge]
             writer.writerow(row)
             f.flush()
@@ -697,7 +697,7 @@ class DiffusionPDF(libDiffusion.DiffusionPDF):
             quantiles.sort()
             NthQuantile = self.findQuantiles(quantiles)
 
-            maxEdge = self.getMaxIdx() - self.currentTime / 2
+            maxEdge = 2*self.getMaxIdx() - self.currentTime
             row = [self.getTime(), maxEdge] + NthQuantile
             save_array[row_num, :] = row
         np.savetxt(file, save_array)

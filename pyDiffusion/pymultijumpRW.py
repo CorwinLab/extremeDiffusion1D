@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import sys
 
-@njit
+
 def randomUniform(size):
 	'''
 	Examples
@@ -61,7 +61,6 @@ def randomGauss(size):
 def ssrw(size):
 	return np.ones(size) / size
 
-@njit 
 def rwre(size):
 	rand_val = np.random.uniform(0, 1)
 	biases = np.zeros(size)
@@ -69,8 +68,14 @@ def rwre(size):
 	biases[-1] = 1-rand_val
 	return biases
 
-@njit
-def getRandVals(step_size, distribution, params=None):
+def randomRightTriangle(size):
+	rand_val = np.random.triangular(1/4,1/4,1)
+	biases = np.zeros(size)
+	biases[0] = rand_val
+	biases[-1] = 1-rand_val
+	return biases
+
+def getRandVals(step_size, distribution, params=np.array([])):
 	if distribution == 'symmetric':
 		rand_vals = symmetricRandomDirichlet(step_size)
 	elif distribution == 'uniform': # 'notsymmetric'
@@ -83,10 +88,11 @@ def getRandVals(step_size, distribution, params=None):
 		rand_vals = rwre(step_size)
 	elif distribution == 'dirichlet':
 		rand_vals = randomDirichlet(params)
+	elif distribution == 'righttriangle':
+		rand_vals = randomRightTriangle(step_size)
 	return rand_vals
 
-@njit
-def iterateTimeStep(pdf, t, step_size=3, distribution='uniform', params=None):
+def iterateTimeStep(pdf, t, step_size=3, distribution='uniform', params=np.array([])):
 	'''
 	Examples
 	--------
@@ -113,7 +119,7 @@ def iterateTimeStep(pdf, t, step_size=3, distribution='uniform', params=None):
 	return pdf_new
 
 @njit
-def iterateFPT(pdf, maxIdx, step_size, distribution='uniform', params=None):
+def iterateFPT(pdf, maxIdx, step_size, distribution='uniform', params=np.array([])):
 	""" Iterate pdf for first passage time
 
 	Parameters
@@ -178,7 +184,7 @@ def iterateFPT(pdf, maxIdx, step_size, distribution='uniform', params=None):
 	
 	return pdf_new
 
-def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N, params=None):
+def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N, params=np.array([])):
 	""" Given a maximum position calculate environmental location and 
 	sampling mean/variance for the environment.
 
@@ -331,7 +337,7 @@ def measureQuantile(pdf, N, t, step_size):
 			center = t * (step_size // 2)
 			return i - center 
 
-def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='uniform', params=None):
+def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='uniform', params=np.array([])):
 	# Ensure the step_size is odd 
 	assert (step_size % 2) != 0, f"Step size is not an odd number but {step_size}"
 
@@ -433,3 +439,24 @@ def getSigmaBetaDirichlet(alpha):
 	sigma = np.sqrt(np.sum(mean * xvals**2))
 
 	return sigma, beta
+
+# og example
+# if __name__ == '__main__':
+# 	pdf = np.zeros(5)
+# 	pdf[0] = 1
+# 	t = 1
+# 	for _ in range(2):
+# 		pdf = iterateTimeStep(pdf, t, 3, 'rwre')
+# 		mean, var, pdf_sum = getMeanVarMax(pdf, 100, t, 3)
+# 		print(pdf)
+# 		t += 1
+if __name__ == '__main__':
+	pdf = np.zeros(5)
+	pdf[0] = 1
+	t = 1
+	for _ in range(2):
+		pdf = iterateTimeStep(pdf, t, 3, 'righttriangle')
+		mean, var, pdf_sum = getMeanVarMax(pdf, 100, t, 3)
+		print(pdf)
+		print(mean,var)
+		t += 1

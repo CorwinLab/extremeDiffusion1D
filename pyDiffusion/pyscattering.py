@@ -5,7 +5,7 @@ import os
 import sys
 import npquad
 
-@jit
+
 def iteratePDF(right, left, quantile, dist="beta", params=1):
 	if dist == "beta":
 		if params == 1:
@@ -56,7 +56,6 @@ def iteratePDF(right, left, quantile, dist="beta", params=1):
 
 	return right_new, left_new, pos
 
-@njit
 def iteratePDFGetVelocities(right, left, xval, dist="beta", params=1):
 	''' Note: xvals should be in decending order '''
 	if dist == "beta":
@@ -113,8 +112,6 @@ def iteratePDFGetVelocities(right, left, xval, dist="beta", params=1):
 
 	return right_new, left_new, prob, delta
 
-
-@jit
 def iteratePDFModified(right, left, quantile, dist="beta", params=1):
 	if dist == "beta":
 		if params == 1:
@@ -165,7 +162,7 @@ def iteratePDFModified(right, left, quantile, dist="beta", params=1):
 		
 	return right_new, left_new, pos
 
-@njit
+
 def generalizedPDF(prr, pll, prl, plr, quantile):
 	biases = np.random.uniform(0, 1, size=prr.shape)
 
@@ -213,7 +210,7 @@ def cyclicPDF(p1, p2, p3, p4, quantile):
 
 	return p1_new, p2_new, p3_new, p4_new, pos
 
-@jit
+
 def cyclicDirichletPDF(p1, p2, p3, p4, quantile):
 	p1_new = np.zeros(p1.shape)
 	p2_new = np.zeros(p2.shape)
@@ -496,7 +493,7 @@ def evolveAndGetVelocities(times, vs, size, dist, params, save_file):
 	f.close()
 
 
-@jit
+
 def biasingField(xvals, correlation_length):
 	grid = np.arange(
 		np.min(xvals) - 3 * correlation_length,
@@ -518,7 +515,7 @@ def biasingField(xvals, correlation_length):
 	return field
 
 
-@jit
+
 def iteratePDFFields(right, left, quantile, xvals, rc=2):
 	biases = biasingField(xvals, rc)
 	right_new = np.zeros(right.shape)
