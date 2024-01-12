@@ -46,7 +46,7 @@ if __name__ == '__main__':
 	elif distribution == 'dirichlet':
 		sigma, beta = getSigmaBetaDirichlet(params)
 
-	Lmax = (prefactor * sigma**4 * (sigma**2 - beta) * np.log(N)**(5/2) / beta) ** (1/3)
+	Lmax = (prefactor * sigma**4 * (sigma**2 - beta) * np.log(N)**(5/2) / beta / np.sqrt(np.pi) * 2 * np.sqrt(2)) ** (1/3)
 	Lmax = int(Lmax)
 	
 	vars = {"Lmax": Lmax, 
