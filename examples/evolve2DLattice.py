@@ -20,10 +20,11 @@ def evolve2DLattice(Length, NParticles, MaxT=None):
 
         startPoint = Length-t+1
         endPoint = Length+t
-        occupancy[startPoint:endPoint, startPoint-1:endPoint-1] += occupancy[startPoint:endPoint, startPoint:endPoint] * biases[:,:,0]
-        occupancy[startPoint+1:endPoint+1, startPoint:endPoint] += occupancy[startPoint:endPoint, startPoint:endPoint] * biases[:,:,1]
-        occupancy[startPoint:endPoint, startPoint+1:endPoint+1] += occupancy[startPoint:endPoint, startPoint:endPoint] * biases[:,:,2]
-        occupancy[startPoint-1:endPoint-1, startPoint:endPoint] += occupancy[startPoint:endPoint, startPoint:endPoint] * biases[:,:,3]
+        oldOccupancy = occupancy[startPoint:endPoint, startPoint:endPoint].copy()
+        occupancy[startPoint:endPoint, startPoint-1:endPoint-1] += oldOccupancy * biases[:,:,0]
+        occupancy[startPoint+1:endPoint+1, startPoint:endPoint] += oldOccupancy * biases[:,:,1]
+        occupancy[startPoint:endPoint, startPoint+1:endPoint+1] += oldOccupancy * biases[:,:,2]
+        occupancy[startPoint-1:endPoint-1, startPoint:endPoint] += oldOccupancy * biases[:,:,3]
         occupancy[checkerboard== (t % 2)] = 0
         # # I'm leaving this code here because it does a better job of explaining what our goal is
         # for i in range(startPoint, endPoint):
