@@ -8,6 +8,9 @@ def evolve2DLattice(Length, NParticles, MaxT=None):
     occupancy = np.zeros((2*Length+1, 2*Length+1))
     origin = (Length, Length)
     occupancy[origin] = NParticles
+    i,j = np.indices(occupancy.shape)
+    checkerboard = (i+j+1) % 2
+
     for t in range(1,MaxT):
         #generate biases as a txtx4 matrix; (txt) specifies lattice point, the 4 represents probability
         #of going in each direction
@@ -17,22 +20,28 @@ def evolve2DLattice(Length, NParticles, MaxT=None):
 
         startPoint = Length-t+1
         endPoint = Length+t
-        for i in range(startPoint, endPoint):
-            #across
-            for j in range(startPoint, endPoint):
-                # Do the calculation if the site and the time have opposite parity
-                if (i + j + t) % 2 == 1:
-                    localBiases = biases[i-startPoint, j-endPoint, :]
-                    # left
-                    occupancy[i, j - 1] += occupancy[i, j] * localBiases[0]
-                    # down
-                    occupancy[i + 1, j] += occupancy[i, j] * localBiases[1]
-                    # right
-                    occupancy[i, j + 1] += occupancy[i, j] * localBiases[2]
-                    # up
-                    occupancy[i - 1, j] += occupancy[i, j] * localBiases[3]
-                    # zero the old one
-                    occupancy[i, j] = 0
+        occupancy[startPoint:endPoint, startPoint-1:endPoint-1] += occupancy[startPoint:endPoint, startPoint:endPoint] * biases[:,:,0]
+        occupancy[startPoint+1:endPoint+1, startPoint:endPoint] += occupancy[startPoint:endPoint, startPoint:endPoint] * biases[:,:,1]
+        occupancy[startPoint:endPoint, startPoint+1:endPoint+1] += occupancy[startPoint:endPoint, startPoint:endPoint] * biases[:,:,2]
+        occupancy[startPoint-1:endPoint-1, startPoint:endPoint] += occupancy[startPoint:endPoint, startPoint:endPoint] * biases[:,:,3]
+        occupancy[checkerboard== (t % 2)] = 0
+        # # I'm leaving this code here because it does a better job of explaining what our goal is
+        # for i in range(startPoint, endPoint):
+        #     #across
+        #     for j in range(startPoint, endPoint):
+        #         # Do the calculation if the site and the time have opposite parity
+        #         if (i + j + t) % 2 == 1:
+        #             localBiases = biases[i-startPoint, j-endPoint, :]
+        #             # left
+        #             occupancy[i, j - 1] += occupancy[i, j] * localBiases[0]
+        #             # down
+        #             occupancy[i + 1, j] += occupancy[i, j] * localBiases[1]
+        #             # right
+        #             occupancy[i, j + 1] += occupancy[i, j] * localBiases[2]
+        #             # up
+        #             occupancy[i - 1, j] += occupancy[i, j] * localBiases[3]
+        #             # zero the old one
+        #             occupancy[i, j] = 0
     return occupancy
 
 
