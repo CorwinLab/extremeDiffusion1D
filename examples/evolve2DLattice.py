@@ -1,6 +1,59 @@
 import numpy as np
 # import npquad
 from matplotlib import pyplot as plt
+# from numba import jit, njit
+
+def numpyEvolve2DLattice(length, NParticles, maxT = None, rng = np.random.default_rng()):
+    if not maxT:
+        maxT = length+1
+    occupancy = np.zeros((2*length+1, 2*length+1), dtype=int)
+    origin = (length, length)
+    occupancy[origin] = int(NParticles)
+    i,j = np.indices(occupancy.shape)
+    checkerboard = (i+j+1) % 2
+    for t in range(1, maxT):
+        # Find the occupied sites
+        sites = (occupancy != 0)
+        i,j = np.where(sites)
+        # Generate biases for each site
+        biases = rng.dirichlet([1]*4, np.sum(sites))
+        # On newer numpy we can vectorize to compute the moves
+        moves = rng.multinomial(occupancy[i,j], biases)
+        occupancy[i,j-1] += moves[:,0]
+        occupancy[i+1,j] += moves[:,1]
+        occupancy[i,j+1] += moves[:,2]
+        occupancy[i-1,j] += moves[:,3]
+        occupancy[i,j] = 0 
+        yield t, occupancy
+#    return occupancy
+    
+
+# # @jit(nopython=True)
+# def numbaEvolve2DLattice(length, NParticles, maxT=None):
+#     if not maxT:
+#         maxT = length+1
+#     occupancy = np.zeros((2*length+1, 2*length+1), dtype=np.uint)
+#     origin = (length, length)
+#     occupancy[origin] = NParticles
+#     # i,j = np.indices(occupancy.shape)
+#     # checkerboard = (i+j+1) % 2
+
+#     for t in range(1,maxT):
+#         for i in range(2*length + 1):
+#             for j in range(2*length + 1):
+#                 if ((i + j + t) % 2 == 1) and (occupancy[i,j] != 0):
+#                     print(i,j,t)
+#                     localBias = np.random.exponential(1, size=4)
+#                     localBias /= np.sum(localBias)
+#                     # moves = localBias * occupancy[i,j]
+#                     moves = np.random.multinomial(occupancy[i,j], [.25, .25, .25, .25])
+#                     occupancy[i,j-1] += moves[0]
+#                     occupancy[i+1,j] += moves[1]
+#                     occupancy[i,j+1] += moves[2]
+#                     occupancy[i-1,j] += moves[3]
+#                     occupancy[i,j] = 0
+#     return occupancy
+
 
 def evolve2DLatticeAgent(Length, NParticles, MaxT=None):
     """
@@ -20,7 +73,6 @@ def evolve2DLatticeAgent(Length, NParticles, MaxT=None):
     occupancy[origin] = NParticles
     i, j = np.indices(occupancy.shape)
     checkerboard = (i + j + 1) % 2
-
     # evolve in time
     for t in range(1, MaxT):
         # Compute biases for every cell within area we're evolving to
