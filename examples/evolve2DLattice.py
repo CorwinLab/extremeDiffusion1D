@@ -45,6 +45,7 @@ def numpyEvolve2DLatticeAgent(occupancy, maxT, startT = 1, rng = np.random.defau
             i,j = np.where(sites)
         occupancy = executeMoves(occupancy, i, j, rng)
         yield t, occupancy
+<<<<<<< HEAD
 #    return occupancy
 
 def run2dAgent(occupancy, maxT):
@@ -52,6 +53,8 @@ def run2dAgent(occupancy, maxT):
         pass
     return occ
 
+=======
+>>>>>>> 846317fdb7227a9ae99727adcaebcaf40de07859
 
 # # @jit(nopython=True)
 # def numbaEvolve2DLattice(length, NParticles, maxT=None):
@@ -195,15 +198,86 @@ def generateFirstArrivalTime(Length,NParticles,MaxT=None):
     # initialize array to fill with 1st arrival time for each site
     tArrival = np.zeros((2*Length+1,2*Length+1))
     tArrival[:] = np.nan
-    for t, occ in evolve2DLatticeAgent(Length,NParticles,MaxT):
+    for t, occ in numpyEvolve2DLattice(Length,NParticles,MaxT):
         tArrival[(occ > 0) & np.isnan(tArrival)] = t
     return occ, tArrival
 
 # helper functions
 #do I really need a wholeass function just to subtract L.
-def shiftCoords(i,j,L):
-    """ # Turn someone's coordinatess with 0,0 at the center into coords for L,L at center?
-    What if i just want 1 coord...
+def cartToPolar(i,j):
     """
-    newcoords = (i-L,j-L)
-    return newcoords
+    Can take indices (i,j) and turn them into polar coords. r, theta
+    Note: indices need to be already shifted so origin is at center appropriately
+    """
+    r = np.sqrt(i**2+j**2)
+    theta = np.arctan2(j,i)
+    return r, theta
+
+#should i turn this into a function? the check how circular
+# the mean tArrivals are?
+def checkIfMeanTCircular(meanTArrival,band):
+    """
+    Takes an array of meanTArrival, chooses a band of TArrival
+    and plots the coordinates of the meanTArrivals in the band as
+    polar coords, i.e plots theta, r.
+    If radially symmetric (circularly?) then should get a flat line
+    Parameters
+    meanTArrival: should be like np.mean(tArrival,0) where tArrival
+        is like (#runs,2L+1,2L+1) array. shape of meanTArrival
+        should be (2L+1,2L+1)
+    band: [lower,upper] of meanTArrival
+    """
+    cond = ((band[0]<meanTArrival) & (meanTArrival<band[1]))
+    L = int(((meanTArrival.shape[0])-1)/2)
+    i,j = np.where(cond)
+    # this is the stupidest way of extracting L
+    # anyway it shifts coords so oriign @ center
+    i, j = i-L,j-L
+    r, theta = cartToPolar(i,j)
+    fig, ax = plt.subplots()
+    ax.set_xlabel("Theta")
+    ax.set_ylabel("Distance to Center")
+    ax.plot(theta,r,'.')
+    plt.show()
+def plotVarTvsDistance(varT,powerlaw=0):
+    """
+    Plots the variance of tArrival as a function of distance from origin
+    on a loglog scale
+    Parameters:
+        varT: array (2L+1,2L+1) in size. should come from like np.nanvar(tArrival,0)
+        powerlaw: automatically set to 0, if not 0 then can also plot a guessed powerlaw
+    """
+    L = int(((varT.shape[0])-1)/2)
+    i, j = np.meshgrid(range(varT.shape[0]),range(varT.shape[0]))
+    i, j = i - L, j - L
+    r, theta = cartToPolar(i,j)
+    plt.ion()
+    fig, ax = plt.subplots()
+    ax.set_xlabel("Distance from origin")
+    ax.set_ylabel("Var(TArrival)")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.plot(r.flatten(),varT.flatten(),'.')
+    if powerlaw != 0:
+        x=np.logspace(1,2)
+        ax.plot(x,1e-3*x**powerlaw)
+    plt.show()
+
+def tArrivalPastPlane(tArrival,line,axis):
+    """
+    Define a plane, and ask for the first tArrival past that plane
+    it should be the smallest tArrival *on* the line*
+    Parameters:
+        tArrival: an individual run of generateFirstArrivalTime, and
+            be a (2L+1,2L+1) shape
+        line: idk i need to figure out how to define a line
+        axis: i or j; if i then the line drawn is i=line, if j then line is j=line
+    """
+    if axis == 'i':
+        # choose all sites with i=line
+        sites = tArrival[line,:]
+    elif axis == 'j':
+        sites = tArrival[:,line]
+    #find the minimum tArrival value in that set of sites
+    firstCrossing = np.nanmin(sites)
+    return firstCrossing
