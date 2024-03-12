@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import sys
 
-
+@njit
 def randomUniform(size):
 	'''
 	Examples
@@ -61,6 +61,7 @@ def randomGauss(size):
 def ssrw(size):
 	return np.ones(size) / size
 
+@njit
 def rwre(size):
 	rand_val = np.random.uniform(0, 1)
 	biases = np.zeros(size)
@@ -68,6 +69,7 @@ def rwre(size):
 	biases[-1] = 1-rand_val
 	return biases
 
+@njit
 def randomRightTriangle(size):
 	rand_val = np.random.triangular(1/4,1/4,1)
 	biases = np.zeros(size)
@@ -117,6 +119,23 @@ def threeStepUniform():
 	biases[1] = 3/4 - rand_val 
 	return biases
 
+@njit 
+def nnssrw():
+	return np.array([1/2, 0, 1/2])
+
+@njit
+def thirdMoment():
+	'''
+	Produces a random distribution with a mean of 0 and variance of 2
+	'''
+	b = np.random.uniform(1/5 - 1/15, 1/5 + 1/15)
+	c = np.random.uniform(1/5 - 1/15, 1/5 + 1/15)
+	a=1/6*(2-3*b-c)
+	d=1/3*(2-3*b-4*c)
+	e=(b+c)/2
+	vals = np.array([a, b, c, d, e])
+	return vals
+
 @njit
 def getRandVals(step_size, distribution, params=np.array([])):
 	if distribution == 'symmetric':
@@ -125,6 +144,8 @@ def getRandVals(step_size, distribution, params=np.array([])):
 		rand_vals = randomUniform(step_size)
 	elif distribution == 'ssrw':
 		rand_vals=ssrw(step_size)
+	elif distribution == 'nnssrw':
+		rand_vals = nnssrw()
 	elif distribution == 'delta':
 		rand_vals = randomDelta(step_size)
 	elif distribution == 'rwre':
@@ -137,6 +158,8 @@ def getRandVals(step_size, distribution, params=np.array([])):
 		rand_vals = rwreBiased()
 	elif distribution == 'threeStepUniform':
 		rand_vals = threeStepUniform()
+	elif distribution == 'thirdMoment':
+		rand_vals = thirdMoment()
 	return rand_vals
 
 @njit
@@ -338,7 +361,6 @@ def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N, params=np.a
 			# Iterate PDF and then step the time forward
 			pdf = iterateFPT(pdf, maxIdx, step_size, distribution, params)
 			t += 1
-			print(pdf, np.sum(pdf))
 
 			firstPassageCDF = mpmath.mp.mpf(pdf[0])
 			nFirstPassageCDF = 1 - (1-firstPassageCDF)**N
@@ -537,12 +559,63 @@ def getSigmaBetaDirichlet(alpha):
 # 		print(pdf)
 # 		t += 1
 if __name__ == '__main__':
-	pdf = np.zeros(5)
-	pdf[0] = 1
-	t = 1
-	for _ in range(2):
-		pdf = iterateTimeStep(pdf, t, 3, 'righttriangle')
-		mean, var, pdf_sum = getMeanVarMax(pdf, 100, t, 3)
-		print(pdf)
-		print(mean,var)
-		t += 1
+	df = pd.read_csv('/home/jacob/Desktop/talapasMount/JacobData/MultiJumpRWFPTPaper/symmetric/7/28/MeanVar.csv')
+	Ls = df['Distance'].values.astype(int)
+	N = 1e28
+	save_file = 'SSRWStep3.txt'
+	params = np.array([])
+	distribution = 'ssrw'
+	step_size = 3
+
+	# Set up writer and write header if save file doesn't exist
+	f = open(save_file, 'a')
+	writer = csv.writer(f)
+	writer.writerow(["Distance", "Env", "Mean(Min)", "Var(Min)", "PDF Sum"])
+
+	pdf_size = int(1e6)
+	mpmath.mp.dps = 250
+	N = mpmath.mp.mpf(N)
+
+	for L in Ls:
+		# Initialize PDF
+		pdf = np.zeros(pdf_size)
+		pdf[L] = 1
+
+		# Initialize exp variables
+		t = 0
+
+		# Initialize quantile and sampling variables
+		quantile = None 
+		running_sum_squared = 0
+		running_sum = 0
+		
+		# Set up fpt cdf and N first passage CDF
+		firstPassageCDF = mpmath.mp.mpf(pdf[0])
+		nFirstPassageCDFPrev = 1 - (1-firstPassageCDF)**N
+
+		while (1-nFirstPassageCDFPrev > np.finfo(pdf[0].dtype).eps) or (firstPassageCDF < 1 / N):
+			# Set maximum index to 
+			maxIdx = L + (step_size//2) * (t+1)
+
+			# Iterate PDF and then step the time forward
+			pdf = iterateFPT(pdf, maxIdx, step_size, distribution, params)
+			t += 1
+
+			firstPassageCDF = mpmath.mp.mpf(pdf[0])
+			nFirstPassageCDF = 1 - (1-firstPassageCDF)**N
+			nFirstPassagePDF = nFirstPassageCDF - nFirstPassageCDFPrev
+			nFirstPassagePDF = float(nFirstPassagePDF)
+
+			running_sum_squared += t ** 2 * nFirstPassagePDF
+			running_sum += t * nFirstPassagePDF
+			
+			if (quantile is None) and (firstPassageCDF > 1 / N):
+				quantile = t
+			
+			nFirstPassageCDFPrev = nFirstPassageCDF
+
+		variance = running_sum_squared - running_sum ** 2
+		writer.writerow([L, quantile, running_sum, variance, np.sum(pdf)])
+		f.flush()
+
+	f.close()
