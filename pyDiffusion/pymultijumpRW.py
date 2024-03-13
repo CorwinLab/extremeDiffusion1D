@@ -38,6 +38,11 @@ def randomDelta(size):
 	return biases
 
 @njit
+def randomThreeStep():
+	eps = np.random.uniform(0, 1e-10)
+	rand_vals = np.array([1/3 + eps/2, 1/3 - eps, 1/3 + eps/2])
+	return rand_vals
+@njit
 def symmetricRandomDirichlet(size):
 	rand_vals = randomUniform(size)
 	return (rand_vals + np.flip(rand_vals)) / 2
@@ -178,6 +183,8 @@ def getRandVals(step_size, distribution, params=np.array([])):
 		rand_vals = thirdMoment()
 	elif distribution == 'thirdMoment7':
 		rand_vals = thirdMoment7()
+	elif distribution == 'randomThreeStep':
+		rand_vals = randomThreeStep()
 	return rand_vals
 
 @njit
