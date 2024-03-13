@@ -176,6 +176,8 @@ def getRandVals(step_size, distribution, params=np.array([])):
 		rand_vals = threeStepUniform()
 	elif distribution == 'thirdMoment':
 		rand_vals = thirdMoment()
+	elif distribution == 'thirdMoment7':
+		rand_vals = thirdMoment7()
 	return rand_vals
 
 @njit
@@ -490,7 +492,6 @@ def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='unifo
 	while t < maxTime: 
 		# Iterate timestep and check all vals are > 0
 		pdf = iterateTimeStep(pdf, t+1, step_size, distribution, params)
-		print(np.sum(pdf))
 		assert np.all(pdf >= 0)
 		t+=1
 		
