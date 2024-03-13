@@ -137,6 +137,22 @@ def thirdMoment():
 	return vals
 
 @njit
+def thirdMoment7():
+	'''
+	Produces a random distribution with mean 0 and variance of 2
+	'''
+	m1 = np.random.uniform(0, 1/9)
+	m2 = np.random.uniform(0, 1/9)
+	mn1 = np.random.uniform(0, 1/9)
+	mn2 = np.random.uniform(0, 1/9)
+	
+	mn3 =  1/9 * (1-5*mn2 - 2*mn1 + m1 + m2)
+	m0 = 1/9*(7-5*mn2 -8*mn1 - 8*m1 -5*m2)
+	m3 = 1/9*(1+mn2 + mn1 - 2*m1 - 5*m2)
+
+	return np.array([mn3, mn2, mn1, m0, m1, m2, m3])
+
+@njit
 def getRandVals(step_size, distribution, params=np.array([])):
 	if distribution == 'symmetric':
 		rand_vals = symmetricRandomDirichlet(step_size)
@@ -558,64 +574,79 @@ def getSigmaBetaDirichlet(alpha):
 # 		mean, var, pdf_sum = getMeanVarMax(pdf, 100, t, 3)
 # 		print(pdf)
 # 		t += 1
-if __name__ == '__main__':
-	df = pd.read_csv('/home/jacob/Desktop/talapasMount/JacobData/MultiJumpRWFPTPaper/symmetric/7/28/MeanVar.csv')
-	Ls = df['Distance'].values.astype(int)
-	N = 1e28
-	save_file = 'SSRWStep3.txt'
-	params = np.array([])
-	distribution = 'ssrw'
-	step_size = 3
+# if __name__ == '__main__':
+# 	df = pd.read_csv('/home/jacob/Desktop/talapasMount/JacobData/MultiJumpRWFPTPaper/symmetric/7/28/MeanVar.csv')
+# 	Ls = df['Distance'].values.astype(int)
+# 	N = 1e28
+# 	save_file = 'SSRWStep3.txt'
+# 	params = np.array([])
+# 	distribution = 'ssrw'
+# 	step_size = 3
 
-	# Set up writer and write header if save file doesn't exist
-	f = open(save_file, 'a')
-	writer = csv.writer(f)
-	writer.writerow(["Distance", "Env", "Mean(Min)", "Var(Min)", "PDF Sum"])
+# 	# Set up writer and write header if save file doesn't exist
+# 	f = open(save_file, 'a')
+# 	writer = csv.writer(f)
+# 	writer.writerow(["Distance", "Env", "Mean(Min)", "Var(Min)", "PDF Sum"])
 
-	pdf_size = int(1e6)
-	mpmath.mp.dps = 250
-	N = mpmath.mp.mpf(N)
+# 	pdf_size = int(1e6)
+# 	mpmath.mp.dps = 250
+# 	N = mpmath.mp.mpf(N)
 
-	for L in Ls:
-		# Initialize PDF
-		pdf = np.zeros(pdf_size)
-		pdf[L] = 1
+# 	for L in Ls:
+# 		# Initialize PDF
+# 		pdf = np.zeros(pdf_size)
+# 		pdf[L] = 1
 
-		# Initialize exp variables
-		t = 0
+# 		# Initialize exp variables
+# 		t = 0
 
-		# Initialize quantile and sampling variables
-		quantile = None 
-		running_sum_squared = 0
-		running_sum = 0
+# 		# Initialize quantile and sampling variables
+# 		quantile = None 
+# 		running_sum_squared = 0
+# 		running_sum = 0
 		
-		# Set up fpt cdf and N first passage CDF
-		firstPassageCDF = mpmath.mp.mpf(pdf[0])
-		nFirstPassageCDFPrev = 1 - (1-firstPassageCDF)**N
+# 		# Set up fpt cdf and N first passage CDF
+# 		firstPassageCDF = mpmath.mp.mpf(pdf[0])
+# 		nFirstPassageCDFPrev = 1 - (1-firstPassageCDF)**N
 
-		while (1-nFirstPassageCDFPrev > np.finfo(pdf[0].dtype).eps) or (firstPassageCDF < 1 / N):
-			# Set maximum index to 
-			maxIdx = L + (step_size//2) * (t+1)
+# 		while (1-nFirstPassageCDFPrev > np.finfo(pdf[0].dtype).eps) or (firstPassageCDF < 1 / N):
+# 			# Set maximum index to 
+# 			maxIdx = L + (step_size//2) * (t+1)
 
-			# Iterate PDF and then step the time forward
-			pdf = iterateFPT(pdf, maxIdx, step_size, distribution, params)
-			t += 1
+# 			# Iterate PDF and then step the time forward
+# 			pdf = iterateFPT(pdf, maxIdx, step_size, distribution, params)
+# 			t += 1
 
-			firstPassageCDF = mpmath.mp.mpf(pdf[0])
-			nFirstPassageCDF = 1 - (1-firstPassageCDF)**N
-			nFirstPassagePDF = nFirstPassageCDF - nFirstPassageCDFPrev
-			nFirstPassagePDF = float(nFirstPassagePDF)
+# 			firstPassageCDF = mpmath.mp.mpf(pdf[0])
+# 			nFirstPassageCDF = 1 - (1-firstPassageCDF)**N
+# 			nFirstPassagePDF = nFirstPassageCDF - nFirstPassageCDFPrev
+# 			nFirstPassagePDF = float(nFirstPassagePDF)
 
-			running_sum_squared += t ** 2 * nFirstPassagePDF
-			running_sum += t * nFirstPassagePDF
+# 			running_sum_squared += t ** 2 * nFirstPassagePDF
+# 			running_sum += t * nFirstPassagePDF
 			
-			if (quantile is None) and (firstPassageCDF > 1 / N):
-				quantile = t
+# 			if (quantile is None) and (firstPassageCDF > 1 / N):
+# 				quantile = t
 			
-			nFirstPassageCDFPrev = nFirstPassageCDF
+# 			nFirstPassageCDFPrev = nFirstPassageCDF
 
-		variance = running_sum_squared - running_sum ** 2
-		writer.writerow([L, quantile, running_sum, variance, np.sum(pdf)])
-		f.flush()
+# 		variance = running_sum_squared - running_sum ** 2
+# 		writer.writerow([L, quantile, running_sum, variance, np.sum(pdf)])
+# 		f.flush()
 
-	f.close()
+# 	f.close()
+
+
+if __name__ == '__main__':
+	xvals = np.array([-3, -2, -1, 0, 1, 2, 3])
+	num_samples = 10000
+	third = np.zeros(num_samples)
+	for i in range(num_samples):
+		vals = thirdMoment7()
+		assert np.sum(vals) - 1 <= 1e-15
+		assert np.sum(vals * xvals) <= 1e-15
+		assert np.sum(vals * xvals**2) - 2 <= 1e-15
+		third[i] = np.sum(xvals**3 * vals)
+		
+	
+	print(np.var(third))
