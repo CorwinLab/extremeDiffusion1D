@@ -5,6 +5,7 @@ import mpmath
 import os
 import pandas as pd
 import sys
+from math import gamma
 
 @njit
 def randomUniform(size):
@@ -28,6 +29,58 @@ def randomUniform(size):
 	'''
 	randomGamma = np.random.exponential(1, size=size)
 	return randomGamma / np.sum(randomGamma)
+
+# This doesn't work with numba
+# def getRandVals():
+# 	n = 3
+# 	alpha = 2
+# 	beta= 4
+# 	xvals = np.arange(0, n+1)
+# 	rand_vals = np.array([0, *betabinom.pmf(xvals, n, alpha, beta)])
+# 	rand_vals[3] -= 3.3306690738754696e-16
+# 	flip = np.random.choice([0, 1])
+# 	if flip: 
+# 		return np.flip(rand_vals)
+# 	return rand_vals 
+
+LOOKUP_TABLE = np.array([
+	1, 1, 2, 6, 24, 120, 720, 5040, 40320,
+	362880, 3628800, 39916800, 479001600,
+	6227020800, 87178291200, 1307674368000,
+	20922789888000, 355687428096000, 6402373705728000,
+	121645100408832000, 2432902008176640000], dtype='int64')
+
+@njit
+def factorial(n):
+	if n > 20:
+		raise ValueError
+	return LOOKUP_TABLE[n]
+
+@vectorize 
+def binom(n, x):
+	return factorial(n) / factorial(x) / factorial(n-x)
+
+@vectorize
+def B(x, y):
+	return gamma(x) * gamma(y) / gamma(x+y)
+@njit 
+def betaBinomPMF(x, n, alpha, beta):
+	return binom(n, x) * B(x + alpha, n-x+beta) / B(alpha, beta)
+
+@njit
+def randBetaBinom():
+	n = 3
+	alpha = 2
+	beta= 4
+	xvals = np.arange(0, n+1)
+	rand_vals = betaBinomPMF(xvals, n, alpha, beta)	
+	rand_vals = np.flip(rand_vals)
+	rand_vals = np.append(rand_vals, 0)
+	rand_vals[1] -= 8.326672684688674e-17
+	flip = np.random.choice(np.array([0, 1]))
+	if flip: 
+		return np.flip(rand_vals)
+	return rand_vals
 
 @njit
 def randomDelta(size):
@@ -185,6 +238,8 @@ def getRandVals(step_size, distribution, params=np.array([])):
 		rand_vals = thirdMoment7()
 	elif distribution == 'randomThreeStep':
 		rand_vals = randomThreeStep()
+	elif distribution == 'betaBinom':
+		rand_vals = randBetaBinom()
 	return rand_vals
 
 @njit
@@ -646,15 +701,12 @@ def getSigmaBetaDirichlet(alpha):
 
 
 if __name__ == '__main__':
-	xvals = np.array([-3, -2, -1, 0, 1, 2, 3])
+	xvals = np.array([ -1, 0, 1])
 	num_samples = 10000
-	third = np.zeros(num_samples)
+	second = np.zeros(num_samples)
 	for i in range(num_samples):
-		vals = thirdMoment7()
-		assert np.sum(vals) - 1 <= 1e-15
-		assert np.sum(vals * xvals) <= 1e-15
-		assert np.sum(vals * xvals**2) - 2 <= 1e-15
-		third[i] = np.sum(xvals**3 * vals)
-		
+		vals = getRandVals(5, 'betaBinom')
+		print(vals)
+	print(np.var(second))
 	
-	print(np.var(third))
+	
