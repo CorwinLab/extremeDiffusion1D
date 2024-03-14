@@ -1,6 +1,7 @@
 import numpy as np
 # import npquad
 from matplotlib import pyplot as plt
+import csv
 # from numba import jit, njit
 
 def doubleOccupancyArray(occupancy):
@@ -45,16 +46,6 @@ def numpyEvolve2DLatticeAgent(occupancy, maxT, startT = 1, rng = np.random.defau
             i,j = np.where(sites)
         occupancy = executeMoves(occupancy, i, j, rng)
         yield t, occupancy
-<<<<<<< HEAD
-#    return occupancy
-
-def run2dAgent(occupancy, maxT):
-    for t, occ in numpyEvolve2DLatticeAgent(occupancy, maxT):
-        pass
-    return occ
-
-=======
->>>>>>> 846317fdb7227a9ae99727adcaebcaf40de07859
 
 # # @jit(nopython=True)
 # def numbaEvolve2DLattice(length, NParticles, maxT=None):
@@ -131,7 +122,7 @@ def evolve2DLatticeAgent(Length, NParticles, MaxT=None):
                     occupancy[i, j] = 0
         yield t, occupancy
 
-def evolve2DLatticePDF(Length, NParticles, MaxT=None):
+def evolve2DLatticePDF(Length, MaxT=None):
     """
     Create a (2Length+1) square lattice with N particles at the center, and let particles diffuse according to
     dirichlet biases in cardinal directions. This evolves the PDF.
@@ -146,7 +137,7 @@ def evolve2DLatticePDF(Length, NParticles, MaxT=None):
     # initialize the array, particles @ origin, and the checkerboard pattern
     occupancy = np.zeros((2*Length+1, 2*Length+1))
     origin = (Length, Length)
-    occupancy[origin] = NParticles
+    occupancy[origin] = 1
     i,j = np.indices(occupancy.shape)
     checkerboard = (i+j+1) % 2
     # evolve in time
@@ -239,6 +230,7 @@ def checkIfMeanTCircular(meanTArrival,band):
     ax.set_ylabel("Distance to Center")
     ax.plot(theta,r,'.')
     plt.show()
+
 def plotVarTvsDistance(varT,powerlaw=0):
     """
     Plots the variance of tArrival as a function of distance from origin
@@ -281,3 +273,24 @@ def tArrivalPastPlane(tArrival,line,axis):
     #find the minimum tArrival value in that set of sites
     firstCrossing = np.nanmin(sites)
     return firstCrossing
+
+def getPDFAtRadius(occ, r):
+    x = np.arange(-(occ.shape[0] // 2), occ.shape[0] // 2 + 1)
+    xx, yy = np.meshgrid(x, x)
+
+    dist_from_center = np.sqrt(xx**2 + yy**2)
+    all_indeces = np.where(dist_from_center == r)
+    return occ[all_indeces]
+
+def measurePDFatRad(tMax, save_file, r):
+
+    f = open(save_file, 'a')
+    writer = csv.writer(f)
+
+    for t, occ in evolve2DLatticePDF(tMax, tMax):
+        probs = getPDFAtRadius(occ, r)
+        if np.sum(probs) == 0:
+            continue
+        writer.writerow([t, *probs])
+
+    f.close()
