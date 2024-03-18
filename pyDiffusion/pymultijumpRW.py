@@ -195,6 +195,16 @@ def thirdMoment():
 	return vals
 
 @njit
+def thirdMomentDHalf():
+	m1 = np.random.uniform(0, 1/11)
+	mn1 = np.random.uniform(0, 1/6)
+	m0 = 1/8*(7 - 6*mn1 - 6*m1)
+	mn2 = 1/16 * (1- 6*mn1 + 2 * m1)
+	m2 = 1/16*(1 + 2 * mn1 - 6*m1)
+
+	return np.array([mn2, mn1, m0, m1, m2])
+
+@njit
 def thirdMoment7():
 	'''
 	Produces a random distribution with mean 0 and variance of 2
@@ -240,6 +250,8 @@ def getRandVals(step_size, distribution, params=np.array([])):
 		rand_vals = randomThreeStep()
 	elif distribution == 'betaBinom':
 		rand_vals = randBetaBinom()
+	elif distribution == 'thirdMomentDHalf':
+		rand_vals = thirdMomentDHalf()
 	return rand_vals
 
 @njit
