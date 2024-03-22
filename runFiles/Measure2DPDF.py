@@ -2,22 +2,22 @@ import numpy as np
 import os 
 import sys 
 sys.path.append("../examples/")
-from evolve2DLattice import measurePDFatRad
+from evolve2DLattice import measurePDFBeyondRad
 from datetime import date
 from experimentUtils import saveVars
 
 if __name__ == '__main__':
 	# Testing code
-	# (topDir, sysID, tMax, r) = '.', '0', '5', '1'
-	# (topDir, sysID, tMax, r) = sys.argv[1:]
+	# (topDir, sysID, tMax) = '.', '0', '100'
+	(topDir, sysID, tMax) = sys.argv[1:]
 	
 	save_file = os.path.join(topDir, f"PDF{sysID}.txt")
-	r = float(r)
+	rs = list(np.arange(10, 110, step=10).astype(float))
 	tMax = int(tMax)
 	# evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution)
 	vars = {"tMax": tMax, 
 	 		"save_file": save_file,
-			"r": r}
+			"rs": rs}
 	
 	vars_file = os.path.join(topDir, "variables.json")
 	today = date.today()
@@ -28,4 +28,4 @@ if __name__ == '__main__':
 		saveVars(vars, vars_file)
 		vars.pop("Date")
 
-	measurePDFatRad(**vars)
+	measurePDFBeyondRad(**vars)

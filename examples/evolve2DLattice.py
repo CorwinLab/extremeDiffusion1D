@@ -1,6 +1,6 @@
 import numpy as np
 # import npquad
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 import csv
 # from numba import jit, njit
 
@@ -15,11 +15,11 @@ def doubleOccupancyArray(occupancy):
     newOccupancy[newLength-length:newLength+length+1, newLength-length:newLength+length+1] = occupancy
     return newOccupancy
 
-def executeMoves(occupancy, i, j, rng):
+def executeMoves(occupancy, i, j): #, rng):
     # Generate biases for each site
-    biases = rng.dirichlet([1]*4, i.shape[0])
+    biases = np.random.dirichlet([1]*4, i.shape[0])
     # On newer numpy we can vectorize to compute the moves
-    moves = rng.multinomial(occupancy[i,j], biases)
+    moves = np.random.multinomial(occupancy[i,j], biases)
     # Note that we can use the same array because we're doing checkerboard moves
     # If we want to use a more general jump kernel we need to use a new (empty) copy of the space
     occupancy[i,j-1] += moves[:,0] # left
@@ -29,7 +29,7 @@ def executeMoves(occupancy, i, j, rng):
     occupancy[i,j] = 0 # Remove everything from the original site, as it's moved to new sites
     return occupancy
 
-def numpyEvolve2DLatticeAgent(occupancy, maxT, startT = 1, rng = np.random.default_rng()):
+def numpyEvolve2DLatticeAgent(occupancy, maxT, startT = 1):# , rng = np.random.default_rng()):
     # Convert a scalar occupancy into a 2d array of size (1,1)
     if np.isscalar(occupancy):
         occupancy = np.array([[occupancy]], dtype=int)
@@ -44,7 +44,7 @@ def numpyEvolve2DLatticeAgent(occupancy, maxT, startT = 1, rng = np.random.defau
             # These next two lines are a waste and we could just do index translation
             sites = (occupancy != 0)
             i,j = np.where(sites)
-        occupancy = executeMoves(occupancy, i, j, rng)
+        occupancy = executeMoves(occupancy, i, j)#, rng)
         yield t, occupancy
 
 # # @jit(nopython=True)
@@ -225,11 +225,11 @@ def checkIfMeanTCircular(meanTArrival,band):
     # anyway it shifts coords so oriign @ center
     i, j = i-L,j-L
     r, theta = cartToPolar(i,j)
-    fig, ax = plt.subplots()
-    ax.set_xlabel("Theta")
-    ax.set_ylabel("Distance to Center")
-    ax.plot(theta,r,'.')
-    plt.show()
+    # fig, ax = plt.subplots()
+    # ax.set_xlabel("Theta")
+    # ax.set_ylabel("Distance to Center")
+    # ax.plot(theta,r,'.')
+    # plt.show()
 
 def plotVarTvsDistance(varT,powerlaw=0):
     """
@@ -243,17 +243,17 @@ def plotVarTvsDistance(varT,powerlaw=0):
     i, j = np.meshgrid(range(varT.shape[0]),range(varT.shape[0]))
     i, j = i - L, j - L
     r, theta = cartToPolar(i,j)
-    plt.ion()
-    fig, ax = plt.subplots()
-    ax.set_xlabel("Distance from origin")
-    ax.set_ylabel("Var(TArrival)")
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.plot(r.flatten(),varT.flatten(),'.')
-    if powerlaw != 0:
-        x=np.logspace(1,2)
-        ax.plot(x,1e-3*x**powerlaw)
-    plt.show()
+    # plt.ion()
+    # fig, ax = plt.subplots()
+    # ax.set_xlabel("Distance from origin")
+    # ax.set_ylabel("Var(TArrival)")
+    # ax.set_xscale("log")
+    # ax.set_yscale("log")
+    # ax.plot(r.flatten(),varT.flatten(),'.')
+    # if powerlaw != 0:
+    #     x=np.logspace(1,2)
+    #     ax.plot(x,1e-3*x**powerlaw)
+    # plt.show()
 
 def tArrivalPastPlane(tArrival,line,axis):
     """
@@ -282,15 +282,23 @@ def getPDFAtRadius(occ, r):
     all_indeces = np.where(dist_from_center == r)
     return occ[all_indeces]
 
-def measurePDFatRad(tMax, save_file, r):
+def getPDFOutsideRadius(occ, r):
+    x = np.arange(-(occ.shape[0] // 2), occ.shape[0] // 2 + 1)
+    xx, yy = np.meshgrid(x, x)
+
+    dist_from_center = np.sqrt(xx**2 + yy**2)
+    all_indeces = np.where(dist_from_center >= r)
+    return np.sum(occ[all_indeces])
+
+def measurePDFBeyondRad(tMax, save_file, rs):
 
     f = open(save_file, 'a')
     writer = csv.writer(f)
-
+    writer.writerow(["Time", *rs])
     for t, occ in evolve2DLatticePDF(tMax, tMax):
-        probs = getPDFAtRadius(occ, r)
-        if np.sum(probs) == 0:
-            continue
+        probs = np.zeros(len(rs))
+        for i in range(len(rs)): 
+            probs[i] = getPDFOutsideRadius(occ, rs[i])
         writer.writerow([t, *probs])
-
+        f.flush()
     f.close()
