@@ -594,6 +594,57 @@ def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='unifo
 			writer.writerow([t, quantile, mean, var, pdf_val, cdf_val, np.sum(pdf), NpdfSum])
 			f.flush()
 
+def evolveAndMeasurePDFSymmetric(tMax, step_size, vs, save_file, distribution='uniform', params=np.array([])):
+	# Ensure the step_size is odd 
+	assert (step_size % 2) != 0, f"Step size is not an odd number but {step_size}"
+
+	# Get save times
+	times = np.unique(np.geomspace(1, tMax, 2500).astype(int))
+
+	# Initialize the probability distribution
+	size = 2*int(1e6) # np.max(times) * step_size * 5
+	pdf = np.zeros(size)
+	pdf[0] = 1
+	t = 0
+	
+	# Check if save_file is already written to
+	write_header = True
+	if os.path.exists(save_file):
+		data = pd.read_csv(save_file)
+		max_time = max(data['Time'].values)
+		if max_time == max(times):
+			print("File already completed", flush=True)
+			sys.exit()
+		times = times[times > max_time]
+		print(f"Starting at t={times[0]}", flush=True)
+		write_header = False
+		
+	# Set up writer and write header if save file doesn't exist
+	f = open(save_file, 'a')
+	writer = csv.writer(f)
+	if write_header:
+		writer.writerow(["Time", *vs])
+	f.flush()
+	
+	maxTime = np.max(times)
+	
+	while t < maxTime: 
+		# Iterate timestep and check all vals are > 0
+		pdf = iterateTimeStep(pdf, t+1, step_size, distribution, params)
+		assert np.all(pdf >= 0)
+		t+=1
+		
+		if t in times: 
+			# Measure the value of Env
+			row = [t]
+			# Get x=t^3/4 pdf and cdf value
+			for v in vs:
+				_, cdf_val = measurePDFandCDF(pdf, v * t**(11/12), t, step_size)
+				row.append(cdf_val)
+
+			writer.writerow(row)
+			f.flush()
+
 def getBeta(step_size):
 	num_samples = 100000
 	xvals = np.arange(- (step_size//2), step_size//2 + 1)
