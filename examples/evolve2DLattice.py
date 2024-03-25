@@ -294,13 +294,13 @@ def getPDFAtRadius(occ, r):
     all_indeces = np.where(dist_from_center == r)
     return occ[all_indeces]
 
-def getPDFOutsideRadius(occ, r):
+def getIndeces(occ, r):
     x = np.arange(-(occ.shape[0] // 2), occ.shape[0] // 2 + 1)
     xx, yy = np.meshgrid(x, x)
 
     dist_from_center = np.sqrt(xx**2 + yy**2)
-    all_indeces = np.where(dist_from_center >= r)
-    return np.sum(occ[all_indeces])
+    all_indeces = np.where(dist_from_center < r)
+    return all_indeces
 
 def measurePDFBeyondRad(tMax, save_file, rs):
     f = open(save_file, 'a')
@@ -308,10 +308,12 @@ def measurePDFBeyondRad(tMax, save_file, rs):
     writer.writerow(["Time", *rs])
     occ = np.zeros((2*tMax+1, 2*tMax+1))
     occ[tMax, tMax] = 1
+
+    indeces = [getIndeces(occ, r) for r in rs]
+
     for t, occ in numpyEvolve2DLatticePDF(occ, tMax):
-        probs = np.zeros(len(rs))
-        for i in range(len(rs)): 
-            probs[i] = getPDFOutsideRadius(occ, rs[i])
+        probs = [np.sum(occ[idx]) for idx in indeces]
         writer.writerow([t, *probs])
         f.flush()
+
     f.close()
