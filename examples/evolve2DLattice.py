@@ -1,8 +1,5 @@
 import numpy as np
-# import npquad
-# from matplotlib import pyplot as plt
 import csv
-# from numba import jit, njit
 
 def doubleOccupancyArray(occupancy):
     # This assumes that occupancy is square and with odd size
@@ -15,7 +12,7 @@ def doubleOccupancyArray(occupancy):
     newOccupancy[newLength-length:newLength+length+1, newLength-length:newLength+length+1] = occupancy
     return newOccupancy
 
-def executeMoves(occupancy, i, j): #, rng):
+def executeMoves(occupancy, i, j): 
     # Generate biases for each site
     biases = np.random.dirichlet([1]*4, i.shape[0])
     # On newer numpy we can vectorize to compute the moves
@@ -29,7 +26,19 @@ def executeMoves(occupancy, i, j): #, rng):
     occupancy[i,j] = 0 # Remove everything from the original site, as it's moved to new sites
     return occupancy
 
-def numpyEvolve2DLatticeAgent(occupancy, maxT, startT = 1):# , rng = np.random.default_rng()):
+def executeMovesPDF(occupancy, i, j):
+    # Generate biases for each site
+    biases = np.random.dirichlet([1]*4, i.shape[0])
+    # Note that we can use the same array because we're doing checkerboard moves
+    # If we want to use a more general jump kernel we need to use a new (empty) copy of the space
+    occupancy[i,j-1] += occupancy[i,j] * biases[:,0] # left
+    occupancy[i+1,j] += occupancy[i,j] * biases[:,1] # down
+    occupancy[i,j+1] += occupancy[i,j] * biases[:,2] # right
+    occupancy[i-1,j] += occupancy[i,j] * biases[:,3] # up
+    occupancy[i,j] = 0 # Remove everything from the original site, as it's moved to new sites
+    return occupancy
+
+def numpyEvolve2DLatticeAgent(occupancy, maxT, startT = 1):
     # Convert a scalar occupancy into a 2d array of size (1,1)
     if np.isscalar(occupancy):
         occupancy = np.array([[occupancy]], dtype=int)
@@ -47,32 +56,35 @@ def numpyEvolve2DLatticeAgent(occupancy, maxT, startT = 1):# , rng = np.random.d
         occupancy = executeMoves(occupancy, i, j)#, rng)
         yield t, occupancy
 
-# # @jit(nopython=True)
-# def numbaEvolve2DLattice(length, NParticles, maxT=None):
-#     if not maxT:
-#         maxT = length+1
-#     occupancy = np.zeros((2*length+1, 2*length+1), dtype=np.uint)
-#     origin = (length, length)
-#     occupancy[origin] = NParticles
-#     # i,j = np.indices(occupancy.shape)
-#     # checkerboard = (i+j+1) % 2
-
-#     for t in range(1,maxT):
-#         for i in range(2*length + 1):
-#             for j in range(2*length + 1):
-#                 if ((i + j + t) % 2 == 1) and (occupancy[i,j] != 0):
-#                     print(i,j,t)
-#                     localBias = np.random.exponential(1, size=4)
-#                     localBias /= np.sum(localBias)
-#                     # moves = localBias * occupancy[i,j]
-#                     moves = np.random.multinomial(occupancy[i,j], [.25, .25, .25, .25])
-#                     occupancy[i,j-1] += moves[0]
-#                     occupancy[i+1,j] += moves[1]
-#                     occupancy[i,j+1] += moves[2]
-#                     occupancy[i-1,j] += moves[3]
-#                     occupancy[i,j] = 0
-#     return occupancy
-
+def numpyEvolve2DLatticePDF(occupancy, maxT, startT = 1):
+    '''
+    Examples
+    --------
+    from matplotlib import pyplot as plt
+    tMax = 10
+    occ = np.zeros((2 * tMax + 1, 2*tMax + 1))
+    occ[tMax, tMax] = 1
+    for t, occ in numpyEvolve2DLatticePDF(occ, tMax, startT = 1):
+        fig, ax = plt.subplots()
+        ax.imshow(occ)
+        fig.savefig(f"PDF{t}.png")
+        print(np.sum(occ))
+    '''
+    # Convert a scalar occupancy into a 2d array of size (1,1)
+    if np.isscalar(occupancy):
+        occupancy = np.array([[occupancy]], dtype=int)
+    for t in range(startT, maxT):
+        # Find the occupied sites
+        i,j = np.where(occupancy != 0)
+        # If the occupied sites are at the limits (i.e if min(i,j) = 0 or max(i,j) = size)
+        # then we need to enlarge occupancy and create a new array
+        if (np.min([i,j]) <= 0) or (np.max([i,j]) >= np.min(occupancy.shape) -1 ):
+            occupancy = doubleOccupancyArray(occupancy)
+            # These next two lines are a waste and we could just do index translation
+            sites = (occupancy != 0)
+            i,j = np.where(sites)
+        occupancy = executeMovesPDF(occupancy, i, j)#, rng)
+        yield t, occupancy
 
 def evolve2DLatticeAgent(Length, NParticles, MaxT=None):
     """
@@ -291,11 +303,12 @@ def getPDFOutsideRadius(occ, r):
     return np.sum(occ[all_indeces])
 
 def measurePDFBeyondRad(tMax, save_file, rs):
-
     f = open(save_file, 'a')
     writer = csv.writer(f)
     writer.writerow(["Time", *rs])
-    for t, occ in evolve2DLatticePDF(tMax, tMax):
+    occ = np.zeros((2*tMax+1, 2*tMax+1))
+    occ[tMax, tMax] = 1
+    for t, occ in numpyEvolve2DLatticePDF(occ, tMax):
         probs = np.zeros(len(rs))
         for i in range(len(rs)): 
             probs[i] = getPDFOutsideRadius(occ, rs[i])
