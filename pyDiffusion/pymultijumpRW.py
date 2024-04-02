@@ -83,6 +83,26 @@ def randBetaBinom():
 	return rand_vals
 
 @njit
+def randomFourthMoment():
+	'''
+	xvals = np.array([-2, -1, 0, 1, 2])
+	num_samples = 10000
+	second = np.zeros(num_samples)
+	for i in range(num_samples):
+		vals = getRandVals(5, 'randomFourthMomet')
+		print(np.sum(xvals * vals))
+		print(np.sum(xvals ** 2 * vals))
+		print(np.sum(xvals**3 * vals))
+	'''
+
+	mn1 = np.random.uniform(1/6, 5/12)
+	mn2 = 5/48 - mn1 /4
+	m0 = 7/8 -3/2 * mn1
+	m1 = mn1 - 1/6
+	m2 = 1/16*(3-4*mn1)
+	return np.array([mn2, mn1, m0, m1, m2])
+
+@njit
 def randomDelta(size):
 	xvals = np.arange(0, size, 1)
 	rand_vals = np.random.choice(xvals, size=2, replace=False)
@@ -252,6 +272,8 @@ def getRandVals(step_size, distribution, params=np.array([])):
 		rand_vals = randBetaBinom()
 	elif distribution == 'thirdMomentDHalf':
 		rand_vals = thirdMomentDHalf()
+	elif distribution == 'randomFourthMomet':
+		rand_vals = randomFourthMoment()
 	return rand_vals
 
 @njit
@@ -689,87 +711,3 @@ def getSigmaBetaDirichlet(alpha):
 	sigma = np.sqrt(np.sum(mean * xvals**2))
 
 	return sigma, beta
-
-# og example
-# if __name__ == '__main__':
-# 	pdf = np.zeros(5)
-# 	pdf[0] = 1
-# 	t = 1
-# 	for _ in range(2):
-# 		pdf = iterateTimeStep(pdf, t, 3, 'rwre')
-# 		mean, var, pdf_sum = getMeanVarMax(pdf, 100, t, 3)
-# 		print(pdf)
-# 		t += 1
-# if __name__ == '__main__':
-# 	df = pd.read_csv('/home/jacob/Desktop/talapasMount/JacobData/MultiJumpRWFPTPaper/symmetric/7/28/MeanVar.csv')
-# 	Ls = df['Distance'].values.astype(int)
-# 	N = 1e28
-# 	save_file = 'SSRWStep3.txt'
-# 	params = np.array([])
-# 	distribution = 'ssrw'
-# 	step_size = 3
-
-# 	# Set up writer and write header if save file doesn't exist
-# 	f = open(save_file, 'a')
-# 	writer = csv.writer(f)
-# 	writer.writerow(["Distance", "Env", "Mean(Min)", "Var(Min)", "PDF Sum"])
-
-# 	pdf_size = int(1e6)
-# 	mpmath.mp.dps = 250
-# 	N = mpmath.mp.mpf(N)
-
-# 	for L in Ls:
-# 		# Initialize PDF
-# 		pdf = np.zeros(pdf_size)
-# 		pdf[L] = 1
-
-# 		# Initialize exp variables
-# 		t = 0
-
-# 		# Initialize quantile and sampling variables
-# 		quantile = None 
-# 		running_sum_squared = 0
-# 		running_sum = 0
-		
-# 		# Set up fpt cdf and N first passage CDF
-# 		firstPassageCDF = mpmath.mp.mpf(pdf[0])
-# 		nFirstPassageCDFPrev = 1 - (1-firstPassageCDF)**N
-
-# 		while (1-nFirstPassageCDFPrev > np.finfo(pdf[0].dtype).eps) or (firstPassageCDF < 1 / N):
-# 			# Set maximum index to 
-# 			maxIdx = L + (step_size//2) * (t+1)
-
-# 			# Iterate PDF and then step the time forward
-# 			pdf = iterateFPT(pdf, maxIdx, step_size, distribution, params)
-# 			t += 1
-
-# 			firstPassageCDF = mpmath.mp.mpf(pdf[0])
-# 			nFirstPassageCDF = 1 - (1-firstPassageCDF)**N
-# 			nFirstPassagePDF = nFirstPassageCDF - nFirstPassageCDFPrev
-# 			nFirstPassagePDF = float(nFirstPassagePDF)
-
-# 			running_sum_squared += t ** 2 * nFirstPassagePDF
-# 			running_sum += t * nFirstPassagePDF
-			
-# 			if (quantile is None) and (firstPassageCDF > 1 / N):
-# 				quantile = t
-			
-# 			nFirstPassageCDFPrev = nFirstPassageCDF
-
-# 		variance = running_sum_squared - running_sum ** 2
-# 		writer.writerow([L, quantile, running_sum, variance, np.sum(pdf)])
-# 		f.flush()
-
-# 	f.close()
-
-
-if __name__ == '__main__':
-	xvals = np.array([ -1, 0, 1])
-	num_samples = 10000
-	second = np.zeros(num_samples)
-	for i in range(num_samples):
-		vals = getRandVals(5, 'betaBinom')
-		print(vals)
-	print(np.var(second))
-	
-	
