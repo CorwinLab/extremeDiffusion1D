@@ -115,9 +115,10 @@ def randomThreeStep():
 	eps = np.random.uniform(0, 1e-10)
 	rand_vals = np.array([1/3 + eps/2, 1/3 - eps, 1/3 + eps/2])
 	return rand_vals
+
 @njit
-def symmetricRandomDirichlet(size):
-	rand_vals = randomUniform(size)
+def symmetricRandomDirichlet(alphas):
+	rand_vals = randomDirichlet(alphas)
 	return (rand_vals + np.flip(rand_vals)) / 2
 
 @vectorize
@@ -545,7 +546,7 @@ def getMeanVarMax(pdf, N, t, step_size):
 @njit
 def measureQuantile(pdf, N, t, step_size):
 	cdf = 0 
-	for i in np.arange(pdf.size-1, 0, -1):
+	for i in np.arange(pdf.size-1, -1, -1):
 		cdf += pdf[i]
 		if cdf >= 1/N:
 			center = t * (step_size // 2)
@@ -616,7 +617,7 @@ def evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution='unifo
 			writer.writerow([t, quantile, mean, var, pdf_val, cdf_val, np.sum(pdf), NpdfSum])
 			f.flush()
 
-def evolveAndMeasurePDFSymmetric(tMax, step_size, vs, save_file, distribution='uniform', params=np.array([])):
+def evolveAndMeasurePDFSymmetric(tMax, step_size, vs, alpha, save_file, distribution='uniform', params=np.array([])):
 	# Ensure the step_size is odd 
 	assert (step_size % 2) != 0, f"Step size is not an odd number but {step_size}"
 
@@ -661,7 +662,7 @@ def evolveAndMeasurePDFSymmetric(tMax, step_size, vs, save_file, distribution='u
 			row = [t]
 			# Get x=t^3/4 pdf and cdf value
 			for v in vs:
-				_, cdf_val = measurePDFandCDF(pdf, v * t**(11/12), t, step_size)
+				_, cdf_val = measurePDFandCDF(pdf, v * t**(alpha), t, step_size)
 				row.append(cdf_val)
 
 			writer.writerow(row)
@@ -711,3 +712,15 @@ def getSigmaBetaDirichlet(alpha):
 	sigma = np.sqrt(np.sum(mean * xvals**2))
 
 	return sigma, beta
+
+if __name__ == '__main__':
+	for _ in range(10000):
+		pdf = np.zeros(int(1e6))
+		pdf[0] = 1
+		t = 0
+		step_size = 3
+		distribution = 'uniform'
+		params = np.array([])
+		pdf = iterateTimeStep(pdf, t+1, step_size, distribution, params)
+		print(measureQuantile(pdf, 10, 1, step_size))
+	
