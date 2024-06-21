@@ -242,6 +242,19 @@ def thirdMoment7():
 	return np.array([mn3, mn2, mn1, m0, m1, m2, m3])
 
 @njit
+def constDiffusionCoefficient(k):
+	"""Produces a distribution with mean 0 and diffusion coefficient of 10."""
+	sigma2 = 10
+	xvals = np.arange(-k, k+1)
+	rand_vals = np.zeros(2 * k + 1)
+	xval = np.random.randint(4, k+1)
+	rand_vals[xvals == xval] = sigma2 / 2 / xval**2
+	rand_vals[xvals == -xval] = sigma2 / 2 / xval**2
+	rand_vals[xvals == 0] = 1 - sigma2 / xval**2
+
+	return rand_vals
+
+@njit
 def getRandVals(step_size, distribution, params=np.array([])):
 	if distribution == 'symmetric':
 		rand_vals = symmetricRandomDirichlet(step_size)
@@ -275,6 +288,8 @@ def getRandVals(step_size, distribution, params=np.array([])):
 		rand_vals = thirdMomentDHalf()
 	elif distribution == 'randomFourthMomet':
 		rand_vals = randomFourthMoment()
+	elif distribution == 'constDiffusionCoefficient':
+		rand_vals = constDiffusionCoefficient(step_size)
 	return rand_vals
 
 @njit
@@ -713,14 +728,55 @@ def getSigmaBetaDirichlet(alpha):
 
 	return sigma, beta
 
-if __name__ == '__main__':
-	for _ in range(10000):
-		pdf = np.zeros(int(1e6))
-		pdf[0] = 1
-		t = 0
-		step_size = 3
-		distribution = 'uniform'
-		params = np.array([])
-		pdf = iterateTimeStep(pdf, t+1, step_size, distribution, params)
-		print(measureQuantile(pdf, 10, 1, step_size))
+# if __name__ == '__main__':
+# 	from matplotlib import pyplot as plt
+# 	width = 10
+# 	xvals = np.arange(-width, width + 1)
 	
+# 	sigma2 =  50 # 2 
+# 	low = 0
+#  	# high = 1 / 57 
+# 	high = 3 * sigma2 / (width *(width - 1) * (2*width - 1))# 
+# 	maxHigh = 3 * sigma2 / (width * (8 * width**2 - 9 * width - 1))
+# 	high = min([high, maxHigh])
+# 	print(high)
+# 	# high = 2 / 767
+# 	for i in range(100):
+# 		dist = np.random.uniform(low=low, high=high, size=(2 * width + 1))
+
+# 		dist1_sum = 0
+# 		for idx, x  in enumerate(xvals): 
+# 			if x in [-width, 0, width]: # [-2, 0, 1]:
+# 				continue
+# 			else: 
+# 				dist1_sum += dist[idx] * (width * x + x ** 2)
+# 				# dist1_sum += dist[idx] * (x - x**2)
+
+# 		dist2_sum = 0
+# 		for idx, x in enumerate(xvals):
+# 			if x in [-width, 0, width]: # [-2, 0, 1]:
+# 				continue 
+# 			else:
+# 				dist2_sum += dist[idx] * (width * x - x**2)
+# 				# dist2_sum += dist[idx] * (2 * x +  x**2)
+		
+# 		dist[xvals == -width] = 1 / 2 / width**2 * (sigma2 + dist2_sum)
+# 		# dist[xvals == -2] = 1/6 * ( sigma2 + dist1_sum)
+
+# 		dist[xvals == width] = 1 / 2 / width**2 * (sigma2 - dist1_sum)
+# 		# dist[xvals == 1] = 1/3 * ( sigma2 - dist2_sum)
+# 		# dist[xvals == -2] = 1/6 * ( sigma2 - dist2_sum)
+# 		dist[xvals == 0] = 1 - np.sum(dist[xvals != 0])
+# 		# print(np.sum(dist)) 
+# 		# print(np.sum(dist * xvals))
+# 		# print(np.sum(dist * xvals**2))
+# 		# print(dist)
+# 		if not np.all(dist > 0):
+# 			print(dist)
+# 			raise KeyError
+
+# 	fig, ax = plt.subplots()
+# 	ax.scatter(xvals, dist)
+# 	fig.savefig("Hist.png", bbox_inches='tight')
+
+# 	print(constDiffusionCoefficient(10))
