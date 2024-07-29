@@ -155,7 +155,7 @@ class Database:
         var_file = os.path.join(directory, "Var.txt")
         forth_moment_file = os.path.join(directory, "ForthMoment.txt")
 
-        if os.path.exists(mean_file) and os.path.exists(var_file) and os.path.exists(forth_moment_file):
+        if os.path.exists(mean_file) and os.path.exists(var_file): #and os.path.exists(forth_moment_file): This sometimes breaks for max particle pos
             self.dirs[directory]["mean"] = mean_file
             self.dirs[directory]["var"] = var_file
             self.dirs[directory]["forth_moment"] =  forth_moment_file
@@ -292,7 +292,8 @@ class Database:
             var_df = pd.read_csv(db.dirs[d]["var"], sep=delimiter)
 
             if db.dirs[d]["type"] == "Gumbel":
-                forth_moment = pd.read_csv(db.dirs[d]["forth_moment"], sep=delimiter)
+                # breaks for max particle pos
+                # forth_moment = pd.read_csv(db.dirs[d]["forth_moment"], sep=delimiter)
                 cdf_df["time"] = mean_df["time"]
 
                 # Get mean Sampling Variance and Mean quantile from mean file
@@ -320,15 +321,15 @@ class Database:
                         exp = quadMath.prettifyQuad(N_column).split("e")[-1]
                         if int(exp) == N:
                             cdf_df["Var Quantile"] = var_df[column]
-
-                for column in forth_moment.columns[1:]: 
-                    if "var" in column: 
-                        continue 
-                    else: 
-                        N_column = np.quad(column)
-                        exp = quadMath.prettifyQuad(N_column).split("e")[-1]
-                        if int(exp) == N:
-                            cdf_df["Var Var Quantile"] = forth_moment[column]
+                # Breaks for max particle pos
+                # for column in forth_moment.columns[1:]: 
+                #     if "var" in column: 
+                #         continue 
+                #     else: 
+                #         N_column = np.quad(column)
+                #         exp = quadMath.prettifyQuad(N_column).split("e")[-1]
+                #         if int(exp) == N:
+                #             cdf_df["Var Var Quantile"] = forth_moment[column]
 
             if db.dirs[d]["type"] == "Max":
                 mean_df = pd.read_csv(db.dirs[d]["mean"], sep=delimiter)

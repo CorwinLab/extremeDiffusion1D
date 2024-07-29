@@ -1,5 +1,4 @@
 import numpy as np
-import npquad
 from scipy.special import erf
 from scipy.interpolate import interp1d
 import warnings
@@ -387,7 +386,7 @@ def KPZ_var_theory(t):
 def KPZ_mean_theory(t):
     return -np.sqrt(np.pi / 8) * (t / 2) ** (1 / 6) - (
         1 / 2 + 3 / 8 * np.pi - 8 * np.pi / 9 / np.sqrt(3)
-    ) * (t / 2) ** (2 / 3)
+    ) * (t / 2) ** (2 / 3) 
 
 
 def KPZ_var_fit(t):
@@ -408,7 +407,7 @@ def KPZ_mean_fit(t):
         [t <= 0.33, t > 0.33],
         [lambda time: KPZ_mean_theory(time), lambda time: f(time)],
     )
-    y = y * 2 ** (-1 / 3) * t ** (1 / 3) - t / 24
+    y = y * 2 ** (-1 / 3) * t ** (1 / 3)- t / 24 - 1/2 * np.log(2 * np.pi * t)
     return y
 
 
@@ -436,8 +435,15 @@ def log_moving_average(time, data, window_size=10):
         window_time = time[(time >= window_min) & (time < window_max)]
         window_data = data[(time >= window_min) & (time < window_max)]
 
-        mean_data.append(np.mean(window_data))
-        new_times.append(np.exp(np.mean(np.log(window_time))))
+        if len(window_data) == 0: 
+            mean_data.append(np.nan)
+        else:
+            mean_data.append(np.mean(window_data))
+        
+        if len(window_time) == 0:
+            new_times.append(np.nan)
+        else:
+            new_times.append(np.exp(np.mean(np.log(window_time))))
 
         window_min = window_max
         window_max = window_size * window_min
