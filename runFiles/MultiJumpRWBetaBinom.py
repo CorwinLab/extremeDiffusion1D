@@ -11,11 +11,13 @@ if __name__ == '__main__':
 	(tMax, step_size, topDir, sysID, distribution) = sys.argv[1:]
 	
 	save_file = os.path.join(topDir, f"Quantiles{sysID}.txt")
-	vs = list(np.linspace(1, 1/50, num=10))
+	vs = list(np.geomspace(10, 1/1000, num=25, endpoint=True))
+	alpha=11/12
 	# evolveAndMeasureEnvAndMax(tMax, step_size, N, save_file, distribution)
 	vars = {"tMax": float(tMax), 
 	 		"step_size": int(step_size),
 			"vs": vs,
+			"alpha": alpha,
 			"save_file": save_file,
 			"distribution": distribution,
 			"params": np.array([])}

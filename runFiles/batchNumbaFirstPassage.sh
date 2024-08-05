@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=FCDF
-#SBATCH --time=7-00:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH --error=/home/jhass2/jamming/JacobData/logs/FPTCDF/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --array=0-1000
+#SBATCH --array=0-500
 #SBATCH --output=/home/jhass2/jamming/JacobData/logs/FPTCDF/%A-%a.out
 #SBATCH --account=jamming
 #SBATCH --partition=preempt
@@ -12,11 +12,12 @@
 
 DMAX=1000
 NUMOFPOINTS=750
+N_EXP=1
 
-for N_EXP in 2 5 12 28
+for i in {0..4}
 do
     TOPDIR=/home/jhass2/jamming/JacobData/FPTCDFSam/$N_EXP
     mkdir -p $TOPDIR
-
-    python3 NumbaFirstPassage.py $TOPDIR $SLURM_ARRAY_TASK_ID $DMAX $N_EXP $NUMOFPOINTS
+    ID=$((SLURM_ARRAY_TASK_ID*4 + i + SLURM_ARRAY_TASK_ID))
+    python3 NumbaFirstPassage.py $TOPDIR $ID $DMAX $N_EXP $NUMOFPOINTS
 done

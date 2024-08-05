@@ -1,19 +1,19 @@
 #!/bin/bash
 #SBATCH --job-name=betaBinom
-#SBATCH --time=1-00:00:00
+#SBATCH --time=3-00:00:00
 #SBATCH --error=/home/jhass2/jamming/JacobData/logs/MultiJumpRW/%A-%a.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --array=0-499
+#SBATCH --array=0-1000
 #SBATCH --output=/home/jhass2/jamming/JacobData/logs/MultiJumpRW/%A-%a.out
 #SBATCH --account=jamming
 #SBATCH --partition=preempt
 #SBATCH --requeue
 
-TMAX=100000
+TMAX=500000
 STEPSIZE=5
 DISTRIBUTION="betaBinom"
-TOPDIR=/home/jhass2/jamming/JacobData/MultiJumpRWPaperSymmetric/$DISTRIBUTION/
+TOPDIR=/home/jhass2/jamming/JacobData/MultiJumpRWPaperSymmetric12/$DISTRIBUTION/
 
 mkdir -p $TOPDIR
 

@@ -257,7 +257,7 @@ def constDiffusionCoefficient(k):
 @njit
 def getRandVals(step_size, distribution, params=np.array([])):
 	if distribution == 'symmetric':
-		rand_vals = symmetricRandomDirichlet(step_size)
+		rand_vals = symmetricRandomDirichlet(params)
 	elif distribution == 'uniform': # 'notsymmetric'
 		rand_vals = randomUniform(step_size)
 	elif distribution == 'ssrw':
@@ -289,7 +289,7 @@ def getRandVals(step_size, distribution, params=np.array([])):
 	elif distribution == 'randomFourthMomet':
 		rand_vals = randomFourthMoment()
 	elif distribution == 'constDiffusionCoefficient':
-		rand_vals = constDiffusionCoefficient(step_size)
+		rand_vals = constDiffusionCoefficient(step_size // 2)
 	return rand_vals
 
 @njit
