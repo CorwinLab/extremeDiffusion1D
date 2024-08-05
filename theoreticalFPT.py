@@ -17,8 +17,8 @@ def cumulativeDistribution(L, t, nTerms=50, verbose=False):
     for k in range(0, nTerms):
         # This is the correct way to do it but we can simplify
         # sum += (-1)**k * erfc(L * np.abs(1 + 2*k)/np.sqrt(2 * t)) * np.sign(1+2*k)
-        if verbose:
-            print(f'k={k}')
+        # if verbose:
+        #     print(f'k={k}')
         sum += 2 * (-1) ** k * erfc(L*(1+2*k)/np.sqrt(2*t))
     return sum
 
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     for N in Ns: 
         L = np.geomspace(np.log(N), 750 * np.log(N), 50)
         mean, var = getNParticleMeanVar(L, N)
-        meanFirstTerm, varFirstTerm = getNParticleMeanVar(L, N, nTerms=1, verbose=True)
+        meanFirstTerm, varFirstTerm = getNParticleMeanVar(L, N, nTerms=10, verbose=True)
         ax.plot(L / np.log(N), var - np.pi**2 / 24 * L**4 / np.log(N)**4, label=str(N))
         ax.plot(L / np.log(N), var - varFirstTerm, ls='--', label=str(N)+'First Order')
     ax.set_xlim([1, 750])
@@ -123,7 +123,7 @@ if __name__ == '__main__':
         varsFirstOrder = np.zeros(len(Ns))
         for i, N in enumerate(Ns):
             mean, var = getNParticleMeanVar([L], N)
-            _, varFirstOrder = getNParticleMeanVar([L], N, nTerms=1, verbose=True)
+            _, varFirstOrder = getNParticleMeanVar([L], N, nTerms=10, verbose=True)
             vars[i] = var - np.pi**2 / 24 * L**4 / np.log(N)**4
             varsFirstOrder[i] = (var - varFirstOrder)[0]
         ax.plot(np.log2(Ns), vars, label=f'L={L}')

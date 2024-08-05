@@ -1,5 +1,5 @@
 import numpy as np
-import npquad
+# import npquad
 import csv
 
 

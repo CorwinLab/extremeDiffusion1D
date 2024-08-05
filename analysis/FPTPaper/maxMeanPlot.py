@@ -21,23 +21,23 @@ alpha = 0.75
 fig, ax = plt.subplots()
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.set_xlabel(r"$L / \ln(N)$")
+ax.set_xlabel(r"$L / \ln(2N)$")
 ax.set_ylabel(r"$\mathrm{Mean}(\mathrm{Min}_L^N)$")
-ax.set_xlim([1/np.log(1e28), 750])
+ax.set_xlim([1/(np.log(1e28) + np.log(2)), 500])
 ax.set_ylim([1, 3*10**7])
 for i, Nexp in enumerate(Ns): 
     dir = f'/home/jacob/Desktop/talapasMount/JacobData/FPTDiscreteTimeCorrected/{Nexp}/'
     meanFile = os.path.join(dir, 'MeanVariance.csv')
     df = pd.read_csv(meanFile)
     N = float(f'1e{Nexp}')
-    logN = np.log(N)
+    logN = np.log(N) + np.log(2)
     mean = mean_theory(df['Distance'].values, N)
     
     ax.plot(df['Distance'] / logN, df['Mean'], c=colors[i], alpha=alpha, label=Nlabels[i])
     #ax.fill_between(df['Distance'] / logN, df['Mean'] - np.sqrt(df['Variance']), df['Mean'] + np.sqrt(df['Variance']), color=colors[i], alpha=alpha/2, edgecolor=None)
     ax.plot(df['Distance'] / logN, mean, c=colors[i], ls='--')
 
-xvals = np.array([100, 600])
+xvals = np.array([100, 450])
 ax.plot(xvals, 50*xvals**2, ls='--', c='k', label=r'$L^2$')
 
 xvals = np.array([0.05, 0.5])

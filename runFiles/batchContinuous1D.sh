@@ -9,13 +9,12 @@
 #SBATCH --account=jamming
 #SBATCH --partition=preempt
 
-NEXP=6
+NEXP=5
 TMAX=100000
 XI=1
 SIGMA=1
 TOL=0.0001
 D=10
-
 
 TOPDIR=/home/jhass2/jamming/JacobData/Continuous1D/$D/$SIGMA/$XI
 

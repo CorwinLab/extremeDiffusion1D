@@ -19,4 +19,4 @@ D=10
 TOPDIR=/home/jhass2/jamming/JacobData/Continuous2D/$D/$SIGMA/$XI
 
 # (topDir, sysID, Nexp, tMax, xi, sigma, tol, D)
-python3 multiJumpFPT.py $TOPDIR $SLURM_ARRAY_TASK_ID $NEXP $TMAX $XI $SIGMA $TOL $D
+python3 Continuous2D.py $TOPDIR $SLURM_ARRAY_TASK_ID $NEXP $TMAX $XI $SIGMA $TOL $D

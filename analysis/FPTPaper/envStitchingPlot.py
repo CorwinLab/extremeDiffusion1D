@@ -1,6 +1,6 @@
 import sys 
 sys.path.append("../../dataAnalysis")
-from fptTheory import variance, var_power_long, var_short
+from fptTheory import variance, var_power_long, var_short, var_power_short
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap

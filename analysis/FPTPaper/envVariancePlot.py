@@ -21,9 +21,9 @@ alpha = 0.6
 fig, ax = plt.subplots()
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.set_xlabel(r"$L / \ln(N)$")
+ax.set_xlabel(r"$L / \ln(2N)$")
 ax.set_ylabel(r"$\mathrm{Var}(\mathrm{Env}_L^N)$")
-ax.set_xlim([0.4, 750])
+ax.set_xlim([0.4, 500])
 ax.set_ylim([10**-2, 10**10])
 
 for i, Nexp in enumerate(Ns):
@@ -34,8 +34,8 @@ for i, Nexp in enumerate(Ns):
     cdf_df = pd.read_csv(cdf_file)
     d = np.geomspace(1, 750*logN, 2500)
     var_theory = variance(d, N)
-    ax.plot(d / logN, var_theory, c=colors[i], ls='--')
-    ax.plot(cdf_df['Distance'] / logN, cdf_df['Env Variance'], label=Nlabels[i], c=colors[i], alpha=alpha)
+    ax.plot(d / (logN+np.log(2)), var_theory, c=colors[i], ls='--')
+    ax.plot(cdf_df['Distance'] / (logN+np.log(2)), cdf_df['Env Variance'], label=Nlabels[i], c=colors[i], alpha=alpha)
     #ax.fill_between(cdf_df['Distance'] / logN, cdf_df['Env Variance'] - np.sqrt(cdf_df['Var Env Variance']), cdf_df['Env Variance'] + np.sqrt(cdf_df['Var Env Variance']), color=colors[i], alpha=alpha/2, edgecolor=None)
 
 xvals = np.array([100, 600])

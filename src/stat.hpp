@@ -64,8 +64,12 @@ std::vector<RealType> getDiscretePDF(std::vector<RealType> comp_cdf, RealType nP
   std::vector<RealType> pdf(comp_cdf.size()-1);
   RealType cdf_current, cdf_prev;
   for (unsigned long int i=1; i < comp_cdf.size(); i++){
-    cdf_current = exp(-comp_cdf[i] * nParticles);
-    cdf_prev = exp(-comp_cdf[i-1] * nParticles);
+    // cdf_current = exp(-comp_cdf[i] * nParticles);
+    // cdf_prev = exp(-comp_cdf[i-1] * nParticles);
+
+    // Try to not use exponential approximation
+    cdf_current = pow(comp_cdf[i], nParticles);
+    cdf_prev = pow(comp_cdf[i-1], nParticles);
     pdf[i-1] = cdf_current - cdf_prev;
   }
   return pdf;
@@ -79,8 +83,12 @@ std::vector<std::vector<RealType> > getDiscretePDF(std::vector<RealType> comp_cd
   RealType cdf_current, cdf_prev;
   for (unsigned long int i=1; i < comp_cdf.size(); i++){
     for (unsigned int j=0; j < nParticles.size(); j++){
-      cdf_current = exp(-comp_cdf[i] * nParticles[j]);
-      cdf_prev = exp(-comp_cdf[i-1] * nParticles[j]);
+      // cdf_current = exp(-comp_cdf[i] * nParticles[j]);
+      // cdf_prev = exp(-comp_cdf[i-1] * nParticles[j]);
+
+      // Try to not use exponential approximation
+      cdf_current = pow(comp_cdf[i], nParticles[j]);
+      cdf_prev = pow(comp_cdf[i-1], nParticles[j]);
       pdf[j][i-1] = cdf_current - cdf_prev;
     }
   }
@@ -105,6 +113,12 @@ template <class RealType, class x_numeric>
 RealType getGumbelVarianceCDF(std::vector<x_numeric> xvals, std::vector<RealType> comp_cdf, RealType nParticles){
   std::vector<RealType> discrete_pdf = getDiscretePDF(comp_cdf, nParticles);
   return calculateVarianceFromPDF(xvals, discrete_pdf);
+}
+
+template <class RealType, class x_numeric>
+RealType getGumbelMeanCDF(std::vector<x_numeric> xvals, std::vector<RealType> comp_cdf, RealType nParticles){
+  std::vector<RealType> discrete_pdf = getDiscretePDF(comp_cdf, nParticles);
+  return calculateMeanFromPDF(xvals, discrete_pdf);
 }
 
 template <class RealType, class x_numeric>

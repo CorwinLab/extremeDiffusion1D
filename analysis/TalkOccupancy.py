@@ -1,5 +1,4 @@
 import sys
-
 from pyDiffusion import DiffusionPDF
 import matplotlib
 
@@ -9,10 +8,13 @@ from matplotlib import colors
 import numpy as np
 import copy
 
-N = 100_000
-numSteps = 1000
+N = 1_000
+numSteps = 500
 numSteps = int(numSteps)
-d = DiffusionPDF(N, 1, numSteps, ProbDistFlag=False, staticEnvironment=False)
+distribution = 'beta'
+parameters = [1, 1]
+
+d = DiffusionPDF(N, distribution, parameters, numSteps)
 allOcc = np.zeros(shape=(numSteps + 1, numSteps + 1))
 
 for i in range(numSteps):
@@ -21,14 +23,16 @@ for i in range(numSteps):
     occ = np.array(occ, dtype=np.float64)
     allOcc[i, :] = occ
 
+centering = np.arange(0, numSteps+1)
+
 for i in range(allOcc.shape[0]):
     occ = allOcc[i, :]
-    idx_shift = int((max(d.center) - d.center[i]))
+    idx_shift = int((numSteps/2 - centering[i]/2))
     occ = np.roll(occ, idx_shift)
     allOcc[i, :] = occ
 
-
-d = DiffusionPDF(N, float("inf"), numSteps, ProbDistFlag=False, staticEnvironment=False)
+parameters = [np.inf, np.inf]
+d = DiffusionPDF(N, distribution, parameters, numSteps)
 allOccE = np.zeros(shape=(numSteps + 1, numSteps + 1))
 
 for i in range(numSteps):
@@ -39,7 +43,7 @@ for i in range(numSteps):
 
 for i in range(allOccE.shape[0]):
     occ = allOccE[i, :]
-    idx_shift = int((max(d.center) - d.center[i]))
+    idx_shift = int((numSteps/2 - centering[i]/2))
     occ = np.roll(occ, idx_shift)
     allOccE[i, :] = occ
 
@@ -65,7 +69,7 @@ ticks = ax.get_yticks()
 new_ticks = np.linspace(0, allOcc.shape[1], len(ticks)) - (allOcc.shape[1]) / 2
 new_ticks = list(new_ticks.astype(int))
 ax.set_yticklabels(new_ticks)
-dist = 100
+dist = 50
 ax.set_ylim([(allOcc.shape[1]) / 2 - dist - 1, (allOcc.shape[1]) / 2 + dist + 1])
 cax = ax2.imshow(
     allOccE.T,
@@ -80,8 +84,7 @@ ticks = ax2.get_yticks()
 new_ticks = np.linspace(0, allOccE.shape[1], len(ticks)) - (allOccE.shape[1]) / 2
 new_ticks = list(new_ticks.astype(int))
 ax2.set_yticklabels(new_ticks)
-dist = 100
 ax2.set_ylim([(allOcc.shape[1]) / 2 - dist - 1, (allOcc.shape[1]) / 2 + dist + 1])
 ax2.set_xlabel("Time")
 
-fig.savefig("TalkComparison.pdf", bbox_inches="tight")
+fig.savefig("Comparison0.5.pdf", bbox_inches="tight")
