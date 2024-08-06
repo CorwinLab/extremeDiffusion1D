@@ -17,6 +17,7 @@
 #include "randomNumGenerator.hpp"
 #include "diffusionND.hpp"
 #include "scattering.hpp"
+#include "stat.hpp"
 
 typedef boost::multiprecision::float128 RealType;
 
@@ -50,6 +51,7 @@ template <> struct type_caster<RealType> : npy_scalar_caster<RealType> {
 PYBIND11_MODULE(libDiffusion, m)
 {
   m.doc() = "Random walk library";
+  
   py::class_<ParticleData>(m, "ParticleData")
       .def(py::init<const RealType>())
       .def(py::self == py::self)
@@ -196,6 +198,10 @@ PYBIND11_MODULE(libDiffusion, m)
            static_cast<RealType (DiffusionTimeCDF::*)(RealType)>(
                &DiffusionTimeCDF::getGumbelVariance),
            py::arg("nParticles"))
+      .def("getGumbelMean",
+           static_cast<RealType (DiffusionTimeCDF::*)(RealType)>(
+               &DiffusionTimeCDF::getGumbelMean),
+           py::arg("nParticles"))
       .def("getGumbelVariance",
            static_cast<std::vector<RealType> (DiffusionTimeCDF::*)(
                std::vector<RealType>)>(&DiffusionTimeCDF::getGumbelVariance),
@@ -233,6 +239,7 @@ PYBIND11_MODULE(libDiffusion, m)
   py::class_<RandDistribution>(m, "RandDistribution")
       .def(py::init<const std::vector<double>>())
       .def("getRandomNumbers", &RandDistribution::getRandomNumbers);
+
   py::class_<DiffusionND, RandDistribution>(m, "DiffusionND")
       .def(py::init<const std::vector<double>, const unsigned long int, int>())
       .def("getBiases", &DiffusionND::getBiases)

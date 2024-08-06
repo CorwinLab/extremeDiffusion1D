@@ -63,9 +63,9 @@ for i, Nexp in enumerate(Ns):
     d = np.geomspace(1, 750*logN, num=100)
     var_theory = variance(d, N) + sam_variance_theory(d, N)
 
-    ax.plot(df['Distance'] / logN, df['Variance'], c=colors[i], alpha=alpha, label=Nlabels[i])
+    ax.plot(df['Distance'] / (logN+np.log(2)), df['Variance'], c=colors[i], alpha=alpha, label=Nlabels[i])
     #ax.fill_between(df['Distance'] / logN, df['Variance'] - np.sqrt(df['Forth Moment']), df['Variance'] + np.sqrt(df['Forth Moment']), color=colors[i], alpha=alpha/2, edgecolor=None)
-    ax.plot(d / logN, var_theory, ls='--', c=colors[i])
+    ax.plot(d / (logN+np.log(2)), var_theory, ls='--', c=colors[i])
 
     axin1.plot(df['Distance'], df['Variance'], c=colors[i], alpha=alpha, label=Nlabels[i])
     #axin1.fill_between(df['Distance'], df['Variance'] - np.sqrt(df['Forth Moment']), df['Variance'] + np.sqrt(df['Forth Moment']), color=colors[i], alpha=alpha/2, edgecolor=None)

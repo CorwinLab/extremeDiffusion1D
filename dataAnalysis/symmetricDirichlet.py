@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.sparse import linalg
+from pyDiffusion.pymultijumpRW import betaBinomPMF
 
 def getSecondMomentArrayUniformRandom():
 	arr1 = np.array([0, 1/3, 1/3, 1/3, 0])
@@ -80,6 +81,184 @@ def getSecondMomentArraySymmetricArbitraryAlpha(alpha):
 	
 	return firstMomentArray, symmetricArray
 
+def getSecondMomentArrayBetaBinom():
+	n = 3
+	alpha = 2
+	beta= 4
+	xvals = np.arange(0, n+1)
+
+	pdf = betaBinomPMF(xvals, n, alpha, beta)	
+	pdf = np.flip(pdf)
+	pdf = np.append(pdf, 0)
+	pdf[1] -= 8.326672684688674e-17
+	
+	pdf_r = np.flip(pdf)
+
+	# E[w]
+	firstMoments = (pdf + pdf_r) / 2
+
+	# E[w(i)] * E[w(j)]
+	firstMomentArray = np.zeros(shape = (len(pdf), len(pdf)))
+
+	# E[w(i) w(j)]
+	secondMomentArray = np.zeros(shape = (len(pdf), len(pdf)))
+
+	for i in range(len(pdf)):
+		for j in range(len(pdf)):
+			firstMomentArray[i, j] = firstMoments[i] * firstMoments[j]
+			secondMomentArray[i, j] = ((pdf[i] * pdf[j]) + (pdf_r[i] * pdf_r[j])) / 2
+
+	return firstMomentArray, secondMomentArray, firstMoments
+
+def getSecondMomentSticky():
+	pdf = np.array([0.01, 0, 0.99])
+	pdf_r = np.array([0.99, 0, 0.01])
+
+	firstMoments = (pdf + pdf_r) / 2
+	
+	# E[w(i)] * E[w(j)]
+	firstMomentArray = np.zeros(shape = (len(pdf), len(pdf)))
+
+	# E[w(i) w(j)]
+	secondMomentArray = np.zeros(shape = (len(pdf), len(pdf)))
+
+	for i in range(len(pdf)):
+		for j in range(len(pdf)):
+			firstMomentArray[i, j] = firstMoments[i] * firstMoments[j]
+			secondMomentArray[i, j] = ((pdf[i] * pdf[j]) + (pdf_r[i] * pdf_r[j])) / 2
+
+	return firstMomentArray, secondMomentArray, firstMoments
+
+def getSecondMomentArrayThirdMoment():
+	a = 2/15
+	b = 4/15
+
+	# E[X2^2] and E[X3^2]
+	meanX2X2 = (a**2 + a * b + b**2) / 3
+
+	# E[Xi] - Note: these do indeed add to 1
+	meanX3 = meanX2 = (b + a) / 2
+	meanX1 = 1/6 * (2 - 3*meanX2 - meanX3)
+	meanX4 = 1/3 * (2 - 3 * meanX2 - 4*meanX3)
+	meanX5 = (meanX2 + meanX3) / 2
+
+	firstMoments = np.array([meanX1, meanX2, meanX3, meanX4, meanX5])
+
+	firstMomentArray = np.zeros(shape = (len(firstMoments), len(firstMoments)))
+	secondMomentArray = np.zeros(shape = (len(firstMoments), len(firstMoments)))
+	
+	# E[X1^2]
+	secondMomentArray[0, 0] = 1/36 * (10 * meanX2X2 + 6 * meanX2 * meanX3 - 16 * meanX2 + 4)
+	
+	# E[X1 X2] 
+	secondMomentArray[0, 1] = 1/6 * (2 * meanX2 - 3 * meanX2X2 - meanX3 * meanX2)
+
+	# E[X1 X3]
+	secondMomentArray[0, 2] = 1/6 * (2 * meanX3 - 3 * meanX2 * meanX3 - meanX2X2)
+
+	# E[X1 X4] 
+	secondMomentArray[0, 3] = 1/2 * meanX2X2 + 5/6 * meanX2 * meanX3 -2/3 * meanX2 + 2/9 * meanX2X2 -5/9 * meanX3 + 2/9
+
+	# E[X1 X5]
+	secondMomentArray[0, 4] = -1/4 * meanX2X2 - 1/3 * meanX2 * meanX3 + 1/6 * meanX2 - 1/12 * meanX2X2 + 1/6 * meanX2 
+
+	# E[X2 X1]
+	secondMomentArray[1, 0] = secondMomentArray[0, 1]
+
+	# E[X2 X2]
+	secondMomentArray[1, 1] = meanX2X2 
+
+	# E[X2 X3] 
+	secondMomentArray[1, 2] = meanX2 * meanX3 
+
+	# E[X2 X4] 
+	secondMomentArray[1, 3] = 1/3 * (2 * meanX2 - 3 * meanX2X2 - 4 * meanX2 * meanX3)
+
+	# E[X2 X5]
+	secondMomentArray[1, 4] = 1/2 * (meanX2X2 + meanX2 * meanX3)
+
+	# E[X3 X1]
+	secondMomentArray[2, 0] =  secondMomentArray[0, 2]
+
+	# E[X3 X2]
+	secondMomentArray[2, 1] = secondMomentArray[1, 2]
+
+	# E[X3 X3]
+	secondMomentArray[2, 2] = secondMomentArray[1, 1]
+
+	# E[X3 X4]
+	secondMomentArray[2, 3] = 1/3 * (2 * meanX2 - 3*meanX2 * meanX3 - 4 * meanX2X2)
+
+	# E[X3 X5] 
+	secondMomentArray[2, 4] = secondMomentArray[1, 4] # might not be right
+
+	# E[X4 X1]
+	secondMomentArray[3, 0] = secondMomentArray[0, 3]
+
+	# E[X4 X2]
+	secondMomentArray[3, 1] = secondMomentArray[1, 3]
+
+	# E[X4 X3] 
+	secondMomentArray[3, 2] = secondMomentArray[2, 3]
+
+	# E[X4 X4]
+	secondMomentArray[3, 3] = meanX2X2 + 8/3 * meanX2 * meanX2 - 4/3 * meanX2 + 16/9 * meanX2X2 - 16/9 * meanX2 + 4/9
+
+	# E[X4 X5]
+	secondMomentArray[3, 4] = -1/2 * meanX2X2 -7/6 * meanX2 * meanX2 + meanX2 / 3 - 2/3 * meanX2X2 + 1/3 * meanX2 
+
+	# E[X5 X1]
+	secondMomentArray[4, 0] = secondMomentArray[0, 4]
+
+	# E[X5 X2]
+	secondMomentArray[4, 1] = secondMomentArray[1, 4]
+
+	# E[X5 X3]
+	secondMomentArray[4, 2] = secondMomentArray[2, 4]
+
+	# E[X5 X4]
+	secondMomentArray[4, 3] = secondMomentArray[3, 4]
+
+	# E[X5 X5]
+	secondMomentArray[4, 4] = 1/2 * meanX2X2 + 1/2 * meanX2 * meanX3
+
+	for i in range(firstMomentArray.shape[0]):
+		for j in range(firstMomentArray.shape[1]):
+			firstMomentArray[i, j] = firstMoments[i] * firstMoments[j]
+
+	return firstMomentArray, secondMomentArray, firstMoments
+
+def getSecondMomentArrayConstDiffCoeff(k):
+	size = 2 * k + 1
+	secondMomentArray = np.zeros(shape = (size, size))
+	firstMomentArray = np.zeros(shape = (size, size))
+
+	rand_vals = np.arange(4, k+1)
+	dists = []
+	sigma2 = 10
+	xvals = np.arange(-k, k+1)
+	for x in rand_vals:
+		rand_vals = np.zeros(size)
+		rand_vals[xvals == x] = sigma2 / 2 / x**2
+		rand_vals[xvals == -x] = sigma2 / 2 / x**2
+		rand_vals[xvals == 0] = 1 - sigma2 / x**2
+		dists.append(rand_vals)
+	
+	dists = np.array(dists)
+	
+	# E[w]
+	firstMoments = np.mean(dists, axis=0)
+
+	for i in range(size):
+		for j in range(size):
+			firstMomentArray[i, j] = firstMoments[i] * firstMoments[j]
+
+			for dist in dists:
+				secondMomentArray[i, j] += dist[i] * dist[j]
+			secondMomentArray[i, j] /= dists.shape[0]
+
+	return firstMomentArray, secondMomentArray, firstMoments
+
 def getInvMeasure(size, secondMoments, firstMoments):
 	"""Calculate Invariant measure for symmetric alphas"""
 	# firstMoments, secondMoments = getSecondMomentArraySymmetricArbitraryAlpha(alphas)
@@ -107,7 +286,6 @@ def getInvMeasure(size, secondMoments, firstMoments):
 	return mu
 
 def calculateLocalTimeSum(k, secondMomentArray, firstMomentArray, size=501):
-	# Could probably combine the first and second sums but that's okay.
 	# Calculate first sum which is over |i-j|
 	firstSum = 0
 	for idx_i in range(secondMomentArray.shape[0]):
@@ -134,23 +312,6 @@ def calculateLocalTimeSum(k, secondMomentArray, firstMomentArray, size=501):
 				if np.abs(xval - yval) > l:
 					sumOverij += (np.abs(xval - yval) - l) * firstMomentArray[idx_i, idx_j]
 
- 		# sumOverij = sumOverij / (2 * k + 1)**2
-
-		# Calculate the invariance measure ratio - only works if obeys detail balance
-		# invMeasurel = 0 
-		# invMeasure0 = 0
-		# mean_vals = 1 / (2 * k + 1)
-		# for i in range(secondMomentArray.shape[0]):
-		# 	for j in range(secondMomentArray.shape[1]):
-		# 		xval = i - (2 * k + 1) // 2
-		# 		yval = j - (2 * k + 1) // 2
-				
-		# 		if np.abs(xval - yval) == l:
-		# 			invMeasurel += secondMomentArray[i, j]
-		# 			invMeasure0 += mean_vals ** 2
-
-		# measure = 2 * invMeasurel / invMeasure0
-		# secondSum += sumOverij * measure
 		secondSum += sumOverij * 2 * np.real_if_close(measure[l])
 
 	coeff = firstSum + secondSum
@@ -160,6 +321,7 @@ def calculateCoefficentArbitraryDirichlet(k, alpha):
 	""" Get extreme value coefficient for dirichlet distribution that is flipped: """
 	firstMomentArray, secondMomentArray = getSecondMomentArraySymmetricArbitraryAlpha(alpha)
 	localTimeCoeff = calculateLocalTimeSum(k, secondMomentArray, firstMomentArray)
+	
 	# Get variance of D
 	varD = 0
 	for idx_i in range(secondMomentArray.shape[0]):
@@ -175,39 +337,83 @@ def calculateCoefficentArbitraryDirichlet(k, alpha):
 	D = 1/2 * np.sum(meanArray * xvals**2)
 	varD -= (2 * D)**2
 	coeff = varD / localTimeCoeff
-	return coeff, varD
+	return coeff, varD, D
 
-# def getInvMeasure(l, secondMomentArray, mean_vals, k):
-# 	invMeasurel = 0 
-# 	invMeasure0 = 0
-# 	for i in range(secondMomentArray.shape[0]):
-# 		for j in range(secondMomentArray.shape[1]):
-# 			xval = i - (2 * k + 1) // 2
-# 			yval = j - (2 * k + 1) // 2
+def calculateCoefficientBetaBinom():
+	firstMomentArray, secondMomentArray, meanArray = getSecondMomentArrayBetaBinom()
+	k = firstMomentArray.shape[0] // 2
+	localTimeCoeff = calculateLocalTimeSum(k, secondMomentArray, firstMomentArray)
+	
+	# Get variance of thirdMoment
+	thirdMoment = 0
+	for idx_i in range(secondMomentArray.shape[0]):
+		for idx_j in range(secondMomentArray.shape[1]):
+			xval = idx_i - (2 * k + 1) // 2
+			yval = idx_j - (2 * k + 1) // 2
 
-# 			if np.abs(xval - yval) == l:
-# 				invMeasurel += secondMomentArray[i, j]
-# 				invMeasure0 += mean_vals[i] * mean_vals[j]
+			thirdMoment += xval**3 * yval**3 * secondMomentArray[idx_i, idx_j]
+	
+	xvals = np.arange(-k, k+1)
+	D = 1/2 * np.sum(meanArray * xvals**2)
+	avgThirdMoment = np.sum(meanArray * xvals**3)
 
-# 	return 2 * invMeasurel / invMeasure0
+	thirdMoment -= (avgThirdMoment)**2
+	coeff = thirdMoment / localTimeCoeff
+
+	return coeff, thirdMoment, D
+
+def calculateCoefficientConstDiffCoeff(k):
+	firstMomentArray, secondMomentArray, meanArray = getSecondMomentArrayConstDiffCoeff(k)
+	localTimeCoeff = calculateLocalTimeSum(k, secondMomentArray, firstMomentArray)
+	
+	# Get variance of fourth moment
+	fourthMoment = 0
+	for idx_i in range(secondMomentArray.shape[0]):
+		for idx_j in range(secondMomentArray.shape[1]):
+			xval = idx_i - (2 * k + 1) // 2
+			yval = idx_j - (2 * k + 1) // 2
+
+			fourthMoment += xval**4 * yval**4 * secondMomentArray[idx_i, idx_j]
+	
+	xvals = np.arange(-k, k+1)
+	D = 1/2 * np.sum(meanArray * xvals**2)
+	avgFourthMoment = np.sum(meanArray * xvals**4)
+
+	fourthMoment -= (avgFourthMoment)**2
+	coeff = fourthMoment / localTimeCoeff
+
+	return coeff, fourthMoment, D
+
+def calculateCoefficientThirdMoment():
+	firstMomentArray, secondMomentArray, meanArray = getSecondMomentArrayThirdMoment()
+	k = firstMomentArray.shape[0] // 2
+	localTimeCoeff = calculateLocalTimeSum(k, secondMomentArray, firstMomentArray)
+	
+	# Get variance of thirdMoment
+	thirdMoment = 0
+	for idx_i in range(secondMomentArray.shape[0]):
+		for idx_j in range(secondMomentArray.shape[1]):
+			xval = idx_i - (2 * k + 1) // 2
+			yval = idx_j - (2 * k + 1) // 2
+
+			thirdMoment += xval**3 * yval**3 * secondMomentArray[idx_i, idx_j]
+	
+	xvals = np.arange(-k, k+1)
+	D = 1/2 * np.sum(meanArray * xvals**2)
+	avgThirdMoment = np.sum(meanArray * xvals**3)
+
+	thirdMoment -= (avgThirdMoment)**2
+	coeff = thirdMoment / localTimeCoeff
+
+	return coeff, thirdMoment, D
 
 if __name__ == '__main__':
-	alpha = 0.01
-	size = 3
-	alpha = np.ones(size) * alpha
-	k = size // 2
-	D = 1 / 2 / 3 * k * (k + 1)
-	firstMomentArray, symmetricArray = getSecondMomentArraySymmetricArbitraryAlpha(alpha)
-	localTimeCoeff = calculateLocalTimeSum(k, symmetricArray, firstMomentArray)
-	print(localTimeCoeff, 4 * D, (4 * D - localTimeCoeff) / localTimeCoeff * 100)
+	from matplotlib import pyplot as plt
 
-	# alpha = np.array([5, 10, 5])
-	# k = len(alpha) // 2
-	# sigma2 = 0 
-	# for i in range(-k, k+1):
-	# 	sigma2 += alpha[i] / np.sum(alpha) * i**2
-	# D = sigma2 / 2
-	# arr = getSecondMomentArraySymmetricArbitraryAlpha(alpha)
-	# localTimeCoeff = calculateLocalTimeSum(k, arr)
-	# coeff, varD = calculateCoefficentArbitraryDirichlet(k, alpha)
-	# print(localTimeCoeff, 4 * D)
+	firstMomentArray, secondMomentArray, firstMoments = getSecondMomentSticky()
+	mu = getInvMeasure(1001, secondMomentArray, firstMomentArray)
+	
+	fig, ax = plt.subplots()
+	ax.set_yscale("log")
+	ax.plot(mu)
+	fig.savefig("InvMeasure.png")

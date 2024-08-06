@@ -35,5 +35,4 @@ if __name__ == '__main__':
 		vars.pop("Date")
 	
 	vars['params'] = np.array(vars['params'])
-
 	evolveAndMeasureEnvAndMax(**vars)

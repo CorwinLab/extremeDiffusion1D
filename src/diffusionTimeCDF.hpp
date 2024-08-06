@@ -43,6 +43,7 @@ public:
   RealType getProbOutsidePositions(unsigned int x);
 
   RealType getGumbelVariance(RealType nParticles);
+  RealType getGumbelMean(RealType nParticles);
   std::vector<RealType> getGumbelVariance(std::vector<RealType> nParticles);
   std::vector<long int> getxvals();
   std::vector<RealType> getSaveCDF();

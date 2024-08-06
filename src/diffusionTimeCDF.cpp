@@ -116,6 +116,17 @@ RealType DiffusionTimeCDF::getGumbelVariance(RealType nParticles)
   return var;
 }
 
+RealType DiffusionTimeCDF::getGumbelMean(RealType nParticles)
+{
+  nParticles+=1;
+  std::vector<RealType> cdf = slice(CDF, 0, t);
+  cdf.push_back(0); // Need to add 0 to CDF to make it complete.
+
+  std::vector<long int> xvals = getxvals();
+  RealType mean = getGumbelMeanCDF(xvals, cdf, nParticles);
+  return mean;
+}
+
 std::vector<RealType>
 DiffusionTimeCDF::getGumbelVariance(std::vector<RealType> nParticles)
 {
