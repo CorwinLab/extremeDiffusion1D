@@ -25,7 +25,7 @@ if __name__ == '__main__':
 	N = float(f"1e{Nexp}")
 	prefactor = float(prefactor)
 	
-	if distribution == 'dirichlet':
+	if distribution in ['dirichlet', 'symmetric']:
 		params = params.split(",")
 		params = np.array(params).astype(float)
 	else:
@@ -49,9 +49,9 @@ if __name__ == '__main__':
 #	if distribution == 'symmetric' or distribution == 'thirdMoment' or distribution == 'thirdMoment7' or distribution == 'randomThirdMoment':
 #		Lmax = 3000
 #	else:
-	Lmax = (prefactor * sigma**4 * (sigma**2 - beta) * np.log(N)**(5/2) / beta / np.sqrt(np.pi) * 2 * np.sqrt(2)) ** (1/3)
-	Lmax = int(Lmax)
-	# Lmax = 3000
+	# Lmax = (prefactor * sigma**4 * (sigma**2 - beta) * np.log(N)**(5/2) / beta / np.sqrt(np.pi) * 2 * np.sqrt(2)) ** (1/3)
+	# Lmax = int(Lmax)
+	Lmax = int(prefactor)
 	vars = {"Lmax": Lmax, 
 	 	"step_size": step_size,
 		"distribution": distribution,

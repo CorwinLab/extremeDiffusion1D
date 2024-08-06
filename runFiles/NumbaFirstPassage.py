@@ -24,6 +24,7 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
         if max_position == max(distances):
             sys.exit()
         distances = distances[distances > max_position]
+        print(f"Found save file. Starting at L={max_position}", flush=True)
         write_header = False
     
     f = open(save_file, "a")
@@ -55,6 +56,7 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
             nFirstPassageCDF = 1 - (1-firstPassageCDF)**N
             nFirstPassagePDF = nFirstPassageCDF - nFirstPassageCDFPrev
             nFirstPassagePDF = float(nFirstPassagePDF)
+            assert nFirstPassagePDF >= 0
 
             running_sum_squared += t ** 2 * nFirstPassagePDF
             running_sum += t * nFirstPassagePDF
@@ -77,11 +79,11 @@ def runExperiment(nExp, dMax, num_of_points, save_dir, sysID):
 
 if __name__ == "__main__":
     # Test line:
-    save_dir, sysID, dMin, dMax, nExp, num_of_points = '.', 1, 0, 50, 24, 250
-    #(save_dir, sysID, dMax, nExp, num_of_points) = sys.argv[1:]
+    # save_dir, sysID, dMin, dMax, nExp, num_of_points = '.', 1, 0, 50, 24, 250
+    (save_dir, sysID, dMax, nExp, num_of_points) = sys.argv[1:]
     dMax = float(dMax)
     num_of_points = int(num_of_points)
-    
+
     vars = {"nExp": nExp,
             "dMax": dMax,
             "num_of_points": num_of_points,

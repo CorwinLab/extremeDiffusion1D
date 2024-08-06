@@ -257,7 +257,7 @@ def constDiffusionCoefficient(k):
 @njit
 def getRandVals(step_size, distribution, params=np.array([])):
 	if distribution == 'symmetric':
-		rand_vals = symmetricRandomDirichlet(step_size)
+		rand_vals = symmetricRandomDirichlet(params)
 	elif distribution == 'uniform': # 'notsymmetric'
 		rand_vals = randomUniform(step_size)
 	elif distribution == 'ssrw':
@@ -289,7 +289,7 @@ def getRandVals(step_size, distribution, params=np.array([])):
 	elif distribution == 'randomFourthMomet':
 		rand_vals = randomFourthMoment()
 	elif distribution == 'constDiffusionCoefficient':
-		rand_vals = constDiffusionCoefficient(step_size)
+		rand_vals = constDiffusionCoefficient(step_size // 2)
 	return rand_vals
 
 @njit
@@ -497,6 +497,99 @@ def evolveAndMeasureFPT(Lmax, step_size, distribution, save_file, N, params=np.a
 			nFirstPassagePDF = nFirstPassageCDF - nFirstPassageCDFPrev
 			nFirstPassagePDF = float(nFirstPassagePDF)
 
+			running_sum_squared += t ** 2 * nFirstPassagePDF
+			running_sum += t * nFirstPassagePDF
+			
+			if (quantile is None) and (firstPassageCDF > 1 / N):
+				quantile = t
+			
+			nFirstPassageCDFPrev = nFirstPassageCDF
+
+		variance = running_sum_squared - running_sum ** 2
+		writer.writerow([L, quantile, running_sum, variance, np.sum(pdf)])
+		f.flush()
+
+	f.close()
+
+def evolveAndMeasureFPTNoAbsorbing(Lmax, step_size, distribution, save_file, N, params=np.array([])):
+	'''
+	Calculate the FPT except with no absorbing boundary condition.
+
+	Example
+	-------
+	Lmax = 50
+	step_size = 5
+	distribution='uniform'
+	save_file = 'Quantile.txt'
+	N = 100
+	evolveAndMeasureFPTNoAbsorbing(Lmax, step_size, distribution, save_file, N)
+	'''
+	
+	# Get save distances
+	Ls = np.unique(np.geomspace(1, Lmax, 500).astype(int))
+	
+	# Check if save_file is already written to
+	write_header = True
+	if os.path.exists(save_file):
+		data = pd.read_csv(save_file)
+		max_position = max(data['Distance'].values)
+		if max_position == max(Ls):
+			print("File already completed", flush=True)
+			sys.exit()
+		Ls = Ls[Ls > max_position]
+		print(f"Starting at {Ls[0]}", flush=True)
+		write_header = False
+		
+	# Set up writer and write header if save file doesn't exist
+	f = open(save_file, 'a')
+	writer = csv.writer(f)
+	if write_header:
+		writer.writerow(["Distance", "Env", "Mean(Min)", "Var(Min)", "PDF Sum"])
+	f.flush()
+	
+	mpmath.mp.dps = 250
+	N = mpmath.mp.mpf(N)
+	
+	for L in Ls:
+		# Initialize PDF
+		# Initialize the probability distribution
+		size = 2 * int(1e6) # np.max(times) * step_size * 5
+		pdf = np.zeros(size)
+		pdf[0] = 1
+		t = 0
+
+		# Initialize quantile and sampling variables
+		quantile = None 
+		running_sum_squared = 0
+		running_sum = 0
+		
+		# Set up fpt cdf and N first passage CDF
+		firstPassageCDF = mpmath.mp.mpf(0)
+		nFirstPassageCDFPrev = 1 - (1-firstPassageCDF)**N
+
+		while (1-nFirstPassageCDFPrev > np.finfo(pdf[0].dtype).eps) or (firstPassageCDF < 1 / N):
+			pdf = iterateTimeStep(pdf, t+1, step_size, distribution, params)
+			assert np.all(pdf >= 0)
+			t+=1
+
+			# Need to parse only part of array that is nonzero
+			maxIdx = (t+1) * (step_size-1) - step_size + 2
+			cdf = np.cumsum(pdf[:maxIdx+1][::-1] * mpmath.mp.mpf(1))[::-1] # Need to convert to mpmath object
+			cdf = np.insert(cdf, 0, 1)
+			
+			xvals = np.arange(0, cdf.size) - t * (step_size // 2)
+			
+			if L > xvals[-1]:
+				firstPassageCDF = mpmath.mp.mpf(0)
+			else:
+				idx_of_L = np.where(xvals==L)[0][0]
+				firstPassageCDF = cdf[idx_of_L]
+			
+			nFirstPassageCDF = 1 - (1-firstPassageCDF)**N
+			nFirstPassagePDF = nFirstPassageCDF - nFirstPassageCDFPrev
+			
+			nFirstPassagePDF = float(nFirstPassagePDF)
+			
 			running_sum_squared += t ** 2 * nFirstPassagePDF
 			running_sum += t * nFirstPassagePDF
 			
@@ -727,56 +820,3 @@ def getSigmaBetaDirichlet(alpha):
 	sigma = np.sqrt(np.sum(mean * xvals**2))
 
 	return sigma, beta
-
-# if __name__ == '__main__':
-# 	from matplotlib import pyplot as plt
-# 	width = 10
-# 	xvals = np.arange(-width, width + 1)
-	
-# 	sigma2 =  50 # 2 
-# 	low = 0
-#  	# high = 1 / 57 
-# 	high = 3 * sigma2 / (width *(width - 1) * (2*width - 1))# 
-# 	maxHigh = 3 * sigma2 / (width * (8 * width**2 - 9 * width - 1))
-# 	high = min([high, maxHigh])
-# 	print(high)
-# 	# high = 2 / 767
-# 	for i in range(100):
-# 		dist = np.random.uniform(low=low, high=high, size=(2 * width + 1))
-
-# 		dist1_sum = 0
-# 		for idx, x  in enumerate(xvals): 
-# 			if x in [-width, 0, width]: # [-2, 0, 1]:
-# 				continue
-# 			else: 
-# 				dist1_sum += dist[idx] * (width * x + x ** 2)
-# 				# dist1_sum += dist[idx] * (x - x**2)
-
-# 		dist2_sum = 0
-# 		for idx, x in enumerate(xvals):
-# 			if x in [-width, 0, width]: # [-2, 0, 1]:
-# 				continue 
-# 			else:
-# 				dist2_sum += dist[idx] * (width * x - x**2)
-# 				# dist2_sum += dist[idx] * (2 * x +  x**2)
-		
-# 		dist[xvals == -width] = 1 / 2 / width**2 * (sigma2 + dist2_sum)
-# 		# dist[xvals == -2] = 1/6 * ( sigma2 + dist1_sum)
-
-# 		dist[xvals == width] = 1 / 2 / width**2 * (sigma2 - dist1_sum)
-# 		# dist[xvals == 1] = 1/3 * ( sigma2 - dist2_sum)
-# 		# dist[xvals == -2] = 1/6 * ( sigma2 - dist2_sum)
-# 		dist[xvals == 0] = 1 - np.sum(dist[xvals != 0])
-# 		# print(np.sum(dist)) 
-# 		# print(np.sum(dist * xvals))
-# 		# print(np.sum(dist * xvals**2))
-# 		# print(dist)
-# 		if not np.all(dist > 0):
-# 			print(dist)
-# 			raise KeyError
-
-# 	fig, ax = plt.subplots()
-# 	ax.scatter(xvals, dist)
-# 	fig.savefig("Hist.png", bbox_inches='tight')
-
-# 	print(constDiffusionCoefficient(10))
