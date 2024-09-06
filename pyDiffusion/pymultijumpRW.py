@@ -242,6 +242,14 @@ def thirdMoment7():
 	return np.array([mn3, mn2, mn1, m0, m1, m2, m3])
 
 @njit
+def sticky():
+	rand_vals = np.array([0.1, 0, 0.9])
+	flip = np.random.choice(np.array([0, 1]))
+	if flip: 
+		return np.flip(rand_vals)
+	return rand_vals
+
+@njit
 def constDiffusionCoefficient(k):
 	"""Produces a distribution with mean 0 and diffusion coefficient of 10."""
 	sigma2 = 10
@@ -286,10 +294,12 @@ def getRandVals(step_size, distribution, params=np.array([])):
 		rand_vals = randBetaBinom()
 	elif distribution == 'thirdMomentDHalf':
 		rand_vals = thirdMomentDHalf()
-	elif distribution == 'randomFourthMomet':
+	elif distribution == 'randomFourthMoment':
 		rand_vals = randomFourthMoment()
 	elif distribution == 'constDiffusionCoefficient':
 		rand_vals = constDiffusionCoefficient(step_size // 2)
+	elif distribution == 'sticky':
+		rand_vals = sticky()
 	return rand_vals
 
 @njit
@@ -793,30 +803,3 @@ def getBeta(step_size):
 		omega_ij += rand_vals[0] * rand_vals[1]
 	print("Mean:", mean / num_samples)
 	return running_sum / num_samples, sigma / num_samples, omega_ij / num_samples
-
-def getSigmaBetaDirichlet(alpha):
-	alpha_0 = np.sum(alpha)
-	mean = alpha / alpha_0 
-	
-	xvals = np.arange(-(len(alpha) // 2), (len(alpha)//2) + 1, 1)
-	cov = np.zeros((len(alpha), len(alpha)))
-	mean_prod = np.zeros((len(alpha), len(alpha)))
-
-	for i in range(cov.shape[0]):
-		for j in range(cov.shape[1]):
-			# Get cov
-			cov[i, j] -= mean[i] * mean[j]
-			if i == j:
-				cov[i, j] += mean[i]
-			cov[i, j] /= (alpha_0 + 1)
-			
-			# Get mean cov
-			mean_prod[i, j] += mean[i] * mean[j]
-
-	exp_ij = cov + mean_prod
-
-	beta = (exp_ij * xvals).T * xvals 
-	beta = np.sum(beta)
-	sigma = np.sqrt(np.sum(mean * xvals**2))
-
-	return sigma, beta
