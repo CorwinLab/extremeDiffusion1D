@@ -10,7 +10,7 @@ pybind11/
 numpy_quad/
 
 #miscellanious stuff
-analysis/
+.vscode
 
 #Latex stuff
 *.aux
